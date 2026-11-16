@@ -73,6 +73,15 @@
               <span data-i18n="navAddCandidate">Add Candidate</span>
             </button>
           </li>
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="careerPortal">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <span data-i18n="navCareerPortal">Career Portal (Jobs)</span>
+            </button>
+          </li>
         </ul>
       </div>
 
@@ -105,6 +114,17 @@
                 <line x1="3" y1="18" x2="3.01" y2="18"/>
               </svg>
               <span data-i18n="navRecList">Recommended List</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="interviewCalendar">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span data-i18n="navInterviewCalendar">Interview Calendar</span>
             </button>
           </li>
           <li>
@@ -673,6 +693,45 @@
       </section>
 
       <!-- ====================================================================
+           PANEL 7: PUBLIC CAREER PORTAL / JOB BOARD (Fase 4A)
+           ==================================================================== -->
+      <section id="panel-careerPortal" class="workspace-panel">
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblOpenPositions">Open Career Opportunities</h2>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+              Explore and apply for open positions across our client companies. Submitted applications directly enter Resume Lib as New candidates.
+            </p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
+              <option value="all">All Companies</option>
+            </select>
+            <input type="text" id="careerSearchQuery" class="ctrl-input" placeholder="Search title or skills..." style="height: 28px; font-size: 12px;">
+          </div>
+        </div>
+
+        <div id="jobBoardContainer" class="job-card-grid"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 8: INTERVIEW CALENDAR & SCHEDULER (Fase 4B)
+           ==================================================================== -->
+      <section id="panel-interviewCalendar" class="workspace-panel">
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblUpcomingInterviews">Upcoming Scheduled Interviews</h2>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+              Coordinate candidate interview rounds, access virtual rooms (Meet/Zoom), and export .ICS calendar events.
+            </p>
+          </div>
+          <button type="button" id="btnOpenScheduleModal" class="btn-solid" data-i18n="btnScheduleInterview">+ Schedule Interview</button>
+        </div>
+
+        <div id="interviewAgendaContainer" class="calendar-agenda-grid"></div>
+      </section>
+
+      <!-- ====================================================================
            PANEL 6: PRD & BLUEPRINT DOCUMENTATION VIEWER
            ==================================================================== -->
       <section id="panel-prdDocs" class="workspace-panel" style="overflow-y: auto;">
@@ -813,6 +872,21 @@
       </div>
       <form id="formAddCandidate">
         <div class="modal-body form-grid">
+          <!-- Smart CV Parser Box (Fase 4D) -->
+          <div class="form-field full cv-parse-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span data-i18n="btnParseCv">Auto-Fill from CV Document</span>
+              </strong>
+              <button type="button" id="btnRunCvParser" class="btn-solid" style="height: 24px; font-size: 11px; padding: 0 8px;">Parse & Auto-Fill</button>
+            </div>
+            <textarea id="rawCvParseText" rows="2" style="font-size: 11.5px; margin-bottom: 6px;" placeholder="Paste candidate's CV text here (e.g. Name, Email, Phone, Experience, Skills) to auto-fill form..."></textarea>
+            <div id="cvParseExtractedPills" style="display: none;" class="parse-extracted-badge">
+              ✓ Successfully extracted candidate details from resume text
+            </div>
+          </div>
+
           <div class="form-field">
             <label for="addName" data-i18n="fldFullName">Candidate Name *</label>
             <input type="text" id="addName" required placeholder="e.g. Bagus Setiawan">
@@ -993,12 +1067,190 @@
             </div>
             <button type="button" class="btn-solid" onclick="runDemoScenario(7)">Uji Skenario 7 (Impor CSV)</button>
           </div>
+
+          <!-- Scenario 8 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 4A: Career Portal</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Portal Karir & Lamar Mandiri</div>
+              <p class="demo-scenario-desc">Kandidat eksternal melihat lowongan terbuka di Career Portal dan melamar langsung (otomatis masuk status 0 New).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(8)">Uji Skenario 8 (Career Portal)</button>
+          </div>
+
+          <!-- Scenario 9 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 4B: Interview Scheduler</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Jadwal Wawancara & Unduh .ICS</div>
+              <p class="demo-scenario-desc">Jadwalkan wawancara untuk kandidat, pilih platform Meet/Zoom, dan unduh berkas kalender .ICS otomatis.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(9)">Uji Skenario 9 (Jadwal Interview)</button>
+          </div>
+
+          <!-- Scenario 10 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 4C: Offer Letter</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Generator Surat Penawaran Resmi</div>
+              <p class="demo-scenario-desc">Cetak dan terbitkan Surat Penawaran Kerja (Offering Letter formal) siap PDF saat kandidat mencapai status 30.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(10)">Uji Skenario 10 (Offering Letter)</button>
+          </div>
+
+          <!-- Scenario 11 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 4D: Smart CV Parser</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Ekstraksi Otomatis CV Kandidat</div>
+              <p class="demo-scenario-desc">Ekstraksi heuristik cerdas membaca teks CV untuk mengisi form nama, kontak, pendidikan, dan pengalaman otomatis.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(11)">Uji Skenario 11 (Parse CV)</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
         <button type="button" class="btn-outlined" onclick="resetAllDemoData()">Reset Data Awal</button>
         <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
       </div>
+    </div>
+  </dialog>
+
+  <!-- Modal 7: Schedule Interview (Fase 4B) -->
+  <dialog id="scheduleInterviewModal" aria-labelledby="scheduleInterviewModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="scheduleInterviewModalTitle" data-i18n="btnScheduleInterview">Schedule Interview</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formScheduleInterview">
+        <div class="modal-body form-grid">
+          <div class="form-field full">
+            <label for="intCandidateSelect">Select Candidate *</label>
+            <select id="intCandidateSelect" class="ctrl-select" required></select>
+          </div>
+          <div class="form-field">
+            <label for="intCompany">Client Company</label>
+            <input type="text" id="intCompany" readonly style="background-color: var(--bg-subtle);">
+          </div>
+          <div class="form-field">
+            <label for="intPosition">Interview Position</label>
+            <input type="text" id="intPosition" readonly style="background-color: var(--bg-subtle);">
+          </div>
+          <div class="form-field">
+            <label for="intDateTime">Date & Time *</label>
+            <input type="datetime-local" id="intDateTime" required>
+          </div>
+          <div class="form-field">
+            <label for="intRound">Interview Stage / Round</label>
+            <select id="intRound" class="ctrl-select">
+              <option value="Initial HR Screening">Initial HR Screening (Code 20)</option>
+              <option value="Technical User Interview">Technical User Interview (Code 21)</option>
+              <option value="Final Executive Round">Final Executive Round (Code 22)</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="intInterviewers">Interviewers / Attendees</label>
+            <input type="text" id="intInterviewers" value="Rina Wijaya, Hiring Manager">
+          </div>
+          <div class="form-field">
+            <label for="intPlatform">Meeting Platform</label>
+            <select id="intPlatform" class="ctrl-select">
+              <option value="Google Meet">Google Meet</option>
+              <option value="Zoom Meeting">Zoom Meeting</option>
+              <option value="Onsite Office">Onsite Client Office</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="intMeetingLink">Meeting URL / Room</label>
+            <input type="text" id="intMeetingLink" value="https://meet.google.com/tt-meet-rec">
+          </div>
+          <div class="form-field full">
+            <label for="intNotes">Interview Agenda / Focus Notes</label>
+            <textarea id="intNotes" rows="2" placeholder="Topics to cover, technical assignment review..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: space-between;">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn-solid" data-i18n="btnScheduleInterview">Confirm & Download .ICS</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 8: Offer Letter & Contract Generator (Fase 4C) -->
+  <dialog id="offerLetterModal" aria-labelledby="offerLetterModalTitle" closedby="any">
+    <div class="modal-shell" style="max-inline-size: 820px;">
+      <div class="modal-header">
+        <h2 id="offerLetterModalTitle" data-i18n="lblOfferDocument">Official Employment Offer Letter</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="offerLetterPaper" class="offer-letter-paper"></div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-outlined" onclick="window.print()">Print / Save PDF</button>
+          <button type="button" id="btnSendOfferCandidate" class="btn-solid">Issue Formal Offer (Code 30)</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal 9: Career Portal Application Modal (Fase 4A) -->
+  <dialog id="applyJobModal" aria-labelledby="applyJobModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="applyJobModalTitle" data-i18n="btnApplyJob">Apply for Position</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formApplyJob">
+        <div class="modal-body form-grid">
+          <input type="hidden" id="applyJobId">
+          <div class="form-field full">
+            <div id="applyJobSummaryBanner" style="padding: 10px 14px; background: var(--bg-subtle); border-radius: 4px; font-weight: 600;"></div>
+          </div>
+          <div class="form-field">
+            <label for="applyFullName" data-i18n="fldFullName">Full Name *</label>
+            <input type="text" id="applyFullName" required placeholder="e.g. Maya Indah">
+          </div>
+          <div class="form-field">
+            <label for="applyEmail" data-i18n="fldEmail">Email Address *</label>
+            <input type="email" id="applyEmail" required placeholder="maya@example.com">
+          </div>
+          <div class="form-field">
+            <label for="applyPhone" data-i18n="fldPhone">Phone / WhatsApp *</label>
+            <input type="text" id="applyPhone" required placeholder="+62 812-xxxx-xxxx">
+          </div>
+          <div class="form-field">
+            <label for="applyYears" data-i18n="fldYearsService">Years of Experience</label>
+            <input type="number" id="applyYears" min="0" max="40" value="3">
+          </div>
+          <div class="form-field">
+            <label for="applyEducation" data-i18n="fldEducation">Education</label>
+            <select id="applyEducation" class="ctrl-select">
+              <option value="undergraduate">undergraduate</option>
+              <option value="master">master</option>
+              <option value="diploma">diploma</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="applySalary" data-i18n="fldSalaryExpectation">Salary Expectation</label>
+            <input type="text" id="applySalary" placeholder="e.g. IDR 15,000,000">
+          </div>
+          <div class="form-field full">
+            <label for="applyCoverLetter">Summary / Cover Note</label>
+            <textarea id="applyCoverLetter" rows="3" placeholder="Explain your relevant background and interest..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn-solid" data-i18n="btnApplyJob">Submit Application</button>
+        </div>
+      </form>
     </div>
   </dialog>
 

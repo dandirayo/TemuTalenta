@@ -125,6 +125,17 @@ Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
 3. **`Recommended List` (`Daftar Rekomendasi`)**:
    - Menampilkan tabel historis seluruh rekomendasi kandidat yang bersangkutan.
    - Memungkinkan konsultan memperbarui status tahapan (`stage`) kandidat secara langsung.
+4. **`Public Career Portal` (`Portal Karier Publik`)**:
+   - Menampilkan lowongan terbuka klien dan memungkinkan kandidat melamar secara mandiri.
+   - Lamaran baru langsung dialirkan ke `Resume Lib` dengan status awal Code `0` (`New`).
+5. **`Interview Calendar & .ICS Scheduler` (`Kalender Wawancara`)**:
+   - Koordinasi putaran wawancara dengan tautan meeting dan ekspor kalender standar `.ics`.
+   - Mengubah status kandidat ke Code `20` (`Interview Scheduled`) dan Code `21` (`Interview Passed`).
+6. **`Official Offer Letter Generator` (`Generator Surat Penawaran Kerja`)**:
+   - Menghasilkan draf dokumen penawaran kerja resmi dengan perincian kompensasi dan blok tanda tangan.
+   - Mengubah status kandidat ke Code `30` (`Offer Proposed`).
+7. **`Smart Heuristic CV Parser` (`Ekstraktor CV Cerdas`)**:
+   - Menganalisis teks CV bebas dan secara cerdas mengisi formulir pendaftaran kandidat.
 
 ---
 

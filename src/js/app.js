@@ -19,6 +19,8 @@ let activeUser = USERS[0];
 let notifications = [];
 let masterCompanies = [];
 let masterPositions = [];
+let openJobs = [];
+let scheduledInterviews = [];
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -31,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
   notifications = getStoredNotifications();
   masterCompanies = getStoredMasterCompanies();
   masterPositions = getStoredMasterPositions();
+  openJobs = getStoredOpenJobs();
+  scheduledInterviews = getStoredInterviews();
 
   bindGlobalEvents();
   setupDialogLightDismiss();
@@ -440,6 +444,16 @@ function bindGlobalEvents() {
   document.getElementById("analyticsDateRange")?.addEventListener("change", renderAdvancedAnalytics);
   document.getElementById("btnExportAnalytics")?.addEventListener("click", exportAnalyticsCsv);
 
+  // Fase 4: Career Portal, Interview Scheduler, Offer Letter & CV Parser
+  document.getElementById("btnRunCvParser")?.addEventListener("click", handleRunCvParser);
+  document.getElementById("careerFilterCompany")?.addEventListener("change", renderCareerPortal);
+  document.getElementById("careerSearchQuery")?.addEventListener("input", renderCareerPortal);
+  document.getElementById("btnOpenScheduleModal")?.addEventListener("click", () => openScheduleInterviewModal());
+  document.getElementById("formScheduleInterview")?.addEventListener("submit", handleScheduleInterviewSubmit);
+  document.getElementById("formApplyJob")?.addEventListener("submit", handleApplyJobSubmit);
+  document.getElementById("intCandidateSelect")?.addEventListener("change", handleIntCandidateChange);
+  document.getElementById("btnSendOfferCandidate")?.addEventListener("click", handleSendOfferClick);
+
   // Forms
   document.getElementById("formRecRepeat")?.addEventListener("submit", handleRecRepeatSubmit);
   document.getElementById("formAddCandidate")?.addEventListener("submit", handleAddCandidateSubmit);
@@ -737,6 +751,8 @@ function buildCandidateRowHtml(c, activeCols) {
               <button type="button" class="op-btn" data-action="download" data-id="${c.id}">${t("actDownloadResume")}</button>
               <button type="button" class="op-btn" data-action="repeat" data-id="${c.id}">${t("actRecRepeat")}</button>
               <button type="button" class="op-btn" data-action="list" data-id="${c.id}">${t("actRecList")}</button>
+              <button type="button" class="op-btn" data-action="schedule" data-id="${c.id}" title="Schedule Interview">Interview</button>
+              <button type="button" class="op-btn" data-action="offer" data-id="${c.id}" title="Generate Offer Letter">Offer</button>
             </div>
           </td>
         `;
@@ -784,6 +800,8 @@ function bindTableRowActions(container) {
       if (action === "list") openRecListModal(id);
       if (action === "client-approve") clientApproveInterview(id);
       if (action === "client-reject") clientRejectResume(id);
+      if (action === "schedule") openScheduleInterviewModal(id);
+      if (action === "offer") openOfferLetterModal(id);
     });
   });
 }
@@ -818,6 +836,10 @@ function openCandidateProfileModal(candidateId) {
         <span class="status-count-badge" style="font-size: 13px; padding: 3px 9px;">
           ${currentBadge} - ${getStatusName(currentBadge)}
         </span>
+        <div style="display: flex; gap: 6px; margin-top: 6px;">
+          <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 24px; font-size: 11px; padding: 0 8px;">Schedule Interview</button>
+          <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 24px; font-size: 11px; padding: 0 8px;">Generate Offer</button>
+        </div>
       </div>
     </div>
 
@@ -1050,6 +1072,16 @@ function openCandidateProfileModal(candidateId) {
     });
   });
 
+  body.querySelector("#btnProfileScheduleInt")?.addEventListener("click", () => {
+    dialog.close();
+    openScheduleInterviewModal(c.id);
+  });
+
+  body.querySelector("#btnProfileGenOffer")?.addEventListener("click", () => {
+    dialog.close();
+    openOfferLetterModal(c.id);
+  });
+
   dialog.showModal();
 }
 
@@ -1191,10 +1223,17 @@ function openRecRepeatModal(candidateId) {
   const dialog = document.getElementById("recRepeatModal");
   if (!dialog) return;
 
-  populateCompanyAndPositionSelects("recRepeatCompanySelect", "recRepeatPositionSelect");
+  const compInput = document.getElementById("recRepeatCompany");
+  const posInput = document.getElementById("recRepeatPosition");
+
+  if (compInput && compInput.tagName === "SELECT") {
+    populateCompanyAndPositionSelects(compInput.id, posInput?.id);
+  }
 
   document.getElementById("recRepeatCandidateId").value = c.id;
   document.getElementById("recRepeatCandidateName").value = c.name;
+  if (posInput && !posInput.value) posInput.value = c.recommendedPosition || "";
+  if (compInput && !compInput.value) compInput.value = c.recommendedCompany || "";
   document.getElementById("recRepeatReason").value = "";
   document.getElementById("recRepeatNotes").value = "";
 
@@ -1209,8 +1248,8 @@ function openRecRepeatModal(candidateId) {
   if (submitBtn) submitBtn.disabled = false;
 
   const verifyRulesLive = () => {
-    const comp = document.getElementById("recRepeatCompanySelect")?.value.trim();
-    const pos = document.getElementById("recRepeatPositionSelect")?.value.trim();
+    const comp = document.getElementById("recRepeatCompany")?.value.trim();
+    const pos = document.getElementById("recRepeatPosition")?.value.trim();
     if (!comp) return;
 
     const evalResult = evaluateRecRepeatRules(c, comp, pos, activeUser.name);
@@ -1248,8 +1287,14 @@ function openRecRepeatModal(candidateId) {
     }
   };
 
-  document.getElementById("recRepeatCompanySelect").onchange = verifyRulesLive;
-  document.getElementById("recRepeatPositionSelect").onchange = verifyRulesLive;
+  if (compInput) {
+    compInput.oninput = verifyRulesLive;
+    compInput.onchange = verifyRulesLive;
+  }
+  if (posInput) {
+    posInput.oninput = verifyRulesLive;
+    posInput.onchange = verifyRulesLive;
+  }
 
   dialog.showModal();
 }
@@ -1257,8 +1302,8 @@ function openRecRepeatModal(candidateId) {
 function handleRecRepeatSubmit(e) {
   e.preventDefault();
   const id = document.getElementById("recRepeatCandidateId")?.value;
-  const pos = document.getElementById("recRepeatPositionSelect")?.value.trim();
-  const comp = document.getElementById("recRepeatCompanySelect")?.value.trim();
+  const pos = document.getElementById("recRepeatPosition")?.value.trim();
+  const comp = document.getElementById("recRepeatCompany")?.value.trim();
   const statusCode = parseInt(document.getElementById("recRepeatStatusCode")?.value || "10", 10);
   const consultant = activeUser.name;
   const reason = document.getElementById("recRepeatReason")?.value.trim() || "";
@@ -1679,6 +1724,8 @@ function renderSecondaryViews() {
   renderAuditLogsView();
   renderMasterDataLists();
   renderUserManagementList();
+  renderCareerPortal();
+  renderInterviewCalendar();
 }
 
 /**
@@ -2287,6 +2334,79 @@ function runDemoScenario(index) {
       }, 200);
       break;
     }
+    case 8: {
+      // Scenario 8: Public Career Portal & Candidate Self-Application (Fase 4A)
+      switchWorkspaceView("careerPortal");
+      setTimeout(() => {
+        openApplyJobModal("JOB-01");
+        setTimeout(() => {
+          const nameInput = document.getElementById("applyFullName");
+          const emailInput = document.getElementById("applyEmail");
+          const phoneInput = document.getElementById("applyPhone");
+          const yearsInput = document.getElementById("applyYears");
+          const salaryInput = document.getElementById("applySalary");
+          const coverInput = document.getElementById("applyCoverLetter");
+          if (nameInput) nameInput.value = "Rian Pratama";
+          if (emailInput) emailInput.value = "rian.pratama@cloudexpert.id";
+          if (phoneInput) phoneInput.value = "+6281298765432";
+          if (yearsInput) yearsInput.value = 8;
+          if (salaryInput) salaryInput.value = "IDR 32,000,000";
+          if (coverInput) coverInput.value = "8 years experience architecting Kubernetes clusters and multi-cloud solutions at tier-1 fintech.";
+          showToast("Demo 8: Review application and click 'Submit Application' to ingest into Resume Lib!");
+        }, 150);
+      }, 200);
+      break;
+    }
+    case 9: {
+      // Scenario 9: Interview Calendar, Scheduler & .ICS Export (Fase 4B)
+      switchWorkspaceView("interviewCalendar");
+      setTimeout(() => {
+        openScheduleInterviewModal("CND-1002");
+        setTimeout(() => {
+          const notesInput = document.getElementById("intNotes");
+          if (notesInput) notesInput.value = "System design and distributed caching round with VP of Engineering.";
+          showToast("Demo 9: Click 'Confirm & Download .ICS' to export calendar file and advance status to Code 20!");
+        }, 150);
+      }, 200);
+      break;
+    }
+    case 10: {
+      // Scenario 10: Official Employment Offer Letter & Code 30 Workflow (Fase 4C)
+      switchWorkspaceView("resumeLib");
+      setTimeout(() => {
+        openOfferLetterModal("CND-1007");
+        showToast("Demo 10: Formal employment offer generated! Test Print or click 'Issue Formal Offer' to advance to Code 30.");
+      }, 200);
+      break;
+    }
+    case 11: {
+      // Scenario 11: Smart Heuristic CV Parser & Auto-Fill (Fase 4D)
+      populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
+      document.getElementById("addCandidateModal")?.showModal();
+      setTimeout(() => {
+        const rawBox = document.getElementById("rawCvParseText");
+        if (rawBox) {
+          rawBox.value = [
+            "MAYA INDAH KUSUMA",
+            "Email: maya.indah@fintech.co.id | Phone: +62 813-8899-7711",
+            "Domicile: Jakarta Selatan | LinkedIn: linkedin.com/in/mayaindah",
+            "",
+            "PROFESSIONAL SUMMARY:",
+            "Results-driven Senior Backend Engineer with 6 years of experience building high-throughput microservices using Go, Docker, Kubernetes, PostgreSQL, and Kafka. Graduated with undergraduate degree in Computer Science.",
+            "",
+            "CORE SKILLS:",
+            "Golang, Docker, Kubernetes, PostgreSQL, Redis, Microservices, CI/CD, AWS",
+            "",
+            "EXPERIENCE:",
+            "Senior Backend Engineer - FinTech Unicorn (2021 - Present)",
+            "- Architected real-time transaction processing pipeline processing 5,000 TPS."
+          ].join("\n");
+          handleRunCvParser();
+          showToast("Demo 11: CV automatically parsed! Notice how Name, Email, Phone, Exp, and Education auto-filled.");
+        }
+      }, 200);
+      break;
+    }
   }
 }
 
@@ -2299,6 +2419,8 @@ function resetAllDemoData() {
     masterPositions = getStoredMasterPositions();
     USERS = getStoredUsers();
     activeUser = USERS[0];
+    openJobs = getStoredOpenJobs();
+    scheduledInterviews = getStoredInterviews();
     document.getElementById("demoGuideModal")?.close();
     renderAllViews();
     applyRolePermissions();
@@ -2440,3 +2562,789 @@ function showToast(msg) {
   stack.appendChild(item);
   setTimeout(() => item.remove(), 2800);
 }
+
+/**
+ * ====================================================================
+ * 14. PHASE 4: ADVANCED ENTERPRISE ATS MODULES
+ * ====================================================================
+ */
+
+/**
+ * 14A. PUBLIC CAREER PORTAL / JOB BOARD (Fase 4A)
+ */
+function renderCareerPortal() {
+  const container = document.getElementById("jobBoardContainer");
+  const filterComp = document.getElementById("careerFilterCompany");
+  const searchInput = document.getElementById("careerSearchQuery");
+  if (!container) return;
+
+  // Populate company filter if not populated yet
+  if (filterComp && filterComp.options.length <= 1) {
+    const companies = [...new Set(openJobs.map(j => j.company))].sort();
+    companies.forEach(comp => {
+      const opt = document.createElement("option");
+      opt.value = comp;
+      opt.textContent = comp;
+      filterComp.appendChild(opt);
+    });
+  }
+
+  const selectedComp = filterComp ? filterComp.value : "all";
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+  const filtered = openJobs.filter(job => {
+    if (selectedComp !== "all" && job.company !== selectedComp) return false;
+    if (query) {
+      const matchText = `${job.title} ${job.company} ${job.location} ${job.type} ${(job.tags || []).join(" ")} ${job.description || ""}`.toLowerCase();
+      if (!matchText.includes(query)) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-base); border-radius: 6px;">
+        <p style="font-size: 14px; font-weight: 500;">No open positions found matching your criteria.</p>
+        <p style="font-size: 12px; margin-top: 4px;">Try clearing filters or search query.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(job => `
+    <div class="job-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+        <div>
+          <span class="job-company-badge">${escapeHtml(job.company)}</span>
+          <h3 class="job-title" style="margin-top: 6px;">${escapeHtml(job.title)}</h3>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 3px;">
+            ${escapeHtml(job.department || "Engineering")} • ${escapeHtml(job.location)} • ${escapeHtml(job.type || "Full-time")}
+          </p>
+        </div>
+        <span class="job-salary-tag">${escapeHtml(job.salaryRange || "Competitive")}</span>
+      </div>
+
+      <p style="font-size: 12.5px; color: var(--text-base); margin-top: 10px; line-height: 1.45;">
+        ${escapeHtml(job.description || "")}
+      </p>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
+        ${(job.tags || []).map(tag => `<span class="parse-extracted-badge">${escapeHtml(tag)}</span>`).join("")}
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-base); font-size: 11.5px; color: var(--text-muted);">
+        <span>Posted: ${escapeHtml(job.postedDate || "Recent")} • Exp: ${escapeHtml(job.experienceRequired || "3+ yrs")}</span>
+        <button type="button" class="btn-solid" onclick="openApplyJobModal('${job.id}')" style="height: 26px; font-size: 11.5px; padding: 0 10px;">
+          ${t("btnApplyJob")}
+        </button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openApplyJobModal(jobId) {
+  const job = openJobs.find(j => j.id === jobId) || openJobs[0];
+  if (!job) return;
+
+  const modal = document.getElementById("applyJobModal");
+  const banner = document.getElementById("applyJobSummaryBanner");
+  const idInput = document.getElementById("applyJobId");
+
+  if (idInput) idInput.value = job.id;
+  if (banner) {
+    banner.innerHTML = `
+      <div style="color: var(--brand-primary); font-size: 13px;">Applying for: <strong>${escapeHtml(job.title)}</strong> at <strong>${escapeHtml(job.company)}</strong></div>
+      <div style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal; margin-top: 2px;">
+        Location: ${escapeHtml(job.location)} | Salary: ${escapeHtml(job.salaryRange)}
+      </div>
+    `;
+  }
+
+  // Reset form inputs
+  const form = document.getElementById("formApplyJob");
+  if (form) form.reset();
+  if (idInput) idInput.value = job.id;
+
+  modal?.showModal();
+}
+
+function handleApplyJobSubmit(e) {
+  e.preventDefault();
+  const jobId = document.getElementById("applyJobId")?.value;
+  const fullName = document.getElementById("applyFullName")?.value.trim();
+  const email = document.getElementById("applyEmail")?.value.trim();
+  const phone = document.getElementById("applyPhone")?.value.trim();
+  const years = parseInt(document.getElementById("applyYears")?.value, 10) || 0;
+  const education = document.getElementById("applyEducation")?.value || "undergraduate";
+  const salary = document.getElementById("applySalary")?.value.trim() || "Negotiable";
+  const coverLetter = document.getElementById("applyCoverLetter")?.value.trim();
+
+  if (!fullName || !email) {
+    alert("Please provide full name and email.");
+    return;
+  }
+
+  const job = openJobs.find(j => j.id === jobId);
+  const candidateId = `CND-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  const now = new Date();
+  const nowFormatted = formatTimestamp(now);
+
+  const newCand = {
+    id: candidateId,
+    name: fullName,
+    nationality: "Indonesia",
+    gender: "Unknown",
+    birthDate: "1996-01-01",
+    education: education,
+    language: "Indonesian, English",
+    yearsOfService: years,
+    email: email,
+    phone: phone,
+    whatsapp: phone,
+    domicile: job ? job.location.split(",")[0] : "Jakarta",
+    salaryExpectation: salary,
+    currentSalary: "-",
+    availability: "1 month notice",
+    recommendedPosition: job ? job.title : "Candidate",
+    recommendedCompany: job ? job.company : "General",
+    ownerName: activeUser.name,
+    entryTime: nowFormatted,
+    isUnviewed: true,
+    recommendations: [
+      {
+        id: `REC-${Date.now()}`,
+        candidateId: candidateId,
+        company: job ? job.company : "General",
+        position: job ? job.title : "Candidate",
+        statusCode: 0,
+        statusText: "New",
+        timestamp: nowFormatted,
+        consultantName: activeUser.name,
+        notes: `Application via Public Career Portal for ${job ? job.title : "Position"}. Cover note: ${coverLetter || "N/A"}`,
+        isActive: true
+      }
+    ]
+  };
+
+  candidates.unshift(newCand);
+  saveCandidates(candidates);
+
+  addAuditLog(
+    "CAREER_PORTAL_APPLY",
+    `Candidate ${fullName}`,
+    `Submitted application for ${job ? job.title : "role"} at ${job ? job.company : "company"} (${candidateId})`
+  );
+
+  notifications.unshift({
+    id: `NT-${Date.now()}`,
+    title: `New Career Portal Application: ${fullName}`,
+    message: `${fullName} submitted an application for ${job ? job.title : "Open Role"} at ${job ? job.company : "Client"}.`,
+    timestamp: nowFormatted,
+    read: false,
+    type: "candidate"
+  });
+  saveNotifications(notifications);
+
+  document.getElementById("applyJobModal")?.close();
+  showToast(`Application submitted! ${fullName} added to Resume Lib with Code 0 (New).`);
+
+  switchWorkspaceView("resumeLib");
+  renderAllViews();
+}
+
+/**
+ * 14B. INTERVIEW CALENDAR & .ICS SCHEDULER (Fase 4B)
+ */
+function renderInterviewCalendar() {
+  const container = document.getElementById("interviewAgendaContainer");
+  if (!container) return;
+
+  if (scheduledInterviews.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-base); border-radius: 6px;">
+        <p style="font-size: 14px; font-weight: 500;">No scheduled interviews yet.</p>
+        <p style="font-size: 12px; margin-top: 4px;">Click "+ Schedule Interview" to set up a candidate interview round.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Sort by dateTime ascending
+  const sorted = [...scheduledInterviews].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+  container.innerHTML = sorted.map(item => {
+    const d = new Date(item.dateTime);
+    const dateStr = !isNaN(d) ? d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" }) : item.dateTime;
+    const timeStr = !isNaN(d) ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB" : "";
+    const isCompleted = item.status === "Completed";
+
+    return `
+      <div class="interview-card" style="${isCompleted ? 'opacity: 0.75; border-left: 3px solid var(--border-base);' : ''}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <span class="interview-time-pill">${dateStr} • ${timeStr}</span>
+          <span class="status-count-badge" style="font-size: 10.5px; ${isCompleted ? 'background: var(--bg-subtle); color: var(--text-muted);' : ''}">
+            ${escapeHtml(item.status || "Scheduled")}
+          </span>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--text-base);">
+            <a href="javascript:void(0)" onclick="openCandidateProfileModal('${item.candidateId}')" style="color: var(--brand-primary); text-decoration: underline;">
+              ${escapeHtml(item.candidateName)}
+            </a>
+          </h4>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+            ${escapeHtml(item.round || "Round 1")} • <strong>${escapeHtml(item.position)}</strong> at <strong>${escapeHtml(item.company)}</strong>
+          </p>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Interviewers: ${escapeHtml(item.interviewers || "-")}
+          </p>
+          ${item.notes ? `<p style="font-size: 11.5px; background: var(--bg-subtle); padding: 6px 8px; border-radius: 3px; margin-top: 6px;">${escapeHtml(item.notes)}</p>` : ""}
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border-base); gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-outlined" onclick="downloadIcsCalendar('${item.id}')" style="height: 24px; font-size: 11px; padding: 0 8px;">
+            Export .ICS
+          </button>
+          <div style="display: flex; gap: 6px;">
+            ${item.meetingLink ? `
+              <a href="${escapeHtml(item.meetingLink)}" target="_blank" rel="noopener noreferrer" class="interview-join-btn">
+                Join ${escapeHtml(item.platform || "Meet")}
+              </a>
+            ` : ""}
+            ${!isCompleted ? `
+              <button type="button" class="btn-solid" onclick="markInterviewComplete('${item.id}')" style="height: 24px; font-size: 11px; padding: 0 8px;">
+                Complete Round
+              </button>
+            ` : `
+              <button type="button" class="btn-outlined" onclick="openOfferLetterModal('${item.candidateId}')" style="height: 24px; font-size: 11px; padding: 0 8px;">
+                Generate Offer
+              </button>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function openScheduleInterviewModal(candidateId = null) {
+  const dialog = document.getElementById("scheduleInterviewModal");
+  const candSelect = document.getElementById("intCandidateSelect");
+  const compInput = document.getElementById("intCompany");
+  const posInput = document.getElementById("intPosition");
+  const dtInput = document.getElementById("intDateTime");
+  const meetInput = document.getElementById("intMeetingLink");
+  if (!dialog || !candSelect) return;
+
+  // Populate candidate select
+  candSelect.innerHTML = candidates.map(c => `
+    <option value="${c.id}" ${candidateId && c.id === candidateId ? "selected" : ""}>
+      ${escapeHtml(c.name)} (${c.id}) — ${escapeHtml(c.recommendedCompany || "No Comp")}
+    </option>
+  `).join("");
+
+  // Select target candidate
+  const selectedId = candidateId || candSelect.value;
+  candSelect.value = selectedId;
+
+  const targetCand = candidates.find(c => c.id === selectedId) || candidates[0];
+  if (targetCand) {
+    if (compInput) compInput.value = targetCand.recommendedCompany || "alauda";
+    if (posInput) posInput.value = targetCand.recommendedPosition || "Software Engineer";
+  }
+
+  // Set default interview time to tomorrow at 14:00
+  if (dtInput) {
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    tmrw.setHours(14, 0, 0, 0);
+    const pad = n => String(n).padStart(2, "0");
+    dtInput.value = `${tmrw.getFullYear()}-${pad(tmrw.getMonth() + 1)}-${pad(tmrw.getDate())}T${pad(tmrw.getHours())}:${pad(tmrw.getMinutes())}`;
+  }
+
+  if (meetInput && (!meetInput.value || meetInput.value.includes("tt-meet-rec"))) {
+    meetInput.value = `https://meet.google.com/tt-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}`;
+  }
+
+  dialog.showModal();
+}
+
+function handleIntCandidateChange(e) {
+  const candId = e.target.value;
+  const targetCand = candidates.find(c => c.id === candId);
+  if (!targetCand) return;
+  const compInput = document.getElementById("intCompany");
+  const posInput = document.getElementById("intPosition");
+  if (compInput) compInput.value = targetCand.recommendedCompany || "alauda";
+  if (posInput) posInput.value = targetCand.recommendedPosition || "Software Engineer";
+}
+
+function handleScheduleInterviewSubmit(e) {
+  e.preventDefault();
+  const candSelect = document.getElementById("intCandidateSelect");
+  const candId = candSelect?.value;
+  const targetCand = candidates.find(c => c.id === candId);
+  if (!targetCand) return;
+
+  const company = document.getElementById("intCompany")?.value.trim() || targetCand.recommendedCompany;
+  const position = document.getElementById("intPosition")?.value.trim() || targetCand.recommendedPosition;
+  const round = document.getElementById("intRound")?.value || "Round 1 - Technical Interview";
+  const dateTime = document.getElementById("intDateTime")?.value;
+  const platform = document.getElementById("intPlatform")?.value || "Google Meet";
+  const interviewers = document.getElementById("intInterviewers")?.value.trim() || activeUser.name;
+  const meetingLink = document.getElementById("intMeetingLink")?.value.trim() || "https://meet.google.com/tt-meet";
+  const notes = document.getElementById("intNotes")?.value.trim() || "";
+
+  const newIntId = `INT-${Math.floor(1000 + Math.random() * 9000)}`;
+  const interviewRecord = {
+    id: newIntId,
+    candidateId: targetCand.id,
+    candidateName: targetCand.name,
+    company: company,
+    position: position,
+    round: round,
+    dateTime: dateTime,
+    platform: platform,
+    interviewers: interviewers,
+    meetingLink: meetingLink,
+    notes: notes,
+    status: "Scheduled"
+  };
+
+  scheduledInterviews.unshift(interviewRecord);
+  saveInterviews(scheduledInterviews);
+
+  // Update candidate status to 20 (Interview Scheduled)
+  const nowFormatted = formatTimestamp(new Date());
+  let targetRec = targetCand.recommendations?.find(r => r.company.toLowerCase() === company.toLowerCase());
+  if (!targetRec && targetCand.recommendations?.length > 0) {
+    targetRec = targetCand.recommendations[0];
+  }
+  if (targetRec) {
+    targetRec.statusCode = 20;
+    targetRec.timestamp = nowFormatted;
+    targetRec.notes = `${round} scheduled for ${dateTime}. Meeting: ${meetingLink}`;
+  } else {
+    targetCand.recommendations.push({
+      id: `REC-${Date.now()}`,
+      candidateId: targetCand.id,
+      company: company,
+      position: position,
+      statusCode: 20,
+      timestamp: nowFormatted,
+      consultantName: activeUser.name,
+      notes: `${round} scheduled for ${dateTime}.`,
+      isActive: true
+    });
+  }
+  saveCandidates(candidates);
+
+  addAuditLog(
+    "INTERVIEW_SCHEDULED",
+    `Candidate ${targetCand.name}`,
+    `Scheduled ${round} at ${company} for ${dateTime} (${newIntId})`
+  );
+
+  notifications.unshift({
+    id: `NT-${Date.now()}`,
+    title: `Interview Scheduled: ${targetCand.name}`,
+    message: `${round} with ${targetCand.name} for ${company} scheduled at ${dateTime}.`,
+    timestamp: nowFormatted,
+    read: false,
+    type: "interview"
+  });
+  saveNotifications(notifications);
+
+  document.getElementById("scheduleInterviewModal")?.close();
+  showToast(`Interview scheduled! Exporting .ICS calendar file...`);
+
+  // Download .ICS calendar event file
+  downloadIcsCalendar(newIntId);
+
+  renderAllViews();
+}
+
+function markInterviewComplete(interviewId) {
+  const item = scheduledInterviews.find(i => i.id === interviewId);
+  if (!item) return;
+
+  item.status = "Completed";
+  saveInterviews(scheduledInterviews);
+
+  // Update candidate status to 21 (Interview Passed)
+  const cand = candidates.find(c => c.id === item.candidateId);
+  if (cand) {
+    const rec = cand.recommendations?.find(r => r.company.toLowerCase() === item.company.toLowerCase()) || cand.recommendations?.[0];
+    if (rec) {
+      rec.statusCode = 21;
+      rec.timestamp = formatTimestamp(new Date());
+      rec.notes = `${item.round} marked as Passed/Completed. Candidate ready for next stage or Offer proposal.`;
+      saveCandidates(candidates);
+    }
+  }
+
+  showToast(`Round marked as Completed! Candidate advanced to Code 21 (Interview Passed).`);
+  renderInterviewCalendar();
+  renderResumeTable();
+}
+
+function downloadIcsCalendar(interviewId) {
+  const item = scheduledInterviews.find(i => i.id === interviewId);
+  if (!item) return;
+
+  const dt = new Date(item.dateTime);
+  const startDt = !isNaN(dt) ? dt : new Date();
+  const endDt = new Date(startDt.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+  const formatIcsTime = d => {
+    return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  };
+
+  const icsLines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TemuTalenta ATS//Interview Scheduler//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:tt-int-${item.id}-${Date.now()}@temutalenta.local`,
+    `DTSTAMP:${formatIcsTime(new Date())}`,
+    `DTSTART:${formatIcsTime(startDt)}`,
+    `DTEND:${formatIcsTime(endDt)}`,
+    `SUMMARY:Interview: ${item.candidateName} - ${item.position} (${item.company})`,
+    `DESCRIPTION:Candidate: ${item.candidateName}\\nPosition: ${item.position}\\nCompany: ${item.company}\\nRound: ${item.round}\\nInterviewers: ${item.interviewers}\\nMeeting Link: ${item.meetingLink}\\nNotes: ${item.notes || "-"}`,
+    `LOCATION:${item.meetingLink || item.platform}`,
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ];
+
+  const blob = new Blob([icsLines.join("\r\n")], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Interview_${item.candidateName.replace(/\s+/g, "_")}_${item.id}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * 14C. OFFICIAL OFFER LETTER GENERATOR (Fase 4C)
+ */
+function openOfferLetterModal(candidateId) {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return;
+
+  const modal = document.getElementById("offerLetterModal");
+  const paper = document.getElementById("offerLetterPaper");
+  const sendBtn = document.getElementById("btnSendOfferCandidate");
+  if (!modal || !paper) return;
+
+  if (sendBtn) {
+    sendBtn.setAttribute("data-candidate-id", c.id);
+  }
+
+  const rec = c.recommendations?.[0] || { company: c.recommendedCompany || "alauda", position: c.recommendedPosition || "Software Engineer" };
+  const companyName = rec.company || "Client Enterprise Partner";
+  const positionName = rec.position || "Senior Professional";
+  const salaryExp = c.salaryExpectation || "IDR 25,000,000 / month";
+  const todayStr = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const startDateStr = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+  paper.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-base); padding-bottom: 14px; margin-bottom: 16px;">
+      <div>
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(companyName)}</h2>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">In Partnership with TemuTalenta Executive Talent Search</p>
+        <p style="font-size: 11px; color: var(--text-muted);">Equity Tower Level 22, SCBD, Senayan, Jakarta Selatan</p>
+      </div>
+      <div style="text-align: right; font-size: 11.5px; color: var(--text-secondary);">
+        <div><strong>Ref:</strong> TT-OFFER/${new Date().getFullYear()}/${c.id}</div>
+        <div style="margin-top: 3px;"><strong>Date:</strong> ${todayStr}</div>
+        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: var(--brand-primary); color: #fff;">OFFICIAL OFFER</span></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px; font-size: 12.5px; line-height: 1.5;">
+      <div><strong>To:</strong> ${escapeHtml(c.name)}</div>
+      <div><strong>Email:</strong> ${escapeHtml(c.email || "-")} | <strong>Phone:</strong> ${escapeHtml(c.phone || "-")}</div>
+      <div><strong>Address / Domicile:</strong> ${escapeHtml(c.domicile || "Indonesia")}</div>
+    </div>
+
+    <div style="font-size: 13px; line-height: 1.6; margin-bottom: 16px;">
+      <p style="margin-bottom: 10px;">
+        Dear <strong>${escapeHtml(c.name)}</strong>,
+      </p>
+      <p style="margin-bottom: 10px;">
+        On behalf of <strong>${escapeHtml(companyName)}</strong>, we are delighted to formally offer you the position of <strong>${escapeHtml(positionName)}</strong>. Following your comprehensive interview performance and professional qualifications, our leadership team is confident in your ability to make significant contributions to our organization.
+      </p>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <h4 style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 8px;">Key Employment Terms & Remuneration</h4>
+      <table class="offer-comp-table">
+        <tbody>
+          <tr>
+            <td style="width: 32%; font-weight: 600;">Position Title</td>
+            <td>${escapeHtml(positionName)}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Employing Entity</td>
+            <td>${escapeHtml(companyName)}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Target Commencement Date</td>
+            <td><strong>${startDateStr}</strong></td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Working Arrangement</td>
+            <td>Full-time, Hybrid (3 days onsite, 2 days remote)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Base Remuneration (Monthly)</td>
+            <td style="font-size: 14px; font-weight: 700; color: var(--success-color);">${escapeHtml(salaryExp)} (gross, subject to PPh 21)</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Performance Bonus</td>
+            <td>Annual Performance Bonus target of 1.5 - 3.0 months base salary, evaluated annually</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Health & Social Security</td>
+            <td>BPJS Ketenagakerjaan (JKK, JKM, JHT, JP), BPJS Kesehatan + Private Inpatient & Outpatient Coverage</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 600;">Annual Leave</td>
+            <td>15 business days paid annual leave + public holidays</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 24px;">
+      <p>
+        This offer is contingent upon successful verification of your educational credentials and reference checks. Please confirm your acceptance by signing this letter and returning it within <strong>7 business days</strong>.
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-base);">
+      <div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 40px;">Sincerely,<br><strong>Authorized Signatory</strong><br>${escapeHtml(companyName)}</p>
+        <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
+          HR Director / Hiring Manager
+        </div>
+      </div>
+      <div>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 40px;">Accepted and Agreed:<br><strong>Candidate Acceptance</strong></p>
+        <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
+          ${escapeHtml(c.name)}<br>
+          <span style="font-size: 10px; color: var(--text-muted);">Signature & Date</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.showModal();
+}
+
+function handleSendOfferClick() {
+  const sendBtn = document.getElementById("btnSendOfferCandidate");
+  const candId = sendBtn?.getAttribute("data-candidate-id");
+  if (!candId) return;
+
+  const c = candidates.find(item => item.id === candId);
+  if (!c) return;
+
+  const rec = c.recommendations?.[0];
+  const nowFormatted = formatTimestamp(new Date());
+
+  if (rec) {
+    rec.statusCode = 30; // Offer Proposed
+    rec.timestamp = nowFormatted;
+    rec.notes = `Official Employment Offer Letter generated and dispatched to candidate (Code 30 - Offer Proposed).`;
+  } else {
+    c.recommendations.push({
+      id: `REC-${Date.now()}`,
+      candidateId: c.id,
+      company: c.recommendedCompany || "alauda",
+      position: c.recommendedPosition || "Software Engineer",
+      statusCode: 30,
+      timestamp: nowFormatted,
+      consultantName: activeUser.name,
+      notes: `Official Employment Offer Letter generated and dispatched (Code 30).`,
+      isActive: true
+    });
+  }
+
+  saveCandidates(candidates);
+
+  addAuditLog(
+    "OFFER_ISSUED",
+    `Candidate ${c.name}`,
+    `Issued formal offer letter (Code 30 - Offer Proposed) for ${rec ? rec.position : "Role"} at ${rec ? rec.company : "Company"}`
+  );
+
+  notifications.unshift({
+    id: `NT-${Date.now()}`,
+    title: `Offer Proposed: ${c.name}`,
+    message: `Official employment offer letter dispatched to ${c.name} (Code 30 - Offer Proposed).`,
+    timestamp: nowFormatted,
+    read: false,
+    type: "candidate"
+  });
+  saveNotifications(notifications);
+
+  document.getElementById("offerLetterModal")?.close();
+  showToast(`Offer letter issued! ${c.name} advanced to Code 30 (Offer Proposed).`);
+
+  renderAllViews();
+}
+
+/**
+ * 14D. HEURISTIC SMART CV PARSER & AUTO-FILL (Fase 4D)
+ */
+function handleRunCvParser() {
+  const rawBox = document.getElementById("rawCvParseText");
+  const rawText = rawBox ? rawBox.value.trim() : "";
+  const pillsBox = document.getElementById("cvParseExtractedPills");
+
+  if (!rawText) {
+    alert("Please paste resume/CV text into the parser area first.");
+    return;
+  }
+
+  const extracted = {};
+
+  // 1. Email extraction
+  const emailMatch = rawText.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/);
+  if (emailMatch) extracted.email = emailMatch[0];
+
+  // 2. Phone extraction (Indonesian phone patterns e.g. +62, 0812, etc.)
+  const phoneMatch = rawText.match(/(?:\+62|62|08)[0-9\s-]{8,15}/);
+  if (phoneMatch) extracted.phone = phoneMatch[0].replace(/\s+/g, " ").trim();
+
+  // 3. Years of Experience extraction
+  const expMatch = rawText.match(/(\d+)\+?\s*(?:years|thn|tahun|yrs)\s*(?:of\s*)?(?:experience|exp|pengalaman)?/i);
+  if (expMatch) extracted.years = parseInt(expMatch[1], 10);
+
+  // 4. Education level extraction
+  if (/master|magister|s2|m\.sc|mba/i.test(rawText)) {
+    extracted.education = "master";
+  } else if (/undergraduate|bachelor|sarjana|s1|s\.kom|s\.t|b\.sc/i.test(rawText)) {
+    extracted.education = "undergraduate";
+  } else if (/diploma|d3|associate/i.test(rawText)) {
+    extracted.education = "diploma";
+  } else {
+    extracted.education = "undergraduate";
+  }
+
+  // 5. Name extraction (heuristic: look for "Name:" or "Nama:" or take top line that is not an email/phone)
+  const namePrefixMatch = rawText.match(/(?:Name|Nama|Full Name)\s*[:\-]\s*([A-Za-z\s'’.]+)/i);
+  if (namePrefixMatch) {
+    extracted.name = namePrefixMatch[1].trim().split("\n")[0];
+  } else {
+    const lines = rawText.split("\n").map(l => l.trim()).filter(l => l.length > 2 && !l.includes("@") && !l.startsWith("http"));
+    if (lines.length > 0) {
+      extracted.name = lines[0].replace(/^(curriculum vitae|resume|cv)\s*[-:]?\s*/i, "").trim();
+    }
+  }
+
+  // 6. Keywords / Skills extraction
+  const knownSkills = [
+    "Kubernetes", "Docker", "Golang", "Go", "Java", "Spring Boot", "Python", "FastAPI", "React", "Next.js",
+    "Node.js", "TypeScript", "AWS", "GCP", "PostgreSQL", "Kafka", "Redis", "Figma", "UI/UX", "Scrum",
+    "Product Management", "Microservices", "CI/CD", "Terraform", "DevOps"
+  ];
+  const matchedSkills = knownSkills.filter(skill => {
+    const regex = new RegExp(`\\b${skill.replace(".", "\\.")}\\b`, "i");
+    return regex.test(rawText);
+  });
+  extracted.skills = matchedSkills;
+
+  // 7. Target Position matching
+  let matchedPos = "";
+  for (const pos of masterPositions) {
+    if (new RegExp(pos.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(rawText)) {
+      matchedPos = pos;
+      break;
+    }
+  }
+  if (!matchedPos) {
+    if (/cloud|devops|infrastructure/i.test(rawText)) matchedPos = "Lead Cloud Architect";
+    else if (/backend|go|golang|microservice/i.test(rawText)) matchedPos = "Senior Backend Engineer";
+    else if (/product manager|pm/i.test(rawText)) matchedPos = "Technical Product Manager";
+    else if (/presales|solution/i.test(rawText)) matchedPos = "Presales Lead";
+  }
+  if (matchedPos) extracted.position = matchedPos;
+
+  // Auto-fill form fields
+  if (extracted.name) {
+    const nameInput = document.getElementById("addName");
+    if (nameInput) nameInput.value = extracted.name;
+  }
+  if (extracted.email) {
+    const emailInput = document.getElementById("addEmail");
+    if (emailInput) emailInput.value = extracted.email;
+  }
+  if (extracted.phone) {
+    const phoneInput = document.getElementById("addPhone");
+    if (phoneInput) phoneInput.value = extracted.phone;
+  }
+  if (extracted.years !== undefined) {
+    const yearsInput = document.getElementById("addYears");
+    if (yearsInput) yearsInput.value = extracted.years;
+  }
+  if (extracted.education) {
+    const eduSelect = document.getElementById("addEducation");
+    if (eduSelect) eduSelect.value = extracted.education;
+  }
+  if (extracted.position) {
+    const posSelect = document.getElementById("addPositionSelect");
+    if (posSelect) {
+      let found = false;
+      for (const opt of posSelect.options) {
+        if (opt.value.toLowerCase() === extracted.position.toLowerCase()) {
+          posSelect.value = opt.value;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const newOpt = document.createElement("option");
+        newOpt.value = extracted.position;
+        newOpt.textContent = extracted.position;
+        posSelect.appendChild(newOpt);
+        posSelect.value = extracted.position;
+      }
+    }
+  }
+
+  // Display extracted badge indicators
+  if (pillsBox) {
+    pillsBox.innerHTML = `
+      <span class="parse-extracted-badge">Name: ${escapeHtml(extracted.name || "N/A")}</span>
+      <span class="parse-extracted-badge">Email: ${escapeHtml(extracted.email || "N/A")}</span>
+      <span class="parse-extracted-badge">Phone: ${escapeHtml(extracted.phone || "N/A")}</span>
+      <span class="parse-extracted-badge">Exp: ${extracted.years !== undefined ? `${extracted.years} yrs` : "N/A"}</span>
+      <span class="parse-extracted-badge">Edu: ${escapeHtml(extracted.education || "N/A")}</span>
+      ${extracted.skills && extracted.skills.length > 0 ? `<span class="parse-extracted-badge">Skills: ${escapeHtml(extracted.skills.slice(0, 4).join(", "))}</span>` : ""}
+    `;
+  }
+
+  showToast("CV parsed! Form fields auto-populated.");
+}
+
+// Expose handlers globally for HTML event attributes
+window.openApplyJobModal = openApplyJobModal;
+window.openCandidateProfileModal = openCandidateProfileModal;
+window.openScheduleInterviewModal = openScheduleInterviewModal;
+window.downloadIcsCalendar = downloadIcsCalendar;
+window.markInterviewComplete = markInterviewComplete;
+window.openOfferLetterModal = openOfferLetterModal;
+window.runDemoScenario = runDemoScenario;
+window.resetAllDemoData = resetAllDemoData;
+window.switchWorkspaceView = switchWorkspaceView;

@@ -1437,3 +1437,196 @@ dialog::backdrop {
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
+
+/* ==========================================================================
+   FASE 4 ECOSYSTEM (Career Portal, Interview Calendar, Offer Letter, CV Parser)
+   ========================================================================== */
+
+/* Career Portal */
+.job-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.job-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.job-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.job-company-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-primary);
+  background: var(--bg-subtle);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.job-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 6px;
+}
+
+.job-salary-tag {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--success-color);
+  margin-top: 4px;
+}
+
+.job-desc-snippet {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.job-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Interview Calendar */
+.calendar-agenda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.interview-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  border-left: 4px solid var(--brand-primary);
+}
+
+.interview-time-pill {
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.interview-join-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #059669;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+}
+
+.interview-join-btn:hover {
+  background-color: #047857;
+}
+
+/* Offer Letter Generator */
+.offer-letter-paper {
+  background: #ffffff;
+  color: #111827;
+  padding: 32px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.offer-header-brand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #2563eb;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+}
+
+.offer-comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+
+.offer-comp-table th,
+.offer-comp-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.offer-comp-table th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+/* Heuristic CV Parser Dropzone */
+.cv-parse-box {
+  background: var(--bg-subtle);
+  border: 2px dashed var(--border-base);
+  border-radius: 6px;
+  padding: 14px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.cv-parse-box:hover {
+  border-color: var(--brand-primary);
+}
+
+.parse-extracted-badge {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success-color);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}

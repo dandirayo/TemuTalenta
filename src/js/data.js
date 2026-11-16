@@ -15,7 +15,9 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: "temutalenta_notifications_v4",
   MASTER_COMPANIES: "temutalenta_master_companies_v4",
   MASTER_POSITIONS: "temutalenta_master_positions_v4",
-  USERS: "temutalenta_users_v4"
+  USERS: "temutalenta_users_v4",
+  OPEN_JOBS: "temutalenta_open_jobs_v4",
+  INTERVIEWS: "temutalenta_interviews_v4"
 };
 
 // Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan, dan Klien Portal)
@@ -202,6 +204,15 @@ const I18N = {
     btnAddUser: "+ Add User",
     btnExportAnalytics: "Export Analytics CSV",
     lblDemographics: "Candidate Demographics & Distribution",
+    navCareerPortal: "Career Portal (Job Board)",
+    navInterviewCalendar: "Interview Calendar",
+    btnScheduleInterview: "Schedule Interview",
+    btnGenerateOffer: "Generate Offer Letter",
+    btnParseCv: "Auto-Fill from CV Document",
+    lblOpenPositions: "Open Career Opportunities",
+    btnApplyJob: "Apply for Position",
+    lblUpcomingInterviews: "Upcoming Scheduled Interviews",
+    lblOfferDocument: "Official Employment Offer Letter",
     msgRefreshed: "Data refreshed.",
     msgResetDone: "Restored to default candidate records.",
     msgResumeDownloaded: "Downloaded resume for",
@@ -363,6 +374,15 @@ const I18N = {
     btnAddUser: "+ 新增用户",
     btnExportAnalytics: "导出分析报表",
     lblDemographics: "人才画像与分布统计",
+    navCareerPortal: "人才招聘门户",
+    navInterviewCalendar: "面试日历",
+    btnScheduleInterview: "安排面试",
+    btnGenerateOffer: "生成录用函 (Offer)",
+    btnParseCv: "智能解析简历",
+    lblOpenPositions: "在招优质岗位",
+    btnApplyJob: "立即申请",
+    lblUpcomingInterviews: "近期面试日程",
+    lblOfferDocument: "正式录用通知书",
     msgRefreshed: "数据已刷新。",
     msgResetDone: "已恢复为默认候选人数据。",
     msgResumeDownloaded: "已下载简历：",
@@ -524,6 +544,15 @@ const I18N = {
     btnAddUser: "+ Tambah Pengguna",
     btnExportAnalytics: "Ekspor Analisis CSV",
     lblDemographics: "Demografi & Distribusi Kandidat",
+    navCareerPortal: "Portal Lowongan Kerja",
+    navInterviewCalendar: "Kalender Wawancara",
+    btnScheduleInterview: "Jadwalkan Wawancara",
+    btnGenerateOffer: "Buat Surat Penawaran",
+    btnParseCv: "Ekstrak Otomatis dari CV",
+    lblOpenPositions: "Peluang Karier Terbuka",
+    btnApplyJob: "Lamar Posisi Ini",
+    lblUpcomingInterviews: "Jadwal Wawancara Mendatang",
+    lblOfferDocument: "Surat Penawaran Kerja Resmi",
     msgRefreshed: "Data berhasil dimuat ulang.",
     msgResetDone: "Data awal berhasil dipulihkan.",
     msgResumeDownloaded: "Dokumen resume diunduh untuk",
@@ -865,6 +894,124 @@ const INITIAL_NOTIFICATIONS = [
 const INITIAL_COMPANIES = ["alauda", "Midea", "Mico World", "Huawei Cloud", "ByteDance ID", "Shopee Indonesia"];
 const INITIAL_POSITIONS = ["Indonesia Pre sales", "Business Development - Sugo Indonesia", "Customs Documentation Clerk", "Regional HRBP Specialist", "Channel Sales Supervisor", "Senior DevOps Architect", "Product Manager", "Fullstack Engineer"];
 
+const INITIAL_OPEN_JOBS = [
+  {
+    id: "JOB-101",
+    title: "Senior Pre sales Specialist",
+    company: "alauda",
+    department: "Enterprise Cloud Solutions",
+    location: "Jakarta (Hybrid)",
+    salaryRange: "IDR 20,000,000 - 32,000,000",
+    experienceReq: "5+ Years",
+    educationReq: "Bachelor Degree",
+    tags: ["Kubernetes", "DevOps", "Bilingual", "Enterprise IT"],
+    description: "Lead technical discovery, solution architecture presentations, and POC delivery for container cloud enterprise clients across Southeast Asia.",
+    postedDate: "2026-11-10",
+    status: "Active"
+  },
+  {
+    id: "JOB-102",
+    title: "Business Development - Sugo Indonesia",
+    company: "Mico World",
+    department: "Global Expansion",
+    location: "Jakarta (Onsite)",
+    salaryRange: "IDR 14,000,000 - 22,000,000",
+    experienceReq: "3+ Years",
+    educationReq: "Bachelor Degree",
+    tags: ["Entertainment App", "Talent Acquisition", "Partnership"],
+    description: "Drive creator community acquisition, streamer agency partnerships, and strategic local growth initiatives for the Sugo social platform.",
+    postedDate: "2026-11-12",
+    status: "Active"
+  },
+  {
+    id: "JOB-103",
+    title: "Customs Documentation Specialist",
+    company: "Midea",
+    department: "Supply Chain & Logistics",
+    location: "Cikarang / Jakarta",
+    salaryRange: "IDR 9,000,000 - 15,000,000",
+    experienceReq: "2+ Years",
+    educationReq: "Diploma / Bachelor",
+    tags: ["Import/Export", "Customs Clearance", "BC 2.0"],
+    description: "Oversee international shipment documentation, CEISA compliance, customs tariff declarations, and bonded warehouse port clearance.",
+    postedDate: "2026-11-08",
+    status: "Active"
+  },
+  {
+    id: "JOB-104",
+    title: "Fullstack Engineer (React & Node.js)",
+    company: "Shopee Indonesia",
+    department: "Fintech & Payments",
+    location: "Jakarta (Remote/Hybrid)",
+    salaryRange: "IDR 18,000,000 - 28,000,000",
+    experienceReq: "4+ Years",
+    educationReq: "Bachelor in Computer Science",
+    tags: ["TypeScript", "React", "Node.js", "Microservices"],
+    description: "Architect and implement scalable user-facing financial microservices, digital wallet integrations, and high-concurrency payment flows.",
+    postedDate: "2026-11-14",
+    status: "Active"
+  },
+  {
+    id: "JOB-105",
+    title: "Bilingual Operations Associate",
+    company: "ByteDance ID",
+    department: "Content Moderation & Safety",
+    location: "Jakarta (Onsite)",
+    salaryRange: "IDR 12,000,000 - 18,000,000",
+    experienceReq: "2+ Years",
+    educationReq: "Bachelor Degree",
+    tags: ["Mandarin HSK 5+", "Content Policy", "Social Media"],
+    description: "Coordinate cross-border content moderation policies, quality control metrics, and liaison between Beijing product teams and Jakarta regional managers.",
+    postedDate: "2026-11-05",
+    status: "Active"
+  }
+];
+
+const INITIAL_SCHEDULED_INTERVIEWS = [
+  {
+    id: "INT-501",
+    candidateId: "CND-1001",
+    candidateName: "Andi Candera",
+    company: "alauda",
+    position: "Senior Pre sales Specialist",
+    interviewType: "Final Interview (User & Director)",
+    dateTime: "2026-11-17 14:00",
+    consultantName: "Rina Wijaya",
+    platform: "Google Meet",
+    meetingLink: "https://meet.google.com/qmv-ytpk-zbd",
+    status: "Confirmed",
+    notes: "Review POC technical architecture deck and cloud modernization portfolio."
+  },
+  {
+    id: "INT-502",
+    candidateId: "CND-1002",
+    candidateName: "DIMAS RIZALDI",
+    company: "Mico World",
+    position: "Business Development - Sugo Indonesia",
+    interviewType: "Initial HR Screening",
+    dateTime: "2026-11-18 10:30",
+    consultantName: "Rina Wijaya",
+    platform: "Zoom Meeting",
+    meetingLink: "https://zoom.us/j/98234110822",
+    status: "Confirmed",
+    notes: "Evaluate agency partnership network and livestream monetization experience."
+  },
+  {
+    id: "INT-503",
+    candidateId: "CND-1007",
+    candidateName: "Kevin Ardianto",
+    company: "Shopee Indonesia",
+    position: "Senior DevOps Architect",
+    interviewType: "Technical Deep-Dive",
+    dateTime: "2026-11-19 15:00",
+    consultantName: "Budi Hartono",
+    platform: "Google Meet",
+    meetingLink: "https://meet.google.com/abc-devops-shp",
+    status: "Confirmed",
+    notes: "Live system design challenge: multi-cloud disaster recovery."
+  }
+];
+
 const ALL_COLUMNS = [
   { id: "candidate", key: "colCandidate", locked: true },
   { id: "nationality", key: "colNationality", locked: false },
@@ -1061,5 +1208,37 @@ function getStoredMasterPositions() {
 function saveMasterPositions(list) {
   try {
     localStorage.setItem(STORAGE_KEYS.MASTER_POSITIONS, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function getStoredOpenJobs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.OPEN_JOBS);
+    if (!raw) return INITIAL_OPEN_JOBS;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_OPEN_JOBS;
+  }
+}
+
+function saveOpenJobs(jobs) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.OPEN_JOBS, JSON.stringify(jobs));
+  } catch (e) {}
+}
+
+function getStoredInterviews() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.INTERVIEWS);
+    if (!raw) return INITIAL_SCHEDULED_INTERVIEWS;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_SCHEDULED_INTERVIEWS;
+  }
+}
+
+function saveInterviews(interviews) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.INTERVIEWS, JSON.stringify(interviews));
   } catch (e) {}
 }
