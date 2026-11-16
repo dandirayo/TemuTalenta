@@ -14,16 +14,20 @@ const STORAGE_KEYS = {
   ACTIVE_USER: "temutalenta_active_user_v4",
   NOTIFICATIONS: "temutalenta_notifications_v4",
   MASTER_COMPANIES: "temutalenta_master_companies_v4",
-  MASTER_POSITIONS: "temutalenta_master_positions_v4"
+  MASTER_POSITIONS: "temutalenta_master_positions_v4",
+  USERS: "temutalenta_users_v4"
 };
 
-// Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan)
-const USERS = [
-  { id: "USR-01", name: "Rina Wijaya", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "RW" },
-  { id: "USR-02", name: "Budi Hartono", role: "manager", roleName: "Team Manager", avatar: "BH" },
-  { id: "USR-03", name: "Hendra Kusuma", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "HK" },
-  { id: "USR-ADMIN", name: "Admin TemuTalenta", role: "superadmin", roleName: "Super Admin (IT)", avatar: "AD" }
+// Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan, dan Klien Portal)
+const INITIAL_USERS = [
+  { id: "USR-01", name: "Rina Wijaya", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "RW", email: "rina.w@temutalenta.com", active: true },
+  { id: "USR-02", name: "Budi Hartono", role: "manager", roleName: "Team Manager", avatar: "BH", email: "budi.h@temutalenta.com", active: true },
+  { id: "USR-03", name: "Hendra Kusuma", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "HK", email: "hendra.k@temutalenta.com", active: true },
+  { id: "USR-ADMIN", name: "Admin TemuTalenta", role: "superadmin", roleName: "Super Admin (IT)", avatar: "AD", email: "admin@temutalenta.com", active: true },
+  { id: "USR-04", name: "David Chen", role: "client", roleName: "Client HR (alauda)", clientCompany: "alauda", avatar: "DC", email: "david.chen@alauda.io", active: true }
 ];
+
+let USERS = [...INITIAL_USERS];
 
 // Master Status Codes sesuai tabel PRD
 const STATUS_CODES = {
@@ -190,6 +194,14 @@ const I18N = {
     lblPositions: "Job Positions",
     btnAddCompany: "+ Add Client",
     btnAddPosition: "+ Add Position",
+    btnInteractiveTester: "Interactive Feature Tester",
+    modalDemoTitle: "Interactive ATS Feature Tester & Scenarios",
+    tabMyTargets: "My Recommendations & Targets",
+    tabLeaderboard: "Team Leaderboard & Comparison",
+    lblUserManagement: "User Management & Role Access",
+    btnAddUser: "+ Add User",
+    btnExportAnalytics: "Export Analytics CSV",
+    lblDemographics: "Candidate Demographics & Distribution",
     msgRefreshed: "Data refreshed.",
     msgResetDone: "Restored to default candidate records.",
     msgResumeDownloaded: "Downloaded resume for",
@@ -343,6 +355,14 @@ const I18N = {
     lblPositions: "标准岗位字典",
     btnAddCompany: "+ 新增客户",
     btnAddPosition: "+ 新增岗位",
+    btnInteractiveTester: "交互功能测试器",
+    modalDemoTitle: "ATS 核心场景交互测试",
+    tabMyTargets: "我的推荐与月度目标",
+    tabLeaderboard: "团队业绩榜与对比",
+    lblUserManagement: "用户管理与权限设置",
+    btnAddUser: "+ 新增用户",
+    btnExportAnalytics: "导出分析报表",
+    lblDemographics: "人才画像与分布统计",
     msgRefreshed: "数据已刷新。",
     msgResetDone: "已恢复为默认候选人数据。",
     msgResumeDownloaded: "已下载简历：",
@@ -496,6 +516,14 @@ const I18N = {
     lblPositions: "Daftar Posisi Pekerjaan",
     btnAddCompany: "+ Tambah Klien",
     btnAddPosition: "+ Tambah Posisi",
+    btnInteractiveTester: "Penguji Fitur Interaktif",
+    modalDemoTitle: "Panduan & Pengujian Interaktif Fitur ATS",
+    tabMyTargets: "Rekomendasi & Target Saya",
+    tabLeaderboard: "Papan Peringkat & Kinerja Tim",
+    lblUserManagement: "Manajemen Pengguna & Hak Akses",
+    btnAddUser: "+ Tambah Pengguna",
+    btnExportAnalytics: "Ekspor Analisis CSV",
+    lblDemographics: "Demografi & Distribusi Kandidat",
     msgRefreshed: "Data berhasil dimuat ulang.",
     msgResetDone: "Data awal berhasil dipulihkan.",
     msgResumeDownloaded: "Dokumen resume diunduh untuk",
@@ -931,13 +959,29 @@ function saveVisibleColumns(cols) {
   } catch (e) {}
 }
 
+function getStoredUsers() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (!raw) return INITIAL_USERS;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_USERS;
+  }
+}
+
+function saveUsers(users) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  } catch (e) {}
+}
+
 function getStoredActiveUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
-    if (!raw) return USERS[0];
+    if (!raw) return getStoredUsers()[0];
     return JSON.parse(raw);
   } catch (e) {
-    return USERS[0];
+    return getStoredUsers()[0];
   }
 }
 

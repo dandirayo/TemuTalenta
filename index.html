@@ -193,12 +193,13 @@
       </div>
 
       <div class="header-right">
-        <!-- Role Switcher (Super Admin, Manager, Consultant) -->
+        <!-- Role Switcher (Super Admin, Manager, Consultant, Client HR) -->
         <div style="display: flex; align-items: center; gap: 6px;">
-          <select id="roleSelect" class="ctrl-select" style="min-width: 140px; height: 26px; font-size: 11.5px;" aria-label="Switch User Role">
-            <option value="USR-001">Rina (Consultant)</option>
-            <option value="USR-002">Budi Hartono (Manager)</option>
-            <option value="USR-003">Super Admin (Admin)</option>
+          <select id="roleSelect" class="ctrl-select" style="min-width: 150px; height: 26px; font-size: 11.5px;" aria-label="Switch User Role">
+            <option value="USR-01">Rina (Consultant)</option>
+            <option value="USR-02">Budi Hartono (Manager)</option>
+            <option value="USR-ADMIN">Super Admin (Admin)</option>
+            <option value="USR-04">David Chen (Client HR - alauda)</option>
           </select>
         </div>
 
@@ -253,8 +254,8 @@
       </div>
     </header>
 
-    <!-- SUB-NAVIGATION TOOLBAR (< , Refresh , Home) -->
-    <div class="sub-nav-bar">
+    <!-- SUB-NAVIGATION TOOLBAR (< , Refresh , Home , Feature Tester) -->
+    <div class="sub-nav-bar" style="display: flex; justify-content: space-between; align-items: center;">
       <div class="nav-tool-group">
         <button type="button" id="subNavBack" class="nav-tool-btn" aria-label="Back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -274,10 +275,21 @@
           </svg>
         </button>
       </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" id="btnOpenDemoGuide" class="btn-solid" style="height: 26px; padding: 0 10px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          <span data-i18n="btnInteractiveTester">Interactive Feature Tester</span>
+        </button>
+      </div>
     </div>
 
     <!-- MAIN WORKSPACE BODY -->
     <main class="workspace-body">
+      <!-- Dynamic Client Portal Header (Visible when role === client) -->
+      <div id="clientPortalBanner" class="client-portal-banner" style="display: none;"></div>
 
       <!-- ====================================================================
            PANEL 1: RESUME LIB (Matches Screenshot & PRD.md)
@@ -415,28 +427,84 @@
       </section>
 
       <!-- ====================================================================
-           PANEL 2: CONSULTANT BUSINESS - RECOMMENDED LIST
+           PANEL 2: CONSULTANT BUSINESS & TARGET TRACKING (CB-01, CB-02, CB-03)
            ==================================================================== -->
       <section id="panel-recList" class="workspace-panel">
-        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-          <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navRecList">Recommended List</h2>
-          <button type="button" class="btn-outlined" onclick="switchWorkspaceView('resumeLib')" data-i18n="navResumeLib">Resume Lib</button>
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navConsultantBiz">Consultant Business</h2>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Track personal targets, client submissions, and team performance leaderboard.</p>
+          </div>
+          <div class="tab-pill-group">
+            <button type="button" id="tabBtnCbRecs" class="tab-pill-btn active" data-cbtab="recommendations" data-i18n="tabMyTargets">My Recommendations & Targets</button>
+            <button type="button" id="tabBtnCbLeaderboard" class="tab-pill-btn" data-cbtab="leaderboard" data-i18n="tabLeaderboard">Team Leaderboard & Comparison</button>
+          </div>
         </div>
-        <div tabindex="0" role="region" aria-label="Global Recommendations" class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th data-i18n="colCandidate">Candidate</th>
-                <th data-i18n="colRecPosition">Recommended Position</th>
-                <th data-i18n="colRecCompany">Recommended Company</th>
-                <th data-i18n="fldStage">Status Code</th>
-                <th data-i18n="fldConsultant">Consultant</th>
-                <th data-i18n="fldDate">Submission Time</th>
-                <th data-i18n="fldNotes">Evaluation Notes / Reason</th>
-              </tr>
-            </thead>
-            <tbody id="globalRecTableBody"></tbody>
-          </table>
+
+        <!-- Monthly Target & KPI Cards -->
+        <div id="consultantTargetKpis" class="kpi-grid" style="margin-bottom: 18px;"></div>
+
+        <!-- Pane A: Recommendations View with Filters -->
+        <div id="paneCbRecs">
+          <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+            <select id="cbFilterConsultant" class="ctrl-select" style="min-width: 150px; height: 28px; font-size: 12px;">
+              <option value="all">All Consultants</option>
+              <option value="Rina Wijaya">Rina Wijaya</option>
+              <option value="Budi Hartono">Budi Hartono</option>
+              <option value="Hendra Kusuma">Hendra Kusuma</option>
+            </select>
+            <select id="cbFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
+              <option value="all">All Companies</option>
+            </select>
+            <select id="cbFilterStatus" class="ctrl-select" style="min-width: 150px; height: 28px; font-size: 12px;">
+              <option value="all">All Status Stages</option>
+              <option value="10">10 - Recommended to Client</option>
+              <option value="12">12 - Original Resume Pass</option>
+              <option value="20">20 - Interview Scheduled</option>
+              <option value="21">21 - Initial Interview Passed</option>
+              <option value="30">30 - Offer Proposed</option>
+              <option value="40">40 - Started Work (Entry)</option>
+              <option value="failed">Failed / Rejected Codes</option>
+            </select>
+          </div>
+
+          <div tabindex="0" role="region" aria-label="Global Recommendations" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="colCandidate">Candidate</th>
+                  <th data-i18n="colRecPosition">Recommended Position</th>
+                  <th data-i18n="colRecCompany">Recommended Company</th>
+                  <th data-i18n="fldStage">Status Code</th>
+                  <th data-i18n="fldConsultant">Consultant</th>
+                  <th data-i18n="fldDate">Submission Time</th>
+                  <th data-i18n="fldNotes">Evaluation Notes / Reason</th>
+                </tr>
+              </thead>
+              <tbody id="globalRecTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pane B: Team Leaderboard & Performance Comparison (CB-03) -->
+        <div id="paneCbLeaderboard" style="display: none;">
+          <div tabindex="0" role="region" aria-label="Team Leaderboard" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Consultant Name</th>
+                  <th>Role</th>
+                  <th>New Candidates Added</th>
+                  <th>Submissions</th>
+                  <th>Interviews</th>
+                  <th>Hired (Entry)</th>
+                  <th>Conversion Rate</th>
+                  <th>Target Achievement</th>
+                </tr>
+              </thead>
+              <tbody id="teamLeaderboardTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -463,15 +531,54 @@
       </section>
 
       <!-- ====================================================================
-           PANEL 4: DATA ANALYSIS - PIPELINE REPORT
+           PANEL 4: DATA ANALYSIS - PIPELINE REPORT & DEMOGRAPHICS (DA-01 s.d DA-05)
            ==================================================================== -->
       <section id="panel-pipelineReport" class="workspace-panel">
-        <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;" data-i18n="navPipelineReport">Pipeline Report</h2>
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navPipelineReport">Pipeline Report</h2>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Comprehensive recruitment funnel, candidate demographics, and monthly inflow analysis.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <select id="analyticsDateRange" class="ctrl-select" style="min-width: 120px; height: 28px; font-size: 12px;">
+              <option value="all">All Time</option>
+              <option value="30d">Last 30 Days</option>
+              <option value="quarter">This Quarter</option>
+              <option value="year">Year to Date</option>
+            </select>
+            <button type="button" id="btnExportAnalytics" class="btn-outlined" data-i18n="btnExportAnalytics">Export Analytics CSV</button>
+          </div>
+        </div>
+
         <div id="analyticsKpiContainer" class="kpi-grid"></div>
 
         <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px;" data-i18n="lblRecruitmentFunnel">Recruitment Pipeline Funnel</h3>
           <div id="funnelVisualContainer" class="funnel-container"></div>
+        </div>
+
+        <!-- Demographics & Distribution (DA-03, DA-04) -->
+        <div style="margin-top: 24px;">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblDemographics">Candidate Demographics & Distribution</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <!-- Education Distribution -->
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Education Breakdown</h4>
+              <div id="distEducationContainer" class="dist-bar-group"></div>
+            </div>
+
+            <!-- Nationality / Location Distribution -->
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Nationality & Domicile</h4>
+              <div id="distNationalityContainer" class="dist-bar-group"></div>
+            </div>
+
+            <!-- Top Client Companies (DA-04) -->
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Top Client Placements</h4>
+              <div id="distCompaniesContainer" class="dist-bar-group"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -506,7 +613,7 @@
           <span style="font-size: 11px; color: var(--text-muted);">Super Admin Access</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 24px;">
           <!-- Master Companies -->
           <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblClientCompanies">Client Companies</h3>
@@ -514,7 +621,7 @@
               <input type="text" id="newMasterCompanyName" class="ctrl-input" placeholder="New Client Company..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddCompany">+ Add Client</button>
             </form>
-            <ul id="settingsCompanyList" style="list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsCompanyList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
           </div>
 
           <!-- Master Positions -->
@@ -524,7 +631,43 @@
               <input type="text" id="newMasterPositionName" class="ctrl-input" placeholder="New Position..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddPosition">+ Add Position</button>
             </form>
-            <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
+        </div>
+
+        <!-- User Management & Role Access (PG-01) -->
+        <div style="background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 13.5px; font-weight: 600;" data-i18n="lblUserManagement">User Management & Role Access (PG-01)</h3>
+          </div>
+
+          <form id="formAddUser" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) 110px; gap: 10px; margin-bottom: 16px;">
+            <input type="text" id="newUserName" class="ctrl-input" placeholder="Full Name *" required>
+            <input type="email" id="newUserEmail" class="ctrl-input" placeholder="Email Address *" required>
+            <select id="newUserRole" class="ctrl-select">
+              <option value="consultant">Consultant (Recruiter)</option>
+              <option value="manager">Team Manager</option>
+              <option value="superadmin">Super Admin</option>
+              <option value="client">Client HR (External)</option>
+            </select>
+            <input type="text" id="newUserClientCompany" class="ctrl-input" placeholder="Client Company (if Client HR)">
+            <button type="submit" class="btn-solid" data-i18n="btnAddUser">+ Add User</button>
+          </form>
+
+          <div tabindex="0" role="region" aria-label="Users Table" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Email / Organization</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="settingsUserListTableBody"></tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -765,6 +908,97 @@
           <button type="submit" class="btn-solid" data-i18n="btnUploadCsv">Upload & Import</button>
         </div>
       </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 6: Interactive Feature Tester & Pre-configured Scenarios -->
+  <dialog id="demoGuideModal" aria-labelledby="demoGuideModalTitle" closedby="any">
+    <div class="modal-shell" style="max-inline-size: 800px;">
+      <div class="modal-header">
+        <h2 id="demoGuideModalTitle" data-i18n="modalDemoTitle">Interactive ATS Feature Tester & Scenarios</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px;">
+          Pilih skenario di bawah ini untuk menguji dan memverifikasi seluruh aturan bisnis PRD secara langsung dengan 1-klik:
+        </p>
+
+        <div class="demo-grid">
+          <!-- Scenario 1 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Rule 1: Duplicate Active</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Duplikasi Rekomendasi Aktif</div>
+              <p class="demo-scenario-desc">Uji pemblokiran rekomendasi pada Andi Candera yang sedang aktif berproses di <strong>alauda</strong> (Status 21).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(1)">Uji Skenario 1 (Block)</button>
+          </div>
+
+          <!-- Scenario 2 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Rule 2: Recent Entry</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Kandidat Baru Bekerja (Entry)</div>
+              <p class="demo-scenario-desc">Uji pemblokiran rekomendasi pada Clarissa Wijaya yang baru saja masuk kerja (Status 40 Entry) di ByteDance.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(2)">Uji Skenario 2 (Block)</button>
+          </div>
+
+          <!-- Scenario 3 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Rule 3: Re-apply Justification</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Rekomendasi Pasca Gagal</div>
+              <p class="demo-scenario-desc">Uji kewajiban justifikasi pada Fajar Nugroho yang sebelumnya gagal di <strong>Midea</strong> (Status 29).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(3)">Uji Skenario 3 (Wajib Alasan)</button>
+          </div>
+
+          <!-- Scenario 4 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Rule 4: Cross-Consultant</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Persetujuan Manajer Tim</div>
+              <p class="demo-scenario-desc">Uji persyaratan izin manajer ketika konsultan lain mengajukan kandidat yang sama dalam waktu 30 hari.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(4)">Uji Skenario 4 (Izin Manajer)</button>
+          </div>
+
+          <!-- Scenario 5 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Phase 2: Client Portal</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Portal Klien (David Chen - alauda)</div>
+              <p class="demo-scenario-desc">Beralih peran ke HR Perusahaan Klien untuk meninjau CV kandidat dan memberikan keputusan 1-klik (Lolos / Tolak).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(5)">Uji Skenario 5 (Portal Klien)</button>
+          </div>
+
+          <!-- Scenario 6 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Decision: Offer Auto-Close</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Offer Diterima (Tutup Rekomendasi Lain)</div>
+              <p class="demo-scenario-desc">Uji aturan penutupan otomatis rekomendasi lain ke kode 90 saat satu offer diterima (Status 31).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(6)">Uji Skenario 6 (Auto-Close)</button>
+          </div>
+
+          <!-- Scenario 7 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">RL-21: CSV Import & Duplicate</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Impor Massal & Cek Duplikat</div>
+              <p class="demo-scenario-desc">Buka form impor CSV dengan data terisi otomatis untuk menguji deteksi duplikat kontak dan tanggal lahir.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(7)">Uji Skenario 7 (Impor CSV)</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn-outlined" onclick="resetAllDemoData()">Reset Data Awal</button>
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
+      </div>
     </div>
   </dialog>
 

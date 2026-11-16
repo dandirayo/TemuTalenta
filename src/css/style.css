@@ -1298,3 +1298,142 @@ dialog::backdrop {
   box-shadow: var(--shadow-dropdown);
   border-left: 3px solid var(--brand-primary);
 }
+
+/* ==========================================================================
+   ADVANCED MODULES (Client Portal, Interactive Tester, Leaderboard, Demographics)
+   ========================================================================== */
+
+.client-portal-banner {
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.client-portal-tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.demo-scenario-card {
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  padding: 14px;
+  background-color: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.demo-scenario-card:hover {
+  border-color: var(--brand-primary);
+  transform: translateY(-1px);
+}
+
+.demo-scenario-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.demo-scenario-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.demo-badge-rule {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background-color: var(--bg-subtle);
+  color: var(--brand-primary);
+  display: inline-block;
+  align-self: flex-start;
+}
+
+.dist-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dist-bar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.dist-bar-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+
+.dist-bar-track {
+  height: 8px;
+  background-color: var(--bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dist-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background-color: var(--brand-primary);
+  transition: width 0.3s ease;
+}
+
+.tab-pill-group {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-subtle);
+  border-radius: 5px;
+  border: 1px solid var(--border-base);
+  margin-bottom: 14px;
+}
+
+.tab-pill-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tab-pill-btn.active {
+  background: var(--bg-surface);
+  color: var(--brand-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
