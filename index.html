@@ -261,6 +261,15 @@
           </div>
         </div>
 
+        <!-- Header Utility Toggle: Kanban Board / Quick Switcher (PRD Second Header Icon) -->
+        <button type="button" id="headerKanbanToggleBtn" class="header-icon-btn" title="Toggle Table / Kanban Board View" aria-label="Toggle Kanban Board View">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="3" width="5" height="18" rx="1"/>
+            <rect x="10" y="3" width="5" height="13" rx="1"/>
+            <rect x="17" y="3" width="4" height="16" rx="1"/>
+          </svg>
+        </button>
+
         <!-- Light / Dark Theme Switch -->
         <button type="button" id="themeSwitchBtn" class="theme-switch-btn" role="switch" aria-checked="false" aria-label="Toggle Light or Dark Theme">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-left: 2px;">
@@ -274,8 +283,20 @@
           <span class="theme-switch-thumb"></span>
         </button>
 
-        <!-- User Avatar Indicator -->
-        <div id="userAvatarIndicator" class="user-avatar" title="Rina Wijaya (Recruitment Consultant)">RW</div>
+        <!-- Interactive User Avatar & Backup/Profile Popover -->
+        <div class="user-menu-container">
+          <button type="button" id="userAvatarIndicator" class="user-avatar" title="Rina Wijaya (Recruitment Consultant)" aria-label="User Profile & System Backup Menu">RW</button>
+          <div id="userProfileDropdown" class="notif-dropdown user-profile-popover">
+            <div id="userProfileSummary" class="notif-header" style="flex-direction: column; align-items: flex-start; gap: 2px;"></div>
+            <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 11px; color: var(--text-muted);" data-i18n="lblBackupRestore">Database Backup & Restore</div>
+              <button type="button" id="btnExportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Download JSON Backup</button>
+              <button type="button" id="btnImportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Restore JSON Backup</button>
+              <input type="file" id="restoreJsonFileInput" accept=".json,application/json" style="display: none;">
+              <button type="button" id="btnQuickResetPassword" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Change Password</button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -382,10 +403,35 @@
             <label for="advMinService" data-i18n="lblMinService">Min Year of Service</label>
             <input type="number" id="advMinService" class="ctrl-input" min="0" max="40" placeholder="0">
           </div>
+          <div class="adv-field">
+            <label for="advLanguage" data-i18n="colLanguage">Language</label>
+            <input type="text" id="advLanguage" class="ctrl-input" placeholder="e.g. English, Chinese">
+          </div>
+          <div class="adv-field">
+            <label for="advCompany" data-i18n="colRecCompany">Company</label>
+            <input type="text" id="advCompany" class="ctrl-input" placeholder="e.g. alauda">
+          </div>
+          <div class="adv-field">
+            <label for="advOwner" data-i18n="fldConsultant">Consultant</label>
+            <select id="advOwner" class="ctrl-select">
+              <option value="all">All Consultants</option>
+              <option value="Rina Wijaya">Rina Wijaya</option>
+              <option value="Budi Hartono">Budi Hartono</option>
+              <option value="Hendra Kusuma">Hendra Kusuma</option>
+            </select>
+          </div>
+          <div class="adv-field">
+            <label for="advArchiveMode">Record State</label>
+            <select id="advArchiveMode" class="ctrl-select">
+              <option value="active">Active Only</option>
+              <option value="archived">Archived (Soft-Deleted)</option>
+              <option value="all">All Records</option>
+            </select>
+          </div>
           <button type="button" id="btnResetDatabase" class="btn-outlined" style="height: 30px; margin-left: auto;" data-i18n="btnResetData">Reset Default Data</button>
         </div>
 
-        <!-- Filter Row 2: 8 Stage Tabs (Including Offer) & Column Selector -->
+        <!-- Filter Row 2: 8 Stage Tabs (Including Offer) & View / Column Selector -->
         <div class="pipeline-bar">
           <div class="stage-tabs" role="tablist" aria-label="Pipeline Stage Filters">
             <button type="button" class="stage-tab active" data-stage="all" data-i18n="stageAll">All</button>
@@ -401,8 +447,12 @@
             <button type="button" class="stage-tab" data-stage="entry" data-i18n="stageEntry">Entry</button>
           </div>
 
-          <!-- Display Columns Selector -->
+          <!-- Display View Mode & Columns Selector -->
           <div class="col-selector-wrap">
+            <div style="display: inline-flex; gap: 4px; margin-right: 6px;">
+              <button type="button" id="btnViewTable" class="btn-outlined active-view-btn" style="height: 30px; font-size: 12px; padding: 0 10px;" data-i18n="btnViewTable">Table View</button>
+              <button type="button" id="btnViewKanban" class="btn-outlined" style="height: 30px; font-size: 12px; padding: 0 10px;" data-i18n="btnViewKanban">Kanban Board</button>
+            </div>
             <span class="col-selector-label" data-i18n="lblDisplayCols">Columns:</span>
             <button type="button" id="colSelectorTrigger" class="col-selector-trigger" aria-label="Select Display Columns">
               <span style="display: inline-flex; align-items: center; gap: 5px;">
@@ -418,7 +468,7 @@
         </div>
 
         <!-- Enterprise Data Table -->
-        <div tabindex="0" role="region" aria-labelledby="resume-table-caption" class="table-wrapper">
+        <div id="resumeTableWrapper" tabindex="0" role="region" aria-labelledby="resume-table-caption" class="table-wrapper">
           <table id="resumeDataTable" class="data-table">
             <caption id="resume-table-caption" class="sr-only">Candidate Resume Library Table</caption>
             <thead>
@@ -427,6 +477,9 @@
             <tbody id="resumeTableBody"></tbody>
           </table>
         </div>
+
+        <!-- Visual Kanban Pipeline Board (Fase 5) -->
+        <div id="resumeKanbanContainer" class="kanban-board-wrapper" style="display: none;"></div>
 
         <!-- Table Footer with Pagination Controls -->
         <div class="table-footer">
@@ -463,6 +516,7 @@
           <div class="tab-pill-group">
             <button type="button" id="tabBtnCbRecs" class="tab-pill-btn active" data-cbtab="recommendations" data-i18n="tabMyTargets">My Recommendations & Targets</button>
             <button type="button" id="tabBtnCbLeaderboard" class="tab-pill-btn" data-cbtab="leaderboard" data-i18n="tabLeaderboard">Team Leaderboard & Comparison</button>
+            <button type="button" id="tabBtnCbWarranty" class="tab-pill-btn" data-cbtab="warranty" data-i18n="tabWarrantyTracker">Placement & Warranty (Fee)</button>
           </div>
         </div>
 
@@ -528,6 +582,26 @@
                 </tr>
               </thead>
               <tbody id="teamLeaderboardTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pane C: Placement Fee & 90-Day Probation Warranty Tracker (Fase 5B) -->
+        <div id="paneCbWarranty" style="display: none;">
+          <div tabindex="0" role="region" aria-label="Placement Warranty and Agency Fee Tracker" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="colCandidate">Candidate</th>
+                  <th>Company & Position</th>
+                  <th data-i18n="fldStage">Stage Code</th>
+                  <th>Start Date & Warranty (90d)</th>
+                  <th>Est. Agency Fee</th>
+                  <th>Invoice Status</th>
+                  <th>Warranty Actions</th>
+                </tr>
+              </thead>
+              <tbody id="warrantyTrackerTableBody"></tbody>
             </table>
           </div>
         </div>
@@ -660,6 +734,22 @@
           </div>
         </div>
 
+        <!-- System Governance Policy (Configurable Duplicate Window & Fee Rate per PRD Line 220) -->
+        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px; margin-bottom: 18px;">
+          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Agency Governance Policy (PRD Configuration)</h3>
+          <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;">
+            <div class="adv-field">
+              <label for="settingDupMonthsInput">Duplicate Recommendation Window (Months)</label>
+              <input type="number" id="settingDupMonthsInput" class="ctrl-input" min="1" max="24" value="6" style="width: 160px;">
+            </div>
+            <div class="adv-field">
+              <label for="settingFeePercentInput">Default Placement Fee Rate (%)</label>
+              <input type="number" id="settingFeePercentInput" class="ctrl-input" min="5" max="35" value="18" style="width: 150px;">
+            </div>
+            <button type="button" id="btnSaveSystemSettings" class="btn-solid">Save Policy</button>
+          </div>
+        </div>
+
         <!-- User Management & Role Access (PG-01) -->
         <div style="background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
@@ -713,6 +803,7 @@
               <option value="all">All Companies</option>
             </select>
             <input type="text" id="careerSearchQuery" class="ctrl-input" placeholder="Search title or skills..." style="height: 28px; font-size: 12px;">
+            <button type="button" id="btnOpenPostJobModal" class="btn-solid" style="height: 28px; font-size: 12px;" data-i18n="btnPostJob">+ Post Job Order</button>
           </div>
         </div>
 
@@ -1155,6 +1246,46 @@
             </div>
             <button type="button" class="btn-solid" onclick="runDemoScenario(11)">Uji Skenario 11 (Parse CV)</button>
           </div>
+
+          <!-- Scenario 12 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 5A: Visual Kanban</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Papan Kanban Pipeline Drag & Drop</div>
+              <p class="demo-scenario-desc">Ubah tampilan Resume Lib ke Papan Kanban lintas 7 tahap dan pindahkan kandidat secara visual antar tahap.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(12)">Uji Skenario 12 (Kanban Board)</button>
+          </div>
+
+          <!-- Scenario 13 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 5B: E-Signature Code 31</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Tanda Tangan Digital & Offer Diterima</div>
+              <p class="demo-scenario-desc">Buka Offering Letter dengan tanggal mulai kerja wajib & E-Signature untuk langsung mengubah status ke Kode 31.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(13)">Uji Skenario 13 (E-Sign Offer)</button>
+          </div>
+
+          <!-- Scenario 14 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 5C: Placement & Warranty</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Pelacak Komisi & Garansi 90 Hari</div>
+              <p class="demo-scenario-desc">Pantau estimasi fee agensi (18%), tanggal berakhir garansi probation 90 hari, dan kelola status invoice penempatan.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(14)">Uji Skenario 14 (Garansi & Fee)</button>
+          </div>
+
+          <!-- Scenario 15 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 5D: Requisition Posting</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Buat Lowongan Kerja Klien Baru</div>
+              <p class="demo-scenario-desc">Buka formulir + Post Job Order terisi otomatis di Career Portal agar lowongan baru langsung bisa dilamar.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(15)">Uji Skenario 15 (Post Job Order)</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
@@ -1237,12 +1368,27 @@
       </div>
       <div class="modal-body">
         <div id="offerLetterPaper" class="offer-letter-paper"></div>
+        <!-- E-Signature & Start Date Acceptance Bar (Fase 5B / Code 31) -->
+        <div style="margin-top: 16px; padding: 14px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: 6px;">
+          <h4 style="font-size: 12.5px; font-weight: 700; margin-bottom: 10px;">Digital E-Signature & Official Start Date (Required for Code 31 Acceptance)</h4>
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="offerStartDateInput">Confirmed Joining / Start Date *</label>
+              <input type="date" id="offerStartDateInput">
+            </div>
+            <div class="form-field">
+              <label for="offerSignatureInput">Candidate E-Signature (Full Name) *</label>
+              <input type="text" id="offerSignatureInput" placeholder="Type candidate name for digital signature...">
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
         <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
-        <div style="display: flex; gap: 8px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-outlined" onclick="window.print()">Print / Save PDF</button>
-          <button type="button" id="btnSendOfferCandidate" class="btn-solid">Issue Formal Offer (Code 30)</button>
+          <button type="button" id="btnSendOfferCandidate" class="btn-outlined">Issue Formal Offer (Code 30)</button>
+          <button type="button" id="btnAcceptOfferEsign" class="btn-solid" style="background-color: var(--success-color); border-color: var(--success-color);" data-i18n="btnAcceptOfferEsign">Sign & Accept Offer (Code 31)</button>
         </div>
       </div>
     </div>
@@ -1297,6 +1443,64 @@
         <div class="modal-footer">
           <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
           <button type="submit" class="btn-solid" data-i18n="btnApplyJob">Submit Application</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 10: Post New Client Job Order (Fase 5D) -->
+  <dialog id="postJobModal" aria-labelledby="postJobModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="postJobModalTitle" data-i18n="btnPostJob">+ Post Job Order</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formPostJob">
+        <div class="modal-body form-grid">
+          <div class="form-field">
+            <label for="postJobTitle">Job Title *</label>
+            <input type="text" id="postJobTitle" required placeholder="e.g. Principal Platform Engineer">
+          </div>
+          <div class="form-field">
+            <label for="postJobCompany">Client Company *</label>
+            <input type="text" id="postJobCompany" required placeholder="e.g. alauda">
+          </div>
+          <div class="form-field">
+            <label for="postJobDepartment">Department</label>
+            <input type="text" id="postJobDepartment" value="Engineering">
+          </div>
+          <div class="form-field">
+            <label for="postJobLocation">Location *</label>
+            <input type="text" id="postJobLocation" required value="Jakarta (Hybrid)">
+          </div>
+          <div class="form-field">
+            <label for="postJobType">Employment Type</label>
+            <select id="postJobType" class="ctrl-select">
+              <option value="Full-time">Full-time</option>
+              <option value="Contract">Contract (12 Months)</option>
+              <option value="Remote">Remote</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="postJobSalary">Salary Budget Range</label>
+            <input type="text" id="postJobSalary" placeholder="e.g. IDR 35M - 45M">
+          </div>
+          <div class="form-field">
+            <label for="postJobExp">Min Experience</label>
+            <input type="text" id="postJobExp" value="5+ Years">
+          </div>
+          <div class="form-field">
+            <label for="postJobTags">Key Skills (comma separated)</label>
+            <input type="text" id="postJobTags" placeholder="Go, Kubernetes, AWS">
+          </div>
+          <div class="form-field full">
+            <label for="postJobDesc">Role Scope & Requirements *</label>
+            <textarea id="postJobDesc" rows="3" required placeholder="Describe core deliverables and required technical stack..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn-solid">Publish to Career Portal</button>
         </div>
       </form>
     </div>

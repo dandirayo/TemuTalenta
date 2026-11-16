@@ -17,7 +17,8 @@ const STORAGE_KEYS = {
   MASTER_POSITIONS: "temutalenta_master_positions_v4",
   USERS: "temutalenta_users_v4",
   OPEN_JOBS: "temutalenta_open_jobs_v4",
-  INTERVIEWS: "temutalenta_interviews_v4"
+  INTERVIEWS: "temutalenta_interviews_v4",
+  SETTINGS: "temutalenta_system_settings_v1"
 };
 
 // Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan, dan Klien Portal)
@@ -213,6 +214,12 @@ const I18N = {
     btnApplyJob: "Apply for Position",
     lblUpcomingInterviews: "Upcoming Scheduled Interviews",
     lblOfferDocument: "Official Employment Offer Letter",
+    btnViewTable: "Table View",
+    btnViewKanban: "Kanban Board",
+    tabWarrantyTracker: "Placement & Warranty (Fee)",
+    btnPostJob: "+ Post Job Order",
+    btnAcceptOfferEsign: "Sign & Accept Offer (Code 31)",
+    lblBackupRestore: "Database Backup & Restore",
     msgRefreshed: "Data refreshed.",
     msgResetDone: "Restored to default candidate records.",
     msgResumeDownloaded: "Downloaded resume for",
@@ -383,6 +390,12 @@ const I18N = {
     btnApplyJob: "立即申请",
     lblUpcomingInterviews: "近期面试日程",
     lblOfferDocument: "正式录用通知书",
+    btnViewTable: "表格视图",
+    btnViewKanban: "看板视图",
+    tabWarrantyTracker: "入职保用期与佣金",
+    btnPostJob: "+ 发布招聘岗位",
+    btnAcceptOfferEsign: "签署并接受录用 (状态 31)",
+    lblBackupRestore: "数据备份与恢复",
     msgRefreshed: "数据已刷新。",
     msgResetDone: "已恢复为默认候选人数据。",
     msgResumeDownloaded: "已下载简历：",
@@ -553,6 +566,12 @@ const I18N = {
     btnApplyJob: "Lamar Posisi Ini",
     lblUpcomingInterviews: "Jadwal Wawancara Mendatang",
     lblOfferDocument: "Surat Penawaran Kerja Resmi",
+    btnViewTable: "Tampilan Tabel",
+    btnViewKanban: "Papan Kanban",
+    tabWarrantyTracker: "Garansi & Komisi Penempatan",
+    btnPostJob: "+ Buat Lowongan Baru",
+    btnAcceptOfferEsign: "Tanda Tangani & Terima Offer (Kode 31)",
+    lblBackupRestore: "Backup & Restore Database",
     msgRefreshed: "Data berhasil dimuat ulang.",
     msgResetDone: "Data awal berhasil dipulihkan.",
     msgResumeDownloaded: "Dokumen resume diunduh untuk",
@@ -1240,5 +1259,27 @@ function getStoredInterviews() {
 function saveInterviews(interviews) {
   try {
     localStorage.setItem(STORAGE_KEYS.INTERVIEWS, JSON.stringify(interviews));
+  } catch (e) {}
+}
+
+const DEFAULT_SYSTEM_SETTINGS = {
+  duplicateWindowMonths: 6,
+  agencyFeePercent: 18,
+  warrantyDays: 90
+};
+
+function getStoredSystemSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    if (!raw) return { ...DEFAULT_SYSTEM_SETTINGS };
+    return { ...DEFAULT_SYSTEM_SETTINGS, ...JSON.parse(raw) };
+  } catch (e) {
+    return { ...DEFAULT_SYSTEM_SETTINGS };
+  }
+}
+
+function saveSystemSettings(settings) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
   } catch (e) {}
 }

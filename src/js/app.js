@@ -21,6 +21,8 @@ let masterCompanies = [];
 let masterPositions = [];
 let openJobs = [];
 let scheduledInterviews = [];
+let systemSettings = {};
+let resumeViewMode = "table";
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -35,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   masterPositions = getStoredMasterPositions();
   openJobs = getStoredOpenJobs();
   scheduledInterviews = getStoredInterviews();
+  systemSettings = getStoredSystemSettings();
 
   bindGlobalEvents();
   setupDialogLightDismiss();
@@ -168,6 +171,14 @@ function applyRolePermissions() {
   if (userAvatar) {
     userAvatar.textContent = activeUser.avatar;
     userAvatar.title = `${activeUser.name} - ${activeUser.roleName}`;
+  }
+  const userSummary = document.getElementById("userProfileSummary");
+  if (userSummary) {
+    userSummary.innerHTML = `
+      <strong style="font-size: 13px;">${escapeHtml(activeUser.name)}</strong>
+      <span style="font-size: 11.5px; color: var(--brand-primary);">${escapeHtml(activeUser.roleName)}</span>
+      <span style="font-size: 11px; color: var(--text-muted);">${escapeHtml(activeUser.email || "")} • Asia/Jakarta (UTC+7)</span>
+    `;
   }
 
   // RL-23: Export to Excel/CSV only for Manager and Super Admin
@@ -397,11 +408,19 @@ function bindGlobalEvents() {
     }
   });
 
-  ["advNationality", "advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", () => {
+  ["advNationality", "advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService", "advLanguage", "advCompany", "advOwner", "advArchiveMode"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", () => {
       currentPage = 1;
       renderResumeTable();
     });
+    if (el.tagName === "SELECT") {
+      el.addEventListener("change", () => {
+        currentPage = 1;
+        renderResumeTable();
+      });
+    }
   });
 
   document.getElementById("btnResetDatabase")?.addEventListener("click", () => {
@@ -505,6 +524,10 @@ function bindGlobalEvents() {
     switchCbTab("leaderboard");
     scrollTabIntoView(e.currentTarget);
   });
+  document.getElementById("tabBtnCbWarranty")?.addEventListener("click", e => {
+    switchCbTab("warranty");
+    scrollTabIntoView(e.currentTarget);
+  });
   document.getElementById("cbFilterConsultant")?.addEventListener("change", renderConsultantBusinessHub);
   document.getElementById("cbFilterCompany")?.addEventListener("change", renderConsultantBusinessHub);
   document.getElementById("cbFilterStatus")?.addEventListener("change", renderConsultantBusinessHub);
@@ -522,6 +545,48 @@ function bindGlobalEvents() {
   document.getElementById("formApplyJob")?.addEventListener("submit", handleApplyJobSubmit);
   document.getElementById("intCandidateSelect")?.addEventListener("change", handleIntCandidateChange);
   document.getElementById("btnSendOfferCandidate")?.addEventListener("click", handleSendOfferClick);
+
+  // Fase 5: Kanban Toggle, E-Sign Code 31, Post Job Order, System Settings & JSON Backup
+  document.getElementById("btnViewTable")?.addEventListener("click", () => switchResumeViewMode("table"));
+  document.getElementById("btnViewKanban")?.addEventListener("click", () => switchResumeViewMode("kanban"));
+  document.getElementById("headerKanbanToggleBtn")?.addEventListener("click", () => {
+    if (currentView !== "resumeLib") switchWorkspaceView("resumeLib");
+    switchResumeViewMode(resumeViewMode === "table" ? "kanban" : "table");
+  });
+  document.getElementById("btnAcceptOfferEsign")?.addEventListener("click", handleAcceptOfferEsign);
+  document.getElementById("btnOpenPostJobModal")?.addEventListener("click", () => {
+    document.getElementById("postJobModal")?.showModal();
+  });
+  document.getElementById("formPostJob")?.addEventListener("submit", handlePostJobSubmit);
+  document.getElementById("btnSaveSystemSettings")?.addEventListener("click", handleSaveSystemSettings);
+
+  // User Avatar Profile Popover & JSON Backup / Restore
+  const avatarBtn = document.getElementById("userAvatarIndicator");
+  const profileDrop = document.getElementById("userProfileDropdown");
+  if (avatarBtn && profileDrop) {
+    avatarBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      profileDrop.classList.toggle("open");
+    });
+    document.addEventListener("click", e => {
+      if (!profileDrop.contains(e.target) && !avatarBtn.contains(e.target)) {
+        profileDrop.classList.remove("open");
+      }
+    });
+  }
+  document.getElementById("btnExportBackupJson")?.addEventListener("click", exportFullDatabaseJson);
+  document.getElementById("btnImportBackupJson")?.addEventListener("click", () => {
+    document.getElementById("restoreJsonFileInput")?.click();
+  });
+  document.getElementById("restoreJsonFileInput")?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (file) importFullDatabaseJson(file);
+    e.target.value = "";
+  });
+  document.getElementById("btnQuickResetPassword")?.addEventListener("click", () => {
+    document.getElementById("userProfileDropdown")?.classList.remove("open");
+    resetUserPassword(activeUser.id);
+  });
 
   // Forms
   document.getElementById("formRecRepeat")?.addEventListener("submit", handleRecRepeatSubmit);
@@ -566,7 +631,7 @@ function syncStageTabsUI() {
 }
 
 function resetSearchFilters() {
-  const ids = ["searchCandidateName", "searchKeyword", "advMinAge", "advMaxAge", "advMinService", "advNationality"];
+  const ids = ["searchCandidateName", "searchKeyword", "advMinAge", "advMaxAge", "advMinService", "advNationality", "advLanguage", "advCompany"];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
@@ -575,10 +640,14 @@ function resetSearchFilters() {
   const stateSelect = document.getElementById("searchStateSelect");
   const advGender = document.getElementById("advGender");
   const advEdu = document.getElementById("advEducation");
+  const advOwner = document.getElementById("advOwner");
+  const advArchive = document.getElementById("advArchiveMode");
 
   if (stateSelect) stateSelect.value = "all";
   if (advGender) advGender.value = "all";
   if (advEdu) advEdu.value = "all";
+  if (advOwner) advOwner.value = "all";
+  if (advArchive) advArchive.value = "active";
 
   currentStageFilter = "all";
   currentPage = 1;
@@ -633,8 +702,16 @@ function getFilteredCandidates() {
   const maxAge = parseInt(document.getElementById("advMaxAge")?.value || "999", 10);
   const eduQ = document.getElementById("advEducation")?.value || "all";
   const minService = parseFloat(document.getElementById("advMinService")?.value || "0");
+  const langQ = (document.getElementById("advLanguage")?.value || "").toLowerCase().trim();
+  const compQ = (document.getElementById("advCompany")?.value || "").toLowerCase().trim();
+  const ownerQ = document.getElementById("advOwner")?.value || "all";
+  const archiveMode = document.getElementById("advArchiveMode")?.value || "active";
 
   return candidates.filter(c => {
+    const isArchived = Boolean(c.isDeleted);
+    if (archiveMode === "active" && isArchived) return false;
+    if (archiveMode === "archived" && !isArchived) return false;
+
     const badgeCode = computeCandidateBadge(c);
     const candidateStageTab = getStageTabForCode(badgeCode);
     const calculatedAge = calculateAge(c.birthDate);
@@ -642,19 +719,26 @@ function getFilteredCandidates() {
     const matchName = !nameQ || c.name.toLowerCase().includes(nameQ);
     const matchKw =
       !kwQ ||
-      c.recommendedPosition.toLowerCase().includes(kwQ) ||
-      c.recommendedCompany.toLowerCase().includes(kwQ) ||
-      c.language.toLowerCase().includes(kwQ) ||
-      c.education.toLowerCase().includes(kwQ) ||
+      (c.recommendedPosition || "").toLowerCase().includes(kwQ) ||
+      (c.recommendedCompany || "").toLowerCase().includes(kwQ) ||
+      (c.language || "").toLowerCase().includes(kwQ) ||
+      (c.education || "").toLowerCase().includes(kwQ) ||
       (c.skills && c.skills.some(s => s.toLowerCase().includes(kwQ))) ||
+      (c.tags && c.tags.some(tg => tg.toLowerCase().includes(kwQ))) ||
       (c.summary && c.summary.toLowerCase().includes(kwQ));
 
     const matchStage = currentStageFilter === "all" || candidateStageTab === currentStageFilter;
-    const matchNat = !natQ || c.nationality.toLowerCase().includes(natQ);
+    const matchNat = !natQ || (c.nationality || "").toLowerCase().includes(natQ);
     const matchGender = genderQ === "all" || c.gender === genderQ;
     const matchAge = calculatedAge >= (isNaN(minAge) ? 0 : minAge) && calculatedAge <= (isNaN(maxAge) ? 999 : maxAge);
     const matchEdu = eduQ === "all" || c.education === eduQ;
     const matchService = c.yearsOfService >= (isNaN(minService) ? 0 : minService);
+    const matchLang = !langQ || (c.language || "").toLowerCase().includes(langQ);
+    const matchComp =
+      !compQ ||
+      (c.recommendedCompany || "").toLowerCase().includes(compQ) ||
+      (c.recommendations || []).some(r => (r.company || "").toLowerCase().includes(compQ));
+    const matchOwner = ownerQ === "all" || (c.ownerName || "Rina Wijaya") === ownerQ;
 
     // Client Portal: Only show candidates recommended to clientCompany
     let matchClient = true;
@@ -663,7 +747,7 @@ function getFilteredCandidates() {
                     (c.recommendedCompany || "").toLowerCase() === activeUser.clientCompany.toLowerCase();
     }
 
-    return matchName && matchKw && matchStage && matchNat && matchGender && matchAge && matchEdu && matchService && matchClient;
+    return matchName && matchKw && matchStage && matchNat && matchGender && matchAge && matchEdu && matchService && matchLang && matchComp && matchOwner && matchClient;
   });
 }
 
@@ -750,12 +834,19 @@ function renderResumeTable() {
         </td>
       </tr>
     `;
+    syncTableResponsiveLabels();
+    if (resumeViewMode === "kanban") {
+      renderKanbanBoard(filtered);
+    }
     return;
   }
 
   tbody.innerHTML = pagedRecords.map(c => buildCandidateRowHtml(c, activeCols)).join("");
   bindTableRowActions(tbody);
   syncTableResponsiveLabels();
+  if (resumeViewMode === "kanban") {
+    renderKanbanBoard(filtered);
+  }
 }
 
 function getRawSortValue(candidate, colId) {
@@ -780,6 +871,7 @@ function buildCandidateRowHtml(c, activeCols) {
             <button type="button" class="candidate-link" data-action="profile" data-id="${c.id}">
               ${escapeHtml(c.name).replace(" ", '<span class="name-break"> </span>')}
               ${c.isUnviewed ? `<span style="display:inline-block; width:6px; height:6px; background-color:var(--danger-dot); border-radius:50%; margin-left:3px;" title="Unviewed"></span>` : ""}
+              ${c.isDeleted ? `<span style="font-size:10px; color:var(--danger-dot); font-weight:700;"> [Archived]</span>` : ""}
             </button>
           </th>
         `;
@@ -836,7 +928,7 @@ function buildCandidateRowHtml(c, activeCols) {
     }
   });
 
-  return `<tr data-candidate-id="${c.id}">${cells.join("")}</tr>`;
+  return `<tr data-candidate-id="${c.id}" class="${c.isDeleted ? 'archived-row' : ''}">${cells.join("")}</tr>`;
 }
 
 function handleColumnSort(colId, buttonEl) {
@@ -881,11 +973,19 @@ function bindTableRowActions(container) {
   });
 }
 
-function openCandidateProfileModal(candidateId) {
+function openCandidateProfileModal(candidateId, activeTab = "overview", selectedCvIdx = 0) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
 
   c.isUnviewed = false;
+  if (!Array.isArray(c.cvVersions) || c.cvVersions.length === 0) {
+    c.cvVersions = [{
+      version: "v1 (Original)",
+      uploadedAt: c.entryTime,
+      uploadedBy: c.ownerName || "Rina Wijaya",
+      content: null
+    }];
+  }
   saveCandidates(candidates);
 
   const dialog = document.getElementById("profileModal");
@@ -894,12 +994,18 @@ function openCandidateProfileModal(candidateId) {
 
   const currentBadge = computeCandidateBadge(c);
   const calculatedAge = calculateAge(c.birthDate);
+  const safeCvIdx = Math.min(Math.max(0, selectedCvIdx), c.cvVersions.length - 1);
+  const activeCvObj = c.cvVersions[safeCvIdx];
+  const cvPreviewContent = activeCvObj.content || generateResumeText(c);
 
   body.innerHTML = `
     <!-- Candidate Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
       <div>
-        <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">${escapeHtml(c.name)}</h3>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">
+          ${escapeHtml(c.name)}
+          ${c.isDeleted ? `<span style="font-size: 11px; color: var(--danger-dot); margin-left: 6px;">[ARCHIVED]</span>` : ""}
+        </h3>
         <p style="color: var(--text-secondary); margin-top: 2px;">
           ${escapeHtml(c.recommendedPosition || "-")} — <strong>${escapeHtml(c.recommendedCompany || "-")}</strong>
         </p>
@@ -914,20 +1020,28 @@ function openCandidateProfileModal(candidateId) {
         <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
           <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 24px; font-size: 11px; padding: 0 8px;">Schedule Interview</button>
           <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 24px; font-size: 11px; padding: 0 8px;">Generate Offer</button>
+          <button type="button" class="btn-outlined" id="btnToggleSoftDelete" style="height: 24px; font-size: 11px; padding: 0 8px; color: var(--warning-color);">
+            ${c.isDeleted ? "Restore Archive" : "Archive (Soft Delete)"}
+          </button>
+          ${activeUser.role === "superadmin" ? `
+            <button type="button" class="btn-outlined" id="btnHardDeleteCandidate" style="height: 24px; font-size: 11px; padding: 0 8px; color: var(--danger-dot); border-color: var(--danger-dot);">
+              Permanent Delete
+            </button>
+          ` : ""}
         </div>
       </div>
     </div>
 
     <!-- Sub-tabs navigation -->
     <div class="profile-subtabs">
-      <button type="button" class="profile-tab-btn active" data-ptab="overview">${t("tabOverview")}</button>
-      <button type="button" class="profile-tab-btn" data-ptab="workEdu">${t("tabWorkEdu")}</button>
-      <button type="button" class="profile-tab-btn" data-ptab="cvViewer">${t("tabCvViewer")}</button>
-      <button type="button" class="profile-tab-btn" data-ptab="timeline">${t("tabTimeline")}</button>
+      <button type="button" class="profile-tab-btn ${activeTab === 'overview' ? 'active' : ''}" data-ptab="overview">${t("tabOverview")}</button>
+      <button type="button" class="profile-tab-btn ${activeTab === 'workEdu' ? 'active' : ''}" data-ptab="workEdu">${t("tabWorkEdu")}</button>
+      <button type="button" class="profile-tab-btn ${activeTab === 'cvViewer' ? 'active' : ''}" data-ptab="cvViewer">${t("tabCvViewer")}</button>
+      <button type="button" class="profile-tab-btn ${activeTab === 'timeline' ? 'active' : ''}" data-ptab="timeline">${t("tabTimeline")}</button>
     </div>
 
     <!-- PANE 1: Overview & Contacts (DK-01) -->
-    <div id="pane-overview" class="profile-tab-pane active">
+    <div id="pane-overview" class="profile-tab-pane ${activeTab === 'overview' ? 'active' : ''}">
       <div class="form-grid" style="margin-bottom: 14px;">
         <div class="form-field">
           <label>${t("fldNationality")}</label>
@@ -971,8 +1085,33 @@ function openCandidateProfileModal(candidateId) {
         </div>
         <div class="form-field full">
           <label>${t("fldTags")} (DK-06)</label>
-          <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px;">
-            ${(c.tags || ["Siap Relokasi", "Verified"]).map(tg => `<span class="col-tag">${escapeHtml(tg)}</span>`).join("")}
+          <div id="candidateTagsContainer" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px; margin-bottom: 6px;">
+            ${(c.tags || ["Siap Relokasi", "Verified"]).map((tg, idx) => `
+              <span class="col-tag">
+                ${escapeHtml(tg)}
+                <button type="button" class="tag-remove-btn" data-tag-idx="${idx}" style="border:none; background:transparent; cursor:pointer; font-size:11px; padding:0 2px; min-block-size:18px; min-inline-size:18px;" aria-label="Remove tag">×</button>
+              </span>
+            `).join("")}
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <input type="text" id="newCandidateTagInput" class="ctrl-input" placeholder="Add skill or attribute tag..." style="height: 28px; font-size: 12px; flex: 1;">
+            <button type="button" id="btnAddCandidateTag" class="btn-outlined" style="height: 28px; font-size: 11.5px; padding: 0 10px;">+ Add Tag</button>
+          </div>
+        </div>
+
+        <div class="form-field full">
+          <label>Internal Consultant Notes (DK-06)</label>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+            ${(c.internalNotes || []).length === 0 ? `<small style="color: var(--text-muted);">No internal notes yet.</small>` : (c.internalNotes || []).map(note => `
+              <div style="padding: 6px 10px; background: var(--bg-subtle); border-left: 2px solid var(--brand-primary); font-size: 12px; border-radius: 3px;">
+                <div>${escapeHtml(note.text)}</div>
+                <small style="color: var(--text-muted);">${escapeHtml(note.author)} • ${escapeHtml(note.timestamp)}</small>
+              </div>
+            `).join("")}
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <input type="text" id="newInternalNoteInput" class="ctrl-input" placeholder="Write private consultant evaluation note..." style="height: 28px; font-size: 12px; flex: 1;">
+            <button type="button" id="btnAddInternalNote" class="btn-outlined" style="height: 28px; font-size: 11.5px; padding: 0 10px;">+ Add Note</button>
           </div>
         </div>
       </div>
@@ -1003,7 +1142,7 @@ function openCandidateProfileModal(candidateId) {
     </div>
 
     <!-- PANE 2: Experience & Education (DK-02) -->
-    <div id="pane-workEdu" class="profile-tab-pane">
+    <div id="pane-workEdu" class="profile-tab-pane ${activeTab === 'workEdu' ? 'active' : ''}">
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Employment History</h4>
       <div class="table-wrapper" style="margin-bottom: 16px;">
         <table class="data-table data-table--compact">
@@ -1055,19 +1194,30 @@ function openCandidateProfileModal(candidateId) {
       </div>
     </div>
 
-    <!-- PANE 3: CV Document Viewer (DK-03) -->
-    <div id="pane-cvViewer" class="profile-tab-pane">
-      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-        <span style="font-size: 12px; color: var(--text-muted);">Standard Candidate CV Document (Pre-formatted Preview)</span>
-        <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}')" style="height: 28px; padding: 0 10px; font-size: 12px;">
-          Download Resume File
-        </button>
+    <!-- PANE 3: Multi-Version CV Document Viewer (DK-03) -->
+    <div id="pane-cvViewer" class="profile-tab-pane ${activeTab === 'cvViewer' ? 'active' : ''}">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <label for="cvVersionSelect" style="font-size: 12px; font-weight: 600;">CV Version:</label>
+          <select id="cvVersionSelect" class="ctrl-select" style="height: 28px; font-size: 12px; min-width: 170px;">
+            ${c.cvVersions.map((ver, idx) => `
+              <option value="${idx}" ${idx === safeCvIdx ? "selected" : ""}>${escapeHtml(ver.version)} — ${escapeHtml(ver.uploadedAt)}</option>
+            `).join("")}
+          </select>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" id="btnAddCvVersion" class="btn-outlined" style="height: 28px; padding: 0 10px; font-size: 12px;">+ Upload New Version</button>
+          <input type="file" id="cvVersionFileInput" accept=".txt,.pdf,.doc,.docx" style="display: none;">
+          <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 28px; padding: 0 10px; font-size: 12px;">
+            Download This Version
+          </button>
+        </div>
       </div>
-      <div class="cv-preview-paper">${escapeHtml(generateResumeText(c))}</div>
+      <div class="cv-preview-paper">${escapeHtml(cvPreviewContent)}</div>
     </div>
 
     <!-- PANE 4: Activity Timeline (DK-05) -->
-    <div id="pane-timeline" class="profile-tab-pane">
+    <div id="pane-timeline" class="profile-tab-pane ${activeTab === 'timeline' ? 'active' : ''}">
       <div class="timeline-track">
         <div class="timeline-item">
           <div class="timeline-time">${c.entryTime}</div>
@@ -1098,52 +1248,87 @@ function openCandidateProfileModal(candidateId) {
     });
   });
 
-  // Bind status transitions with reason requirement on failure (DK-04)
+  // Bind DK-06 Tags & Internal Notes
+  body.querySelector("#btnAddCandidateTag")?.addEventListener("click", () => {
+    const tagVal = body.querySelector("#newCandidateTagInput")?.value.trim();
+    if (!tagVal) return;
+    if (!Array.isArray(c.tags)) c.tags = ["Siap Relokasi", "Verified"];
+    if (!c.tags.includes(tagVal)) c.tags.push(tagVal);
+    saveCandidates(candidates);
+    addAuditLog("ADD_TAG", `Candidate ${c.name}`, `Added tag "${tagVal}"`);
+    openCandidateProfileModal(c.id, "overview");
+  });
+
+  body.querySelectorAll(".tag-remove-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.getAttribute("data-tag-idx"), 10);
+      if (!Array.isArray(c.tags)) c.tags = ["Siap Relokasi", "Verified"];
+      const removed = c.tags.splice(idx, 1)[0];
+      saveCandidates(candidates);
+      addAuditLog("REMOVE_TAG", `Candidate ${c.name}`, `Removed tag "${removed}"`);
+      openCandidateProfileModal(c.id, "overview");
+    });
+  });
+
+  body.querySelector("#btnAddInternalNote")?.addEventListener("click", () => {
+    const noteText = body.querySelector("#newInternalNoteInput")?.value.trim();
+    if (!noteText) return;
+    if (!Array.isArray(c.internalNotes)) c.internalNotes = [];
+    c.internalNotes.unshift({
+      id: `NOTE-${Date.now()}`,
+      text: noteText,
+      author: activeUser.name,
+      timestamp: formatTimestamp(new Date())
+    });
+    saveCandidates(candidates);
+    addAuditLog("INTERNAL_NOTE", `Candidate ${c.name}`, `Added internal note`);
+    openCandidateProfileModal(c.id, "overview");
+  });
+
+  // Bind DK-03 Multi-Version CV switcher & uploader
+  body.querySelector("#cvVersionSelect")?.addEventListener("change", e => {
+    const idx = parseInt(e.target.value, 10) || 0;
+    openCandidateProfileModal(c.id, "cvViewer", idx);
+  });
+
+  body.querySelector("#btnAddCvVersion")?.addEventListener("click", () => {
+    body.querySelector("#cvVersionFileInput")?.click();
+  });
+
+  body.querySelector("#cvVersionFileInput")?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const verLabel = `v${c.cvVersions.length + 1} (${file.name})`;
+    const addVer = (contentText) => {
+      c.cvVersions.unshift({
+        version: verLabel,
+        uploadedAt: formatTimestamp(new Date()),
+        uploadedBy: activeUser.name,
+        content: contentText
+      });
+      saveCandidates(candidates);
+      addAuditLog("UPLOAD_CV_VERSION", `Candidate ${c.name}`, `Uploaded CV version ${verLabel}`);
+      showToast(`Added CV version: ${verLabel}`);
+      openCandidateProfileModal(c.id, "cvViewer", 0);
+    };
+
+    if (file.type.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+      const reader = new FileReader();
+      reader.onload = ev => addVer(String(ev.target.result || ""));
+      reader.readAsText(file);
+    } else {
+      addVer(`[Binary Document Uploaded]\nFile Name : ${file.name}\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
+    }
+  });
+
+  // Bind status transitions (DK-04) via shared helper
   body.querySelectorAll(".rec-stage-changer").forEach(sel => {
     sel.addEventListener("change", e => {
-      const candId = sel.getAttribute("data-candidate-id");
       const recId = sel.getAttribute("data-rec-id");
       const newCode = parseInt(e.target.value, 10);
-
-      // Check Blacklist permission: only Manager/SuperAdmin can set 91
-      if (newCode === 91 && activeUser.role !== "manager" && activeUser.role !== "superadmin") {
-        alert("Permission denied: Only Team Managers or Super Admins can set status to 91 (Blacklist).");
+      const ok = transitionCandidateStage(c.id, newCode, recId);
+      if (!ok) {
         sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
-        return;
-      }
-
-      // Check mandatory reason for failure codes (19, 29, 39, 49, 90)
-      const failedCodes = [19, 29, 39, 49, 90, 91];
-      let reasonInput = "";
-      if (failedCodes.includes(newCode)) {
-        reasonInput = prompt(`Reason is mandatory for setting status code ${newCode} (${getStatusName(newCode)}):`);
-        if (!reasonInput || !reasonInput.trim()) {
-          alert("Action cancelled: Reason is mandatory.");
-          sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
-          return;
-        }
-      }
-
-      const targetRec = c.recommendations?.find(r => r.id === recId);
-      if (targetRec) {
-        const oldCode = targetRec.statusCode;
-        targetRec.statusCode = newCode;
-        if (reasonInput) targetRec.reason = reasonInput.trim();
-
-        if (newCode === 31) {
-          c.recommendations.forEach(otherR => {
-            if (otherR.id !== recId && otherR.isActive) {
-              otherR.statusCode = 90;
-              otherR.isActive = false;
-              otherR.notes += " (Closed automatically as candidate accepted offer elsewhere)";
-            }
-          });
-        }
-
-        addAuditLog("STATUS_CHANGE", `Candidate ${c.name}`, `Changed code from ${oldCode} to ${newCode}. ${reasonInput ? `Reason: ${reasonInput}` : ""}`);
-        saveCandidates(candidates);
-        renderAllViews();
-        showToast(`${t("msgStatusChanged")} ${c.name} -> Code ${newCode}`);
       }
     });
   });
@@ -1158,8 +1343,21 @@ function openCandidateProfileModal(candidateId) {
     openOfferLetterModal(c.id);
   });
 
+  body.querySelector("#btnToggleSoftDelete")?.addEventListener("click", () => {
+    toggleSoftDeleteCandidate(c.id);
+    dialog.close();
+  });
+
+  body.querySelector("#btnHardDeleteCandidate")?.addEventListener("click", () => {
+    if (hardDeleteCandidate(c.id)) {
+      dialog.close();
+    }
+  });
+
   syncTableResponsiveLabels();
-  dialog.showModal();
+  if (!dialog.open) {
+    dialog.showModal();
+  }
 }
 
 function generateResumeText(c) {
@@ -1200,22 +1398,23 @@ function generateResumeText(c) {
   ].join("\n");
 }
 
-function downloadCandidateResume(candidateId) {
+function downloadCandidateResume(candidateId, cvVersionIdx = 0) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
 
-  const resumeContent = generateResumeText(c);
+  const verObj = Array.isArray(c.cvVersions) && c.cvVersions[cvVersionIdx] ? c.cvVersions[cvVersionIdx] : null;
+  const resumeContent = verObj && verObj.content ? verObj.content : generateResumeText(c);
   const blob = new Blob([resumeContent], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Resume_${c.name.replace(/\s+/g, "_")}_${c.id}.txt`;
+  a.download = `Resume_${c.name.replace(/\s+/g, "_")}_${c.id}${verObj ? "_v" + (cvVersionIdx + 1) : ""}.txt`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 
-  addAuditLog("DOWNLOAD_RESUME", `Candidate ${c.name}`, `Downloaded CV file`);
+  addAuditLog("DOWNLOAD_RESUME", `Candidate ${c.name}`, `Downloaded CV file (${verObj ? verObj.version : "latest"})`);
   showToast(`${t("msgResumeDownloaded")} ${c.name}`);
 }
 
@@ -1231,7 +1430,9 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
   }
 
   const recs = candidate.recommendations || [];
-  const sixMonthsAgo = new Date("2026-05-16");
+  const windowMonths = parseInt(systemSettings?.duplicateWindowMonths, 10) || 6;
+  const cutoffDate = new Date("2026-11-16");
+  cutoffDate.setMonth(cutoffDate.getMonth() - windowMonths);
 
   // Condition 2: Same company + same position, previous recommendation still active
   const activeSame = recs.find(r => 
@@ -1248,10 +1449,10 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
     };
   }
 
-  // Condition 3: Same company, by another consultant, in last 6 months
+  // Condition 3: Same company, by another consultant, within configured window
   const diffConsultantWithin6Mo = recs.find(r => {
     const rDate = new Date(r.timestamp.split(" ")[0]);
-    const isWithin = rDate >= sixMonthsAgo;
+    const isWithin = rDate >= cutoffDate;
     const isSameComp = r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
     const isDiffCons = (r.consultantName || "").toLowerCase() !== currentConsultant.toLowerCase();
     return isSameComp && isWithin && isDiffCons;
@@ -1259,21 +1460,21 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
   if (diffConsultantWithin6Mo) {
     return {
       blocked: false,
-      message: `Warning: Recommended to this company by another consultant (${diffConsultantWithin6Mo.consultantName}) in the last 6 months. Manager approval and justification required.`,
+      message: `Warning: Recommended to this company by another consultant (${diffConsultantWithin6Mo.consultantName}) in the last ${windowMonths} months. Manager approval and justification required.`,
       requiresReason: true,
       requiresManager: true
     };
   }
 
-  // Condition 4: Same company in last 6 months
+  // Condition 4: Same company within configured window
   const sameCompWithin6Mo = recs.find(r => {
     const rDate = new Date(r.timestamp.split(" ")[0]);
-    return rDate >= sixMonthsAgo && r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
+    return rDate >= cutoffDate && r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
   });
   if (sameCompWithin6Mo) {
     return {
       blocked: false,
-      message: "Notice: Candidate was recommended to this company within the last 6 months. Reason is mandatory.",
+      message: `Notice: Candidate was recommended to this company within the last ${windowMonths} months. Reason is mandatory.`,
       requiresReason: true,
       requiresManager: false
     };
@@ -1770,7 +1971,7 @@ function renderNotifications() {
     <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
       <div class="notif-item-title">${escapeHtml(n.title)}</div>
       <div class="notif-item-desc">${escapeHtml(n.message)}</div>
-      <div class="notif-item-time">${escapeHtml(n.time)}</div>
+      <div class="notif-item-time">${escapeHtml(n.time || n.timestamp || "")}</div>
     </div>
   `).join("");
 
@@ -1797,6 +1998,7 @@ function renderNotifications() {
 function renderSecondaryViews() {
   renderNotifications();
   renderConsultantBusinessHub();
+  renderWarrantyTracker();
   renderClientCompaniesView();
   renderAdvancedAnalytics();
   renderAuditLogsView();
@@ -1804,6 +2006,7 @@ function renderSecondaryViews() {
   renderUserManagementList();
   renderCareerPortal();
   renderInterviewCalendar();
+  syncSystemSettingsInputs();
   syncTableResponsiveLabels();
 }
 
@@ -1813,20 +2016,23 @@ function renderSecondaryViews() {
 function switchCbTab(tabKey) {
   const btnRecs = document.getElementById("tabBtnCbRecs");
   const btnLeader = document.getElementById("tabBtnCbLeaderboard");
+  const btnWarranty = document.getElementById("tabBtnCbWarranty");
   const paneRecs = document.getElementById("paneCbRecs");
   const paneLeader = document.getElementById("paneCbLeaderboard");
+  const paneWarranty = document.getElementById("paneCbWarranty");
 
-  if (tabKey === "recs") {
-    btnRecs?.classList.add("active");
-    btnLeader?.classList.remove("active");
-    if (paneRecs) paneRecs.style.display = "block";
-    if (paneLeader) paneLeader.style.display = "none";
-  } else {
-    btnRecs?.classList.remove("active");
-    btnLeader?.classList.add("active");
-    if (paneRecs) paneRecs.style.display = "none";
-    if (paneLeader) paneLeader.style.display = "block";
+  btnRecs?.classList.toggle("active", tabKey === "recs");
+  btnLeader?.classList.toggle("active", tabKey === "leaderboard");
+  btnWarranty?.classList.toggle("active", tabKey === "warranty");
+
+  if (paneRecs) paneRecs.style.display = tabKey === "recs" ? "block" : "none";
+  if (paneLeader) paneLeader.style.display = tabKey === "leaderboard" ? "block" : "none";
+  if (paneWarranty) paneWarranty.style.display = tabKey === "warranty" ? "block" : "none";
+
+  if (tabKey === "warranty") {
+    renderWarrantyTracker();
   }
+  syncTableResponsiveLabels();
 }
 
 function renderConsultantBusinessHub() {
@@ -2486,6 +2692,57 @@ function runDemoScenario(index) {
       }, 200);
       break;
     }
+    case 12: {
+      // Scenario 12: Visual Kanban Pipeline Drag & Drop (Fase 5A)
+      switchWorkspaceView("resumeLib");
+      setTimeout(() => {
+        switchResumeViewMode("kanban");
+        showToast("Demo 12: Switched to Kanban Board! Drag cards across stages or use card dropdowns.");
+      }, 150);
+      break;
+    }
+    case 13: {
+      // Scenario 13: Digital E-Signature & Official Offer Acceptance Code 31 (Fase 5B)
+      switchWorkspaceView("resumeLib");
+      setTimeout(() => {
+        openOfferLetterModal("CND-1007");
+        setTimeout(() => {
+          const signInput = document.getElementById("offerSignatureInput");
+          if (signInput) signInput.value = "Gilang Ramadhan";
+          showToast("Demo 13: Confirm Start Date and click 'Sign & Accept Offer (Code 31)' to complete E-Sign!");
+        }, 150);
+      }, 200);
+      break;
+    }
+    case 14: {
+      // Scenario 14: Placement Fee & 90-Day Probation Warranty Tracker (Fase 5C)
+      switchWorkspaceView("recList");
+      setTimeout(() => {
+        switchCbTab("warranty");
+        showToast("Demo 14: Viewing active placement fees (18%) & 90-day probation warranty expiration tracker.");
+      }, 150);
+      break;
+    }
+    case 15: {
+      // Scenario 15: Post New Client Job Order to Career Portal (Fase 5D)
+      switchWorkspaceView("careerPortal");
+      setTimeout(() => {
+        const modal = document.getElementById("postJobModal");
+        const t = document.getElementById("postJobTitle");
+        const c = document.getElementById("postJobCompany");
+        const s = document.getElementById("postJobSalary");
+        const tags = document.getElementById("postJobTags");
+        const desc = document.getElementById("postJobDesc");
+        if (t) t.value = "Principal Staff SRE Engineer";
+        if (c) c.value = "alauda";
+        if (s) s.value = "IDR 42M - 55M / month";
+        if (tags) tags.value = "Kubernetes, Terraform, Prometheus, Go";
+        if (desc) desc.value = "Lead platform reliability engineering and multi-region Kubernetes cluster automation across APAC enterprise clients.";
+        modal?.showModal();
+        showToast("Demo 15: Review job requisition details and click 'Publish to Career Portal'!");
+      }, 200);
+      break;
+    }
   }
 }
 
@@ -2500,6 +2757,7 @@ function resetAllDemoData() {
     activeUser = USERS[0];
     openJobs = getStoredOpenJobs();
     scheduledInterviews = getStoredInterviews();
+    systemSettings = getStoredSystemSettings();
     document.getElementById("demoGuideModal")?.close();
     renderAllViews();
     applyRolePermissions();
@@ -3122,18 +3380,24 @@ function openOfferLetterModal(candidateId) {
   const modal = document.getElementById("offerLetterModal");
   const paper = document.getElementById("offerLetterPaper");
   const sendBtn = document.getElementById("btnSendOfferCandidate");
+  const acceptBtn = document.getElementById("btnAcceptOfferEsign");
+  const startInput = document.getElementById("offerStartDateInput");
+  const sigInput = document.getElementById("offerSignatureInput");
   if (!modal || !paper) return;
 
-  if (sendBtn) {
-    sendBtn.setAttribute("data-candidate-id", c.id);
-  }
+  if (sendBtn) sendBtn.setAttribute("data-candidate-id", c.id);
+  if (acceptBtn) acceptBtn.setAttribute("data-candidate-id", c.id);
+
+  const defaultStartIso = c.startDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  if (startInput) startInput.value = defaultStartIso;
+  if (sigInput) sigInput.value = c.digitalSignature || "";
 
   const rec = c.recommendations?.[0] || { company: c.recommendedCompany || "alauda", position: c.recommendedPosition || "Software Engineer" };
   const companyName = rec.company || "Client Enterprise Partner";
   const positionName = rec.position || "Senior Professional";
   const salaryExp = c.salaryExpectation || "IDR 25,000,000 / month";
   const todayStr = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  const startDateStr = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const startDateStr = new Date(defaultStartIso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   paper.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-base); padding-bottom: 14px; margin-bottom: 16px;">
@@ -3145,7 +3409,7 @@ function openOfferLetterModal(candidateId) {
       <div style="text-align: right; font-size: 11.5px; color: var(--text-secondary);">
         <div><strong>Ref:</strong> TT-OFFER/${new Date().getFullYear()}/${c.id}</div>
         <div style="margin-top: 3px;"><strong>Date:</strong> ${todayStr}</div>
-        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: var(--brand-primary); color: #fff;">OFFICIAL OFFER</span></div>
+        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: ${c.digitalSignature ? 'var(--success-color)' : 'var(--brand-primary)'}; color: #fff;">${c.digitalSignature ? 'SIGNED & ACCEPTED' : 'OFFICIAL OFFER'}</span></div>
       </div>
     </div>
 
@@ -3218,7 +3482,8 @@ function openOfferLetterModal(candidateId) {
         </div>
       </div>
       <div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 40px;">Accepted and Agreed:<br><strong>Candidate Acceptance</strong></p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: ${c.digitalSignature ? '12px' : '40px'};">Accepted and Agreed:<br><strong>Candidate Acceptance</strong></p>
+        ${c.digitalSignature ? `<div class="esign-script" style="margin-bottom: 6px;">/s/ ${escapeHtml(c.digitalSignature)}</div><div style="font-size: 10px; color: var(--success-color); margin-bottom: 6px;">Digitally Signed • Start Date: ${escapeHtml(defaultStartIso)}</div>` : ""}
         <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
           ${escapeHtml(c.name)}<br>
           <span style="font-size: 10px; color: var(--text-muted);">Signature & Date</span>
@@ -3227,7 +3492,9 @@ function openOfferLetterModal(candidateId) {
     </div>
   `;
 
-  modal.showModal();
+  if (!modal.open) {
+    modal.showModal();
+  }
 }
 
 function handleSendOfferClick() {
@@ -3417,6 +3684,580 @@ function handleRunCvParser() {
   showToast("CV parsed! Form fields auto-populated.");
 }
 
+/**
+ * ====================================================================
+ * 15. FASE 5 (P4): KANBAN PIPELINE, WARRANTY TRACKER, E-SIGN, SOFT-DELETE & BACKUP
+ * ====================================================================
+ */
+
+/**
+ * 15A. SHARED STAGE TRANSITION ENGINE (DK-04, Kanban & Warranty)
+ */
+function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return false;
+
+  // Check Blacklist permission: only Manager/SuperAdmin can set 91
+  if (newCode === 91 && activeUser.role !== "manager" && activeUser.role !== "superadmin") {
+    alert("Permission denied: Only Team Managers or Super Admins can set status to 91 (Blacklist).");
+    return false;
+  }
+
+  // Check mandatory reason for failure codes (19, 29, 39, 49, 90, 91)
+  const failedCodes = [19, 29, 39, 49, 90, 91];
+  let reasonInput = "";
+  if (failedCodes.includes(newCode)) {
+    reasonInput = prompt(`Reason is mandatory for setting status code ${newCode} (${getStatusName(newCode)}):`);
+    if (!reasonInput || !reasonInput.trim()) {
+      alert("Action cancelled: Reason is mandatory.");
+      return false;
+    }
+  }
+
+  // Mandatory start date when advancing to Offer Accepted (Code 31) per PRD
+  let startDateVal = c.startDate || "";
+  if (newCode === 31 && !startDateVal) {
+    const defaultDt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const promptedDate = prompt(`Start Date is required for Code 31 (${getStatusName(31)}). Enter YYYY-MM-DD:`, defaultDt);
+    if (!promptedDate || !promptedDate.trim()) {
+      alert("Action cancelled: Confirmed Start Date is required for Offer Acceptance (Code 31).");
+      return false;
+    }
+    startDateVal = promptedDate.trim();
+    c.startDate = startDateVal;
+  }
+
+  if (!Array.isArray(c.recommendations) || c.recommendations.length === 0) {
+    c.recommendations = [{
+      id: `REC-${Date.now().toString().slice(-4)}`,
+      company: c.recommendedCompany || "alauda",
+      position: c.recommendedPosition || "General Position",
+      statusCode: 0,
+      consultantName: activeUser.name,
+      timestamp: formatTimestamp(new Date()),
+      notes: "Pipeline stage initialized",
+      isActive: true
+    }];
+  }
+
+  const targetRec = targetRecId
+    ? c.recommendations.find(r => r.id === targetRecId)
+    : c.recommendations[0];
+
+  if (!targetRec) return false;
+
+  const oldCode = targetRec.statusCode;
+  targetRec.statusCode = newCode;
+  targetRec.timestamp = formatTimestamp(new Date());
+  if (reasonInput) targetRec.reason = reasonInput.trim();
+  if (STATUS_CODES[newCode]?.isFailed || newCode === 41) {
+    targetRec.isActive = false;
+  } else {
+    targetRec.isActive = true;
+  }
+
+  if (newCode === 40 && !c.startDate) {
+    c.startDate = new Date().toISOString().slice(0, 10);
+  }
+
+  // Rule: Accepting Offer (31) auto-closes competing active recommendations on other companies
+  if (newCode === 31) {
+    c.recommendations.forEach(otherR => {
+      if (otherR.id !== targetRec.id && otherR.isActive) {
+        otherR.statusCode = 90;
+        otherR.isActive = false;
+        otherR.notes = `${otherR.notes || ""} (Closed automatically as candidate accepted offer elsewhere)`.trim();
+      }
+    });
+  }
+
+  addAuditLog(
+    "STATUS_CHANGE",
+    `Candidate ${c.name}`,
+    `Changed code from ${oldCode} to ${newCode}. ${reasonInput ? `Reason: ${reasonInput.trim()}` : ""}`
+  );
+  saveCandidates(candidates);
+  renderAllViews();
+  showToast(`${t("msgStatusChanged")} ${c.name} -> Code ${newCode}`);
+  return true;
+}
+
+/**
+ * 15B. VISUAL KANBAN PIPELINE BOARD (Fase 5A)
+ */
+function switchResumeViewMode(mode) {
+  resumeViewMode = mode === "kanban" ? "kanban" : "table";
+  const tableWrapper = document.getElementById("resumeTableWrapper");
+  const kanbanBox = document.getElementById("resumeKanbanContainer");
+  const tableFooter = document.querySelector("#panel-resumeLib .table-footer");
+  const btnTable = document.getElementById("btnViewTable");
+  const btnKanban = document.getElementById("btnViewKanban");
+
+  btnTable?.classList.toggle("active-view-btn", resumeViewMode === "table");
+  btnKanban?.classList.toggle("active-view-btn", resumeViewMode === "kanban");
+
+  if (tableWrapper) tableWrapper.style.display = resumeViewMode === "table" ? "block" : "none";
+  if (tableFooter) tableFooter.style.display = resumeViewMode === "table" ? "flex" : "none";
+  if (kanbanBox) kanbanBox.style.display = resumeViewMode === "kanban" ? "flex" : "none";
+
+  if (resumeViewMode === "kanban") {
+    renderKanbanBoard(getFilteredCandidates());
+  } else {
+    renderResumeTable();
+  }
+}
+
+function renderKanbanBoard(filteredCandidates) {
+  const container = document.getElementById("resumeKanbanContainer");
+  if (!container) return;
+
+  const list = Array.isArray(filteredCandidates) ? filteredCandidates : getFilteredCandidates();
+
+  const kanbanCols = [
+    { stageKey: "new", title: "New (0)", dropCode: 0, color: "var(--brand-primary)" },
+    { stageKey: "pending", title: "Pending Client (10-11)", dropCode: 10, color: "#4f46e5" },
+    { stageKey: "pass", title: "CV Pass (12)", dropCode: 12, color: "#06b6d4" },
+    { stageKey: "interview", title: "Interview (20-22)", dropCode: 20, color: "#0ea5e9" },
+    { stageKey: "offer", title: "Offer (30-31)", dropCode: 30, color: "#8b5cf6" },
+    { stageKey: "entry", title: "Entry (40-41)", dropCode: 40, color: "var(--success-color)" },
+    { stageKey: "failed", title: "Failed / Closed", dropCode: 19, color: "var(--danger-dot)" }
+  ];
+
+  container.innerHTML = kanbanCols.map(col => {
+    const colItems = list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === col.stageKey);
+    return `
+      <div class="kanban-column" data-stage-key="${col.stageKey}" data-drop-code="${col.dropCode}">
+        <div class="kanban-col-header" style="border-top: 3px solid ${col.color};">
+          <span>${col.title}</span>
+          <span class="status-count-badge" style="background-color: ${col.color};">${colItems.length}</span>
+        </div>
+        <div class="kanban-col-body">
+          ${colItems.length === 0 ? `<div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 18px 8px;">Drop candidate card here</div>` : colItems.map(c => {
+            const code = computeCandidateBadge(c);
+            return `
+              <article class="kanban-card" draggable="true" data-candidate-id="${c.id}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                  <button type="button" class="candidate-link" style="text-align: left; font-weight: 700; font-size: 13px;" onclick="openCandidateProfileModal('${c.id}')">
+                    ${escapeHtml(c.name)}
+                  </button>
+                  <span class="status-count-badge" style="font-size: 11px; ${STATUS_CODES[code]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">${code}</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-secondary);">
+                  <strong>${escapeHtml(c.recommendedCompany || "-")}</strong> • ${escapeHtml(c.recommendedPosition || "-")}
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  ${c.yearsOfService} yrs exp • ${escapeHtml(c.education || "-")}
+                </div>
+                <div class="card-quick-actions">
+                  <select class="ctrl-select kanban-stage-select" data-candidate-id="${c.id}" aria-label="Move stage for ${escapeHtml(c.name)}" style="min-width: 0; height: 24px; font-size: 11px; padding: 0 6px; flex: 1;">
+                    <option value="">Move to stage...</option>
+                    <option value="10">10 - Recommended</option>
+                    <option value="12">12 - CV Pass</option>
+                    <option value="20">20 - Interview</option>
+                    <option value="30">30 - Offer Proposed</option>
+                    <option value="31">31 - Offer Accepted</option>
+                    <option value="40">40 - Started Work</option>
+                    <option value="19">19 - Failed</option>
+                  </select>
+                </div>
+              </article>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Bind HTML5 Drag-and-Drop
+  let draggedCandidateId = null;
+  container.querySelectorAll(".kanban-card").forEach(card => {
+    card.addEventListener("dragstart", e => {
+      draggedCandidateId = card.getAttribute("data-candidate-id");
+      card.classList.add("dragging");
+      if (e.dataTransfer) e.dataTransfer.setData("text/plain", draggedCandidateId || "");
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      draggedCandidateId = null;
+    });
+  });
+
+  container.querySelectorAll(".kanban-column").forEach(colEl => {
+    colEl.addEventListener("dragover", e => {
+      e.preventDefault();
+      colEl.classList.add("drag-over");
+    });
+    colEl.addEventListener("dragleave", () => {
+      colEl.classList.remove("drag-over");
+    });
+    colEl.addEventListener("drop", e => {
+      e.preventDefault();
+      colEl.classList.remove("drag-over");
+      const cid = draggedCandidateId || e.dataTransfer?.getData("text/plain");
+      const targetCode = parseInt(colEl.getAttribute("data-drop-code"), 10);
+      if (cid && !isNaN(targetCode)) {
+        transitionCandidateStage(cid, targetCode);
+      }
+    });
+  });
+
+  // Bind Keyboard-accessible move dropdown
+  container.querySelectorAll(".kanban-stage-select").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const cid = sel.getAttribute("data-candidate-id");
+      const code = parseInt(sel.value, 10);
+      if (cid && !isNaN(code)) {
+        transitionCandidateStage(cid, code);
+      }
+    });
+  });
+}
+
+/**
+ * 15C. PLACEMENT FEE & 90-DAY PROBATION WARRANTY TRACKER (Fase 5C)
+ */
+function parseMonthlySalaryIDR(salStr) {
+  if (!salStr) return 25000000;
+  const cleaned = String(salStr).replace(/\./g, "").replace(/,/g, "");
+  const mMatch = cleaned.match(/(\d+)\s*M/i);
+  if (mMatch) return parseInt(mMatch[1], 10) * 1000000;
+  const numMatch = cleaned.match(/(\d{7,})/);
+  if (numMatch) return parseInt(numMatch[1], 10);
+  return 25000000;
+}
+
+function renderWarrantyTracker() {
+  const tbody = document.getElementById("warrantyTrackerTableBody");
+  if (!tbody) return;
+
+  const feeRate = parseFloat(systemSettings?.agencyFeePercent) || 18;
+  const warrantyDays = parseInt(systemSettings?.warrantyDays, 10) || 90;
+
+  const placementItems = [];
+  candidates.forEach(c => {
+    if (c.isDeleted) return;
+    (c.recommendations || []).forEach(r => {
+      if ([30, 31, 40, 41, 49].includes(r.statusCode)) {
+        placementItems.push({ candidate: c, rec: r });
+      }
+    });
+  });
+
+  if (placementItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">No candidates currently in Offer or Probation Warranty stages (Codes 30, 31, 40, 41, 49).</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = placementItems.map(({ candidate: c, rec: r }) => {
+    const startDtStr = c.startDate || r.timestamp.split(" ")[0];
+    const startDt = new Date(startDtStr);
+    const warrantyEndDt = !isNaN(startDt) ? new Date(startDt.getTime() + warrantyDays * 24 * 60 * 60 * 1000) : null;
+    const warrantyEndStr = warrantyEndDt ? warrantyEndDt.toISOString().slice(0, 10) : "-";
+
+    const monthlySal = parseMonthlySalaryIDR(c.salaryExpectation);
+    const annualComp = monthlySal * 12;
+    const estFee = Math.round(annualComp * (feeRate / 100));
+    const formattedFee = "IDR " + estFee.toLocaleString("id-ID");
+
+    const invStatus = r.invoiceStatus || (r.statusCode === 41 ? "Paid" : (r.statusCode === 40 ? "Invoiced" : "Draft"));
+    const invColor = invStatus === "Paid" ? "var(--success-color)" : (invStatus === "Invoiced" ? "var(--brand-primary)" : "var(--text-muted)");
+
+    return `
+      <tr>
+        <th scope="row">
+          <button type="button" class="candidate-link" onclick="openCandidateProfileModal('${c.id}')">${escapeHtml(c.name)}</button>
+        </th>
+        <td><strong>${escapeHtml(r.company)}</strong><br><small style="color:var(--text-muted);">${escapeHtml(r.position)}</small></td>
+        <td>
+          <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">${r.statusCode}</span>
+          <small style="display:block; font-size:10px; color:var(--text-muted);">${getStatusName(r.statusCode)}</small>
+        </td>
+        <td>
+          Start: <strong>${escapeHtml(startDtStr)}</strong><br>
+          <small style="color:var(--text-secondary);">Ends: ${warrantyEndStr}</small>
+        </td>
+        <td><strong>${formattedFee}</strong><br><small style="color:var(--text-muted);">${feeRate}% of 12mo</small></td>
+        <td><span style="font-weight: 700; color: ${invColor};">${escapeHtml(invStatus)}</span></td>
+        <td>
+          <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;">
+            ${r.statusCode === 40 ? `<button type="button" class="btn-outlined" style="height:24px; font-size:10.5px; padding:0 6px; color:var(--success-color);" onclick="updateWarrantyAction('${c.id}', '${r.id}', 'pass41')">Pass (41)</button>` : ""}
+            ${r.statusCode === 40 ? `<button type="button" class="btn-outlined" style="height:24px; font-size:10.5px; padding:0 6px; color:var(--danger-dot);" onclick="updateWarrantyAction('${c.id}', '${r.id}', 'fail49')">Resign (49)</button>` : ""}
+            ${invStatus !== "Paid" && ![49].includes(r.statusCode) ? `<button type="button" class="btn-solid" style="height:24px; font-size:10.5px; padding:0 8px;" onclick="updateWarrantyAction('${c.id}', '${r.id}', 'markPaid')">Mark Paid</button>` : ""}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function updateWarrantyAction(candidateId, recId, actionType) {
+  const c = candidates.find(item => item.id === candidateId);
+  const r = c?.recommendations?.find(rec => rec.id === recId);
+  if (!c || !r) return;
+
+  if (actionType === "pass41") {
+    transitionCandidateStage(c.id, 41, r.id);
+    r.invoiceStatus = "Paid";
+    saveCandidates(candidates);
+  } else if (actionType === "fail49") {
+    if (transitionCandidateStage(c.id, 49, r.id)) {
+      r.invoiceStatus = "Warranty Replacement Required";
+      saveCandidates(candidates);
+    }
+  } else if (actionType === "markPaid") {
+    r.invoiceStatus = "Paid";
+    addAuditLog("INVOICE_PAID", `Candidate ${c.name}`, `Marked placement fee invoice as Paid for ${r.company}`);
+    saveCandidates(candidates);
+    showToast(`Placement invoice marked Paid for ${c.name}.`);
+  }
+
+  renderWarrantyTracker();
+  syncTableResponsiveLabels();
+}
+
+/**
+ * 15D. DIGITAL E-SIGNATURE OFFER ACCEPTANCE (Fase 5B / Code 31)
+ */
+function handleAcceptOfferEsign() {
+  const acceptBtn = document.getElementById("btnAcceptOfferEsign");
+  const candId = acceptBtn?.getAttribute("data-candidate-id");
+  const startDate = document.getElementById("offerStartDateInput")?.value;
+  const sigName = document.getElementById("offerSignatureInput")?.value.trim();
+
+  if (!candId) return;
+  if (!startDate) {
+    alert("Confirmed Joining / Start Date is required before accepting offer (Code 31).");
+    return;
+  }
+  if (!sigName) {
+    alert("Please type the candidate's full name as Digital E-Signature.");
+    return;
+  }
+
+  const c = candidates.find(item => item.id === candId);
+  if (!c) return;
+
+  c.startDate = startDate;
+  c.digitalSignature = sigName;
+
+  const rec = c.recommendations?.[0];
+  const nowFormatted = formatTimestamp(new Date());
+
+  if (rec) {
+    rec.statusCode = 31; // Offer Accepted
+    rec.timestamp = nowFormatted;
+    rec.isActive = true;
+    rec.notes = `Offer signed digitally by "${sigName}". Confirmed start date: ${startDate} (Code 31 - Offer Accepted).`;
+    c.recommendations.forEach(otherR => {
+      if (otherR.id !== rec.id && otherR.isActive) {
+        otherR.statusCode = 90;
+        otherR.isActive = false;
+        otherR.notes = `${otherR.notes || ""} (Closed automatically after E-Signed Offer Acceptance)`.trim();
+      }
+    });
+  } else {
+    c.recommendations.push({
+      id: `REC-${Date.now()}`,
+      company: c.recommendedCompany || "alauda",
+      position: c.recommendedPosition || "Software Engineer",
+      statusCode: 31,
+      timestamp: nowFormatted,
+      consultantName: activeUser.name,
+      notes: `Offer signed digitally by "${sigName}". Start Date: ${startDate}.`,
+      isActive: true
+    });
+  }
+
+  saveCandidates(candidates);
+  addAuditLog("OFFER_ESIGNED", `Candidate ${c.name}`, `Offer Accepted (Code 31) via E-Signature "${sigName}", Start Date: ${startDate}`);
+
+  notifications.unshift({
+    id: `NT-${Date.now()}`,
+    title: `Offer Accepted (E-Signed): ${c.name}`,
+    message: `${c.name} signed offer letter with start date ${startDate}. Competing active pipelines closed automatically.`,
+    time: nowFormatted,
+    timestamp: nowFormatted,
+    read: false,
+    candidateId: c.id
+  });
+  saveNotifications(notifications);
+
+  openOfferLetterModal(c.id);
+  renderAllViews();
+  showToast(`E-Signature captured! ${c.name} advanced to Code 31 (Offer Accepted).`);
+}
+
+/**
+ * 15E. LIVE JOB REQUISITION POSTING (Fase 5D)
+ */
+function handlePostJobSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById("postJobTitle")?.value.trim();
+  const company = document.getElementById("postJobCompany")?.value.trim();
+  const department = document.getElementById("postJobDepartment")?.value.trim() || "Engineering";
+  const location = document.getElementById("postJobLocation")?.value.trim() || "Jakarta";
+  const type = document.getElementById("postJobType")?.value || "Full-time";
+  const salaryRange = document.getElementById("postJobSalary")?.value.trim() || "Competitive";
+  const exp = document.getElementById("postJobExp")?.value.trim() || "3+ Years";
+  const tagsRaw = document.getElementById("postJobTags")?.value.trim() || "";
+  const description = document.getElementById("postJobDesc")?.value.trim();
+
+  if (!title || !company || !description) return;
+
+  const newJob = {
+    id: `JOB-${Math.floor(10 + Math.random() * 90)}`,
+    title,
+    company,
+    department,
+    location,
+    type,
+    salaryRange,
+    experienceRequired: exp,
+    postedDate: new Date().toISOString().slice(0, 10),
+    tags: tagsRaw ? tagsRaw.split(",").map(s => s.trim()).filter(Boolean) : [department],
+    description
+  };
+
+  openJobs.unshift(newJob);
+  saveOpenJobs(openJobs);
+
+  if (!masterCompanies.includes(company)) {
+    masterCompanies.push(company);
+    saveMasterCompanies(masterCompanies);
+  }
+  if (!masterPositions.includes(title)) {
+    masterPositions.push(title);
+    saveMasterPositions(masterPositions);
+  }
+
+  addAuditLog("POST_JOB_ORDER", `Job ${title}`, `Published new open requisition at ${company}`);
+  e.target.reset();
+  document.getElementById("postJobModal")?.close();
+
+  const filterComp = document.getElementById("careerFilterCompany");
+  if (filterComp) {
+    filterComp.innerHTML = `<option value="all">All Companies</option>`;
+  }
+
+  renderAllViews();
+  showToast(`Published job order "${title}" to Public Career Portal!`);
+}
+
+/**
+ * 15F. SOFT DELETE, PERMANENT DELETE, SYSTEM SETTINGS & JSON BACKUP
+ */
+function toggleSoftDeleteCandidate(candidateId) {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return;
+  c.isDeleted = !c.isDeleted;
+  saveCandidates(candidates);
+  addAuditLog(
+    c.isDeleted ? "SOFT_DELETE" : "RESTORE_CANDIDATE",
+    `Candidate ${c.name}`,
+    c.isDeleted ? "Moved candidate to archive" : "Restored candidate from archive"
+  );
+  renderAllViews();
+  showToast(c.isDeleted ? `${c.name} archived (Soft Delete).` : `${c.name} restored to active library.`);
+}
+
+function hardDeleteCandidate(candidateId) {
+  if (activeUser.role !== "superadmin") {
+    alert("Permission denied: Permanent deletion is restricted to Super Admin.");
+    return false;
+  }
+  const idx = candidates.findIndex(item => item.id === candidateId);
+  if (idx < 0) return false;
+  if (!confirm(`Permanently delete ${candidates[idx].name} (${candidates[idx].id})? This cannot be undone.`)) {
+    return false;
+  }
+  const removed = candidates.splice(idx, 1)[0];
+  saveCandidates(candidates);
+  addAuditLog("HARD_DELETE", `Candidate ${removed.name}`, `Permanently removed record ${removed.id}`);
+  renderAllViews();
+  showToast(`Permanently deleted ${removed.name}.`);
+  return true;
+}
+
+function syncSystemSettingsInputs() {
+  const dupInput = document.getElementById("settingDupMonthsInput");
+  const feeInput = document.getElementById("settingFeePercentInput");
+  if (dupInput) dupInput.value = systemSettings.duplicateWindowMonths ?? 6;
+  if (feeInput) feeInput.value = systemSettings.agencyFeePercent ?? 18;
+}
+
+function handleSaveSystemSettings() {
+  const months = Math.min(24, Math.max(1, parseInt(document.getElementById("settingDupMonthsInput")?.value, 10) || 6));
+  const fee = Math.min(35, Math.max(5, parseFloat(document.getElementById("settingFeePercentInput")?.value) || 18));
+
+  systemSettings = { ...systemSettings, duplicateWindowMonths: months, agencyFeePercent: fee };
+  saveSystemSettings(systemSettings);
+  addAuditLog("UPDATE_POLICY", "System Governance", `Set duplicate check window=${months}mo, agency fee=${fee}%`);
+  renderWarrantyTracker();
+  showToast(`Saved policy: ${months}-month duplicate window & ${fee}% agency fee.`);
+}
+
+function exportFullDatabaseJson() {
+  const bundle = {
+    app: "TemuTalenta ATS",
+    version: "Phase 5 (P4)",
+    exportedAt: new Date().toISOString(),
+    exportedBy: activeUser.name,
+    candidates,
+    openJobs,
+    scheduledInterviews,
+    notifications,
+    masterCompanies,
+    masterPositions,
+    users: USERS,
+    systemSettings,
+    auditLogs: getStoredAuditLogs()
+  };
+
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `TemuTalenta_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  document.getElementById("userProfileDropdown")?.classList.remove("open");
+  addAuditLog("JSON_BACKUP_EXPORT", "Full Database", `Exported ${candidates.length} candidates & system config`);
+  showToast("Full JSON backup downloaded.");
+}
+
+function importFullDatabaseJson(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(String(ev.target?.result || "{}"));
+      if (!Array.isArray(parsed.candidates)) {
+        alert("Invalid backup file: missing candidates array.");
+        return;
+      }
+      candidates = parsed.candidates;
+      saveCandidates(candidates);
+      if (Array.isArray(parsed.openJobs)) { openJobs = parsed.openJobs; saveOpenJobs(openJobs); }
+      if (Array.isArray(parsed.scheduledInterviews)) { scheduledInterviews = parsed.scheduledInterviews; saveInterviews(scheduledInterviews); }
+      if (Array.isArray(parsed.notifications)) { notifications = parsed.notifications; saveNotifications(notifications); }
+      if (Array.isArray(parsed.masterCompanies)) { masterCompanies = parsed.masterCompanies; saveMasterCompanies(masterCompanies); }
+      if (Array.isArray(parsed.masterPositions)) { masterPositions = parsed.masterPositions; saveMasterPositions(masterPositions); }
+      if (Array.isArray(parsed.users)) { USERS = parsed.users; saveUsers(USERS); }
+      if (parsed.systemSettings) { systemSettings = parsed.systemSettings; saveSystemSettings(systemSettings); }
+
+      document.getElementById("userProfileDropdown")?.classList.remove("open");
+      addAuditLog("JSON_BACKUP_RESTORE", "Full Database", `Restored ${candidates.length} candidates from ${file.name}`);
+      renderAllViews();
+      showToast(`Restored database backup (${candidates.length} candidates)!`);
+    } catch (err) {
+      alert(`Failed to parse JSON backup: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
 // Expose handlers globally for HTML event attributes
 window.openApplyJobModal = openApplyJobModal;
 window.openCandidateProfileModal = openCandidateProfileModal;
@@ -3427,3 +4268,7 @@ window.openOfferLetterModal = openOfferLetterModal;
 window.runDemoScenario = runDemoScenario;
 window.resetAllDemoData = resetAllDemoData;
 window.switchWorkspaceView = switchWorkspaceView;
+window.switchResumeViewMode = switchResumeViewMode;
+window.updateWarrantyAction = updateWarrantyAction;
+window.toggleSoftDeleteCandidate = toggleSoftDeleteCandidate;
+window.hardDeleteCandidate = hardDeleteCandidate;

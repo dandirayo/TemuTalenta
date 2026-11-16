@@ -184,6 +184,19 @@ button, input, select, textarea {
   color: inherit;
 }
 
+:where(button) {
+  transition: box-shadow 150ms ease-out, scale 150ms ease-out, background-color 150ms ease-out;
+}
+
+button:active {
+  scale: 0.97;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid CanvasText;
+  outline-offset: 2px;
+}
+
 @media (pointer: coarse) {
   :where(button, select, textarea, input:not([type="checkbox"], [type="radio"]), [role="button"], nav a, label:has(input[type="checkbox"], input[type="radio"])) {
     min-block-size: var(--target-size);
@@ -647,17 +660,50 @@ button, input, select, textarea {
   margin-top: 4px;
 }
 
+.user-menu-container {
+  position: relative;
+}
+
 .user-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
   background-color: var(--brand-primary);
   color: #ffffff;
+  border: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 11px;
+}
+
+.user-profile-popover {
+  right: 0;
+  width: 270px;
+}
+
+.notif-dropdown {
+  transform-origin: top right;
+}
+
+.notif-dropdown.open {
+  animation: tt-fade-in 150ms ease-out both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .notif-dropdown.open {
+    animation: tt-grow 300ms linear(0, 0.45 15%, 1.08 35%, 0.97 55%, 1.01 75%, 1) both, tt-fade-in 150ms ease-out both;
+  }
+}
+
+@keyframes tt-grow {
+  from { scale: 0.9; }
+}
+
+@keyframes tt-fade-in {
+  from { opacity: 0; }
 }
 
 /* ==========================================================================
@@ -756,7 +802,6 @@ button, input, select, textarea {
 }
 
 .ctrl-input:focus, .ctrl-select:focus {
-  outline: none;
   border-color: var(--brand-primary);
 }
 
@@ -920,6 +965,7 @@ button, input, select, textarea {
 
 .col-selector-wrap {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   position: relative;
@@ -2223,4 +2269,117 @@ dialog::backdrop {
     color: var(--brand-primary);
     font-weight: 700;
   }
+}
+
+/* ==========================================================================
+   FASE 5 (P4): KANBAN PIPELINE BOARD, E-SIGNATURE & VIEW TOGGLE
+   ========================================================================== */
+.active-view-btn {
+  background-color: var(--brand-soft-bg);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  font-weight: 600;
+}
+
+.kanban-board-wrapper {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 12px;
+  min-height: 420px;
+  flex: 1;
+}
+
+.kanban-column {
+  flex: 0 0 275px;
+  scroll-snap-align: start;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-base);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  max-height: 68dvh;
+}
+
+.kanban-column.drag-over {
+  border-color: var(--brand-primary);
+  background-color: var(--brand-soft-bg);
+}
+
+.kanban-col-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-base);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  font-size: 12.5px;
+  background-color: var(--bg-surface);
+  border-radius: 6px 6px 0 0;
+}
+
+.kanban-col-body {
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.kanban-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  border-radius: 5px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+  cursor: grab;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-card:hover {
+  border-color: var(--brand-primary);
+  box-shadow: var(--shadow-dropdown);
+}
+
+.kanban-card.dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.kanban-card .card-quick-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.kanban-card:hover .card-quick-actions,
+.kanban-card:focus-within .card-quick-actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .kanban-card .card-quick-actions {
+    opacity: 1;
+  }
+}
+
+.esign-script {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--brand-primary);
+  font-weight: 700;
+}
+
+.archived-row td,
+.archived-row th {
+  opacity: 0.55;
 }

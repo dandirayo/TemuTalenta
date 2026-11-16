@@ -136,6 +136,10 @@ Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
    - Mengubah status kandidat ke Code `30` (`Offer Proposed`).
 7. **`Smart Heuristic CV Parser` (`Ekstraktor CV Cerdas`)**:
    - Menganalisis teks CV bebas dan secara cerdas mengisi formulir pendaftaran kandidat.
+8. **`Visual Kanban Board` (`Papan Pipeline Kanban`)**:
+   - Memungkinkan pemindahan kandidat antar-tahap melalui *drag-and-drop* atau kontrol keyboard dengan seluruh validasi bisnis tetap berlaku.
+9. **`Placement Fee & Warranty Tracker` (`Pelacak Komisi & Garansi 90 Hari`)**:
+   - Menghitung estimasi kompensasi agensi, melacak masa garansi *probation* 90 hari, status *invoice*, serta pengarsipan *Soft Delete* dan pencadangan JSON penuh.
 
 ---
 
