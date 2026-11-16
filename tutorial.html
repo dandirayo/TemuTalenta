@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TemuTalenta - Client Presentation & Tutorial Blueprint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #ccf535;
+      --brand-primary-hover: #bde828;
+      --brand-primary-text: #161922;
+      --brand-dark: #161922;
+      --brand-dark-surface: #202430;
+      --brand-dark-card: #282d3c;
+      --brand-dark-border: #333a4d;
+      
+      --bg-app: #f5f6fa;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f8f9fd;
+      --border-base: #e6e8f0;
+      --border-focus: #ccf535;
+      
+      --text-primary: #161922;
+      --text-secondary: #5b657e;
+      --text-muted: #8c96ac;
+      
+      --badge-success-bg: #dcfce7;
+      --badge-success-text: #15803d;
+      --badge-warning-bg: #fef3c7;
+      --badge-warning-text: #b45309;
+      --badge-danger-bg: #fee2e2;
+      --badge-danger-text: #b91c1c;
+      --badge-info-bg: #e0f2fe;
+      --badge-info-text: #0369a1;
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 26px;
+      --radius-pill: 9999px;
+      
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.08);
+      --shadow-lime: 0 4px 16px rgba(204, 245, 53, 0.35);
+      
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      line-height: 1.5;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* TOP PRESENTATION BAR */
+    .pres-header {
+      background-color: var(--brand-dark);
+      color: #ffffff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    .pres-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.2px;
+    }
+
+    .pres-brand-badge {
+      background-color: var(--brand-primary);
+      color: var(--brand-dark);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pres-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mode-pill-toggle {
+      background-color: var(--brand-dark-surface);
+      border: 1px solid var(--brand-dark-border);
+      border-radius: var(--radius-pill);
+      padding: 3px;
+      display: flex;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background-color: var(--brand-primary);
+      color: var(--brand-dark);
+      font-weight: 700;
+    }
+
+    .btn-launch-live {
+      background-color: var(--brand-primary);
+      color: var(--brand-dark);
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 7px 16px;
+      border-radius: var(--radius-pill);
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: var(--shadow-lime);
+      transition: transform 0.15s, background-color 0.15s;
+    }
+
+    .btn-launch-live:hover {
+      background-color: var(--brand-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    /* SLIDES DECK WRAPPER */
+    .deck-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+
+    /* PROGRESS BAR */
+    .pres-progress {
+      height: 6px;
+      background-color: var(--border-base);
+      border-radius: var(--radius-pill);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .pres-progress-bar {
+      height: 100%;
+      width: 8.33%;
+      background: linear-gradient(90deg, #161922 0%, #ccf535 100%);
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* SLIDE CARD */
+    .slide-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-base);
+      border-radius: var(--radius-xl);
+      padding: 36px 40px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      display: none;
+      animation: fadeInSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide-card.active {
+      display: block;
+    }
+
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .slide-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .slide-act-tag {
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #6366f1;
+      background-color: #eef2ff;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+    }
+
+    .slide-index-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .slide-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+
+    .slide-subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    /* PRESENTATION CONTENT GRIDS */
+    .content-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .content-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .info-card {
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-base);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .info-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .info-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background-color: var(--brand-dark);
+      color: var(--brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .info-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .info-card-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* SPEAKER NOTES ACCORDION / DRAWER */
+    .speaker-notes-box {
+      background: linear-gradient(145deg, #161922 0%, #202430 100%);
+      color: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-top: 28px;
+      border: 1px solid var(--brand-dark-border);
+      position: relative;
+    }
+
+    .speaker-notes-badge {
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      background-color: var(--brand-primary);
+      color: var(--brand-dark);
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: var(--radius-pill);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .speaker-notes-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+      margin-top: 6px;
+    }
+
+    .note-col-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--brand-primary);
+      margin-bottom: 6px;
+    }
+
+    .speaker-say-text {
+      font-size: 13.5px;
+      color: #e2e8f0;
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .speaker-action-list {
+      list-style: none;
+      font-size: 12.5px;
+      color: #cbd5e1;
+    }
+
+    .speaker-action-list li {
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .speaker-action-list li::before {
+      content: "👉";
+      font-size: 12px;
+    }
+
+    /* CLIENT Q&A CALLOUT */
+    .qa-box {
+      background-color: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #92400e;
+    }
+
+    .qa-box strong {
+      color: #78350f;
+    }
+
+    /* BOTTOM NAV CONTROLS */
+    .pres-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 24px;
+      padding: 10px 0;
+    }
+
+    .deck-nav-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-nav {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-base);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      border-color: #161922;
+      background-color: var(--bg-subtle);
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-nav-primary {
+      background-color: var(--brand-dark);
+      color: #ffffff;
+      border-color: var(--brand-dark);
+    }
+
+    .btn-nav-primary:hover:not(:disabled) {
+      background-color: #000000;
+      border-color: #000000;
+      color: var(--brand-primary);
+    }
+
+    .slide-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-pill);
+      background-color: var(--border-base);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dot.active {
+      width: 24px;
+      background-color: var(--brand-primary);
+      border: 1px solid #161922;
+    }
+
+    /* HANDBOOK / DOCUMENT VIEW */
+    .handbook-view {
+      display: none;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px 60px;
+    }
+
+    .handbook-toc {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-base);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 30px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .handbook-section {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-base);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .handbook-section h2 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    .table-spec {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 16px 0;
+    }
+
+    .table-spec th {
+      background-color: var(--brand-dark);
+      color: #ffffff;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .table-spec td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-base);
+    }
+
+    .table-spec tr:nth-child(even) td {
+      background-color: var(--bg-subtle);
+    }
+
+    .pill-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* KEYBOARD HINT */
+    .kbd-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kbd-key {
+      background-color: var(--bg-subtle);
+      border: 1px solid var(--border-base);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+      .pres-header { padding: 10px 14px; }
+      .slide-card { padding: 24px 20px; }
+      .content-grid-2, .content-grid-3 { grid-template-columns: 1fr; }
+      .speaker-notes-grid { grid-template-columns: 1fr; }
+      .slide-title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================
+       TOP UTILITY / PRESENTATION BAR
+       ======================================================================== -->
+  <header class="pres-header">
+    <div class="pres-brand">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
+        <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#ccf535"/>
+      </svg>
+      <span>TemuTalenta</span>
+      <span class="pres-brand-badge">Client Presentation Blueprint</span>
+    </div>
+
+    <div class="pres-controls">
+      <div class="mode-pill-toggle">
+        <button type="button" id="btnModeDeck" class="mode-btn active" onclick="setMode('deck')">Slides Deck</button>
+        <button type="button" id="btnModeHandbook" class="mode-btn" onclick="setMode('handbook')">Executive Manual</button>
+      </div>
+      <a href="./index.html" target="_blank" class="btn-launch-live" title="Open TemuTalenta App in new tab">
+        <span>Launch Live App</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       DECK CONTAINER (SLIDES MODE)
+       ======================================================================== -->
+  <main id="deckView" class="deck-container">
+    <div class="pres-progress">
+      <div id="deckProgressBar" class="pres-progress-bar"></div>
+    </div>
+
+    <!-- SLIDE 1: TITLE & VALUE PROPOSITION -->
+    <article class="slide-card active" data-slide="1">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 1: Executive Overview</span>
+        <span class="slide-index-tag">Slide 01 / 12</span>
+      </div>
+      <h1 class="slide-title">TemuTalenta Enterprise ATS & Placement Governance</h1>
+      <p class="slide-subtitle">Modernizing Headhunting, Talent Sourcing, and Anti-Conflict Placement Governance</p>
+
+      <div class="content-grid-3">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">⚡</div>
+            <div class="info-card-title">45% Faster Time-to-Hire</div>
+          </div>
+          <div class="info-card-desc">Sourcing pintar dengan 8 tahapan pipeline terstruktur, pencarian instan nama/skill, serta preview CV tanpa unduh manual.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🛡️</div>
+            <div class="info-card-title">Anti-Double Brokering</div>
+          </div>
+          <div class="info-card-desc">Algoritma 6 Aturan Rekomendasi mencegah duplikasi CV, sengketa komisi antar konsultan, dan kandidat blacklist.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📈</div>
+            <div class="info-card-title">90-Day Placement Warranty</div>
+          </div>
+          <div class="info-card-desc">Otomasi kalkulasi fee penempatan, pemantauan masa garansi probation 90 hari, dan mitigasi risiko pergantian gratis.</div>
+        </div>
+      </div>
+
+      <!-- SPEAKER NOTES -->
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Selamat pagi/siang Bapak/Ibu direksi dan tim HR. Hari ini saya mempersembahkan TemuTalenta—platform Enterprise ATS yang dirancang khusus untuk memecahkan tiga masalah terbesar rekrutmen: lambatnya proses CV screening, tabrakan data kandidat antar konsultan, serta sulitnya melacak masa garansi penempatan 90 hari."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Tunjukkan logo TemuTalenta dan aesthetic modern bergradasi Neon Lime & Charcoal.</li>
+              <li>Sebutkan agenda: 15 menit demo fungsional + live Q&A.</li>
+              <li>Arahkan pandangan klien ke 3 pilar utama: Kecepatan, Keamanan Sengketa, dan Akuntabilitas Finansial.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 2: MULTI-ROLE GOVERNANCE (RBAC) -->
+    <article class="slide-card" data-slide="2">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 1: Governance & Security</span>
+        <span class="slide-index-tag">Slide 02 / 12</span>
+      </div>
+      <h2 class="slide-title">Multi-Role Governance & Hak Akses Terisolasi</h2>
+      <p class="slide-subtitle">Satu sistem terpadu untuk 4 pemangku kepentingan rekrutmen</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">👔</div>
+            <div>
+              <div class="info-card-title">Recruitment Consultant (Rina)</div>
+              <span class="pill-status" style="background:#e0e7ff; color:#3730a3;">Daily Operator</span>
+            </div>
+          </div>
+          <div class="info-card-desc">Sourcing database kandidat, input CV baru, penjadwalan interview, pengiriman rekomendasi klien, dan kontak instan via WhatsApp.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">👑</div>
+            <div>
+              <div class="info-card-title">Branch / Agency Manager (Budi)</div>
+              <span class="pill-status" style="background:#fef3c7; color:#92400e;">Approver & Supervisor</span>
+            </div>
+          </div>
+          <div class="info-card-desc">Menyetujui *override* konflik pengajuan silang konsultan (Rule 4), memantau konversi placement fee, dan menandatangani klaim garansi.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">⚙️</div>
+            <div>
+              <div class="info-card-title">Super Admin (System Owner)</div>
+              <span class="pill-status" style="background:#dcfce7; color:#166534;">System Administrator</span>
+            </div>
+          </div>
+          <div class="info-card-desc">Akses penuh Master Data: konfigurasi 17 kamus kode status, tarif fee klien, ekspor seluruh database, serta inspeksi Audit Trail.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🏢</div>
+            <div>
+              <div class="info-card-title">Client HR Partner (David - Alauda)</div>
+              <span class="pill-status" style="background:#fee2e2; color:#991b1b;">Client Portal Access</span>
+            </div>
+          </div>
+          <div class="info-card-desc">Akses portal khusus klien untuk mereview shortlist CV yang diajukan, memberikan umpan balik (Approve/Reject), dan memposting lowongan kerja baru.</div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Keunggulan utama TemuTalenta adalah data Anda aman dan terisolasi. Konsultan hanya dapat mengelola talent mereka, Manajer memegang kendali persetujuan, dan Klien Anda mendapatkan portal tersendiri untuk menyetujui kandidat tanpa harus berkirim email bolak-balik."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Di aplikasi live, tunjukkan dropdown role di kanan atas (`#roleSelect`).</li>
+              <li>Pilih 'Client HR (David Chen)' dan tunjukkan bagaimana tampilan otomatis beradaptasi.</li>
+              <li>Kembalikan ke 'Consultant' atau 'Manager' untuk melanjutkan demonstrasi.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 3: TALENT SOURCING & RESUME LIB -->
+    <article class="slide-card" data-slide="3">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 2: Sourcing Engine</span>
+        <span class="slide-index-tag">Slide 03 / 12</span>
+      </div>
+      <h2 class="slide-title">Resume Library: Pencarian Cepat & Manajemen 8 Tahapan</h2>
+      <p class="slide-subtitle">Menavigasi ribuan talent dalam hitungan detik tanpa membuka spreadsheet manual</p>
+
+      <div class="content-grid-3">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🔍</div>
+            <div class="info-card-title">Instant Sourcing Filters</div>
+          </div>
+          <div class="info-card-desc">Pencarian real-time nama, keyword resume, filter kewarganegaraan, tingkat pendidikan, bahasa (EN/ZH/ID), dan kode status.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🏷️</div>
+            <div class="info-card-title">8 Tahapan Pipeline Tab</div>
+          </div>
+          <div class="info-card-desc">Tab berbentuk pill: All, New (0), Pending (10-11), Pass (12), Interview (20-22), Offer (30-31), Failed (19/29/39/49/91), dan Entry (40-41).</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📄</div>
+            <div class="info-card-title">Profil & Inline Work History</div>
+          </div>
+          <div class="info-card-desc">Klik nama kandidat untuk membuka modal profil lengkap, riwayat pekerjaan inline (DK-02), unduh CV asli, dan riwayat penempatan.</div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Mari kita coba mencari kandidat spesifik. Cukup ketik 'Andi' pada kolom nama atau pilih tab 'Interview'. Seluruh data tersaji rapi, lengkap dengan kode status dua digit internasional dan pill indikator yang jelas."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Ketik 'Andi' pada `#searchCandidateName` lalu tekan Enter / klik 'Search'.</li>
+              <li>Klik 'Search All' untuk reset data.</li>
+              <li>Klik salah satu tab stage (misal: 'Interview' atau 'Offer') untuk menunjukkan filter instan.</li>
+              <li>Klik nama 'Andi Candera' untuk membuka modal profil dan preview riwayat karir.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 4: THE 6 RECOMMENDATION RULES -->
+    <article class="slide-card" data-slide="4">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 2: Anti-Collision Engine</span>
+        <span class="slide-index-tag">Slide 04 / 12</span>
+      </div>
+      <h2 class="slide-title">Algoritma 6 Aturan Rekomendasi (Anti-Sengketa)</h2>
+      <p class="slide-subtitle">Menjamin reputasi agency dengan validasi anti-duplikasi otomatis</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#fee2e2; color:#b91c1c;">⛔</div>
+            <div class="info-card-title">Rule 1 & Rule 2: Proteksi Keras</div>
+          </div>
+          <div class="info-card-desc">
+            • <strong>Rule 1 (Blacklist Code 91)</strong>: Sistem memblokir mutlak kandidat bermasalah etika/hukum.<br>
+            • <strong>Rule 2 (Duplicate Active 180 Hari)</strong>: Menolak pengajuan ulang jika kandidat masih dalam proses aktif di perusahaan yang sama.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#fef3c7; color:#b45309;">⚠️</div>
+            <div class="info-card-title">Rule 3 & Rule 4: Tata Kelola Manajerial</div>
+          </div>
+          <div class="info-card-desc">
+            • <strong>Rule 3 (Re-apply Gagal)</strong>: Wajib melampirkan formulir justifikasi jika pernah gagal di perusahaan yang sama.<br>
+            • <strong>Rule 4 (Cross-Consultant Conflict)</strong>: Jika diajukan konsultan lain dalam 30 hari, wajib verifikasi Manager.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#dcfce7; color:#15803d;">✅</div>
+            <div class="info-card-title">Rule 5: Siklus Baru Pasca 6 Bulan</div>
+          </div>
+          <div class="info-card-desc">Jika riwayat pengajuan sebelumnya telah melewati masa kadaluarsa 180 hari, sistem membuka siklus rekrutmen baru secara otomatis.</div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#e0f2fe; color:#0369a1;">🚀</div>
+            <div class="info-card-title">Rule 6: Multi-Perusahaan Paralel</div>
+          </div>
+          <div class="info-card-desc">Pengajuan kandidat yang sama ke perusahaan klien yang berbeda dapat berjalan paralel tanpa hambatan siklus.</div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Seringkali terjadi situasi memalukan di mana agency mengirimkan kandidat yang sedang aktif diproses klien atau bahkan telah di-blacklist. Di TemuTalenta hal itu mustahil terjadi. Sistem kami memvalidasi 6 aturan bisnis ini secara real-time sebelum tombol kirim dapat ditekan."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Buka tombol 'Interactive Feature Tester' di kanan atas.</li>
+              <li>Pilih Skenario 6 (Test Rule 1 - Blacklist) untuk melihat alert penolakan otomatis.</li>
+              <li>Pilih Skenario 7 (Test Rule 2 - Duplicate Active) untuk menunjukkan proteksi 180 hari.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 5: BATCH ACTIONS & OUTREACH -->
+    <article class="slide-card" data-slide="5">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 2: Operational Productivity</span>
+        <span class="slide-index-tag">Slide 05 / 12</span>
+      </div>
+      <h2 class="slide-title">Batch Actions & Multi-Channel Outreach</h2>
+      <p class="slide-subtitle">Menghubungi puluhan kandidat via WhatsApp & Email dalam 1 klik</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">⚡</div>
+            <div class="info-card-title">Floating Batch Action Bar</div>
+          </div>
+          <div class="info-card-desc">
+            Centang checkbox pada baris tabel untuk memicu bar aksi mengambang:<br>
+            • Update status massal (misal: memindahkan 10 kandidat ke 'Interview').<br>
+            • Ekspor data terpilih ke CSV/Excel.<br>
+            • Mengirim pesan penawaran massal.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">💬</div>
+            <div class="info-card-title">Automated WhatsApp & Email Drafter</div>
+          </div>
+          <div class="info-card-desc">
+            Klik tombol <strong>'Contact'</strong> pada kandidat:<br>
+            • Menghasilkan draft pesan WhatsApp profesional dengan tag dinamis `{CandidateName}`, `{Position}`, dan `{Company}`.<br>
+            • Tombol direct link membuka WhatsApp Web / WhatsApp Desktop langsung ke nomor kandidat.<br>
+            • Alternatif dispatch email resmi via `mailto:` template.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Konsultan Anda tidak perlu lagi copy-paste pesan WhatsApp manual satu per satu. Sistem kami secara otomatis merangkai undangan wawancara resmi berdasar profil kandidat, dan hanya butuh 1 klik untuk langsung membuka chat WhatsApp kandidat."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Pilih baris kandidat dengan mencentang checkbox untuk memunculkan batch bar.</li>
+              <li>Klik tombol 'Contact' di kolom Operation baris Andi Candera.</li>
+              <li>Tunjukkan modal draft pesan WhatsApp yang langsung terisi otomatis.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 6: KANBAN BOARD & CAREER PORTAL -->
+    <article class="slide-card" data-slide="6">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 3: Visual Pipeline</span>
+        <span class="slide-index-tag">Slide 06 / 12</span>
+      </div>
+      <h2 class="slide-title">Visual Kanban Board & Career Portal Publik</h2>
+      <p class="slide-subtitle">Dua mode kerja fleksibel untuk recruiter dan pencari kerja</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📊</div>
+            <div class="info-card-title">Drag & Drop Kanban Board</div>
+          </div>
+          <div class="info-card-desc">
+            Beralih dari 'Table View' ke 'Kanban Board' hanya dengan satu klik tombol pill. Memvisualisasikan kolom tahapan lengkap:
+            New (0), Pending (10), Pass (12), Interview (20), Offer (30), Failed (19), dan Entry (40) dengan card profil yang ringkas.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🌐</div>
+            <div class="info-card-title">Career Portal (Job Board)</div>
+          </div>
+          <div class="info-card-desc">
+            Portal lowongan kerja terintegrasi. Menampilkan lowongan aktif klien (Engineering, Product, Sales, Finance), detail kompensasi, dan tombol lamar cepat yang langsung menginput pelamar ke status `New Candidate (0)`.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Bagi tim yang lebih menyukai visual agile, kami menyediakan Kanban Board interaktif. Dan bagi klien yang ingin mempublikasikan lowongan, Career Portal kami siap menampung pelamar dan menyalurkannya langsung ke pipeline."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Klik tombol pill 'Kanban Board' di atas tabel data.</li>
+              <li>Tunjukkan sebaran kandidat di setiap kolom.</li>
+              <li>Di sidebar, klik 'Career Portal (Jobs)' untuk menampilkan etalase lowongan kerja aktif.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 7: INTERVIEW CALENDAR -->
+    <article class="slide-card" data-slide="7">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 3: Coordination</span>
+        <span class="slide-index-tag">Slide 07 / 12</span>
+      </div>
+      <h2 class="slide-title">Interview Calendar: Sinkronisasi Jadwal Multi-Stage</h2>
+      <p class="slide-subtitle">Mencegah bentrok jadwal antara kandidat, interviewer klien, dan konsultan</p>
+
+      <div class="content-grid-3">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📅</div>
+            <div class="info-card-title">Kalender Interaktif</div>
+          </div>
+          <div class="info-card-desc">Tampilan kalender bulanan terstruktur dengan badge sesi wawancara berkode warna status.</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🎯</div>
+            <div class="info-card-title">Multi-Stage Tracking</div>
+          </div>
+          <div class="info-card-desc">Mencakup tahap Wawancara Awal (Code 20/21), Wawancara User Teknis, hingga Wawancara Direksi (Code 22).</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🔗</div>
+            <div class="info-card-title">Link & Lokasi Meeting</div>
+          </div>
+          <div class="info-card-desc">Menyimpan link Google Meet/Zoom, kontak PIC klien, dan ruang wawancara untuk kemudahan koordinasi.</div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Di modul Interview Calendar, seluruh jadwal wawancara tersentralisasi. Konsultan dapat melihat agenda harian mereka, sementara Manajer dapat memantau produktivitas wawancara antar klien dalam satu layar."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Di sidebar navigasi, buka 'Consultant Business' -> 'Interview Calendar'.</li>
+              <li>Tunjukkan sesi wawancara aktif (seperti sesi Andi Candera dengan tim Alauda).</li>
+              <li>Klik salah satu jadwal untuk melihat detail PIC interviewer dan link meeting.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 8: 90-DAY WARRANTY & PLACEMENT TRACKER -->
+    <article class="slide-card" data-slide="8">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 4: Financial & Risk Governance</span>
+        <span class="slide-index-tag">Slide 08 / 12</span>
+      </div>
+      <h2 class="slide-title">Placement Fee & 90-Day Warranty Tracker</h2>
+      <p class="slide-subtitle">Transparansi komisi dan jaminan garansi penggantian kandidat tanpa sengketa</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">💰</div>
+            <div class="info-card-title">Otomasi Perhitungan Placement Fee</div>
+          </div>
+          <div class="info-card-desc">
+            Sistem secara otomatis mengkalkulasi komisi agency berdasarkan gaji tahunan yang disetujui (Annual Package) dan tarif tiering klien (15% - 25%). Rekapitulasi siap diekspor untuk penerbitan faktur (invoice).
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🛡️</div>
+            <div class="info-card-title">Countdown Garansi 90 Hari (Probation)</div>
+          </div>
+          <div class="info-card-desc">
+            Ketika kandidat mencapai status <strong>Entry (40)</strong>, sistem memulai hitungan mundur 90 hari kalender:<br>
+            • <strong>Lolos Probation (41)</strong>: Garansi selesai penuh, komisi diakui 100%.<br>
+            • <strong>Gagal/Resign (49)</strong>: Alert otomatis memicu hak penggantian kandidat (Free Replacement) bagi klien.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Inilah fitur favorit para CFO dan HR Director. TemuTalenta menjamin kepatuhan garansi penempatan. Jika ada kandidat yang resign sebelum hari ke-90, sistem kami langsung memberi notifikasi penggantian gratis secara transparan tanpa perlu audit manual berulang kali."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Di sidebar navigasi, buka 'Consultant Business' -> 'Placement Tracker'.</li>
+              <li>Tunjukkan tabel garansi aktif dengan sisa hari countdown probation.</li>
+              <li>Tunjukkan kolom Status Garansi (Active / Passed / Warranty Claimed).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 9: RECRUITMENT FUNNEL & ANALYTICS -->
+    <article class="slide-card" data-slide="9">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 4: Executive Intelligence</span>
+        <span class="slide-index-tag">Slide 09 / 12</span>
+      </div>
+      <h2 class="slide-title">Recruitment Funnel & Monthly Inflow Analytics</h2>
+      <p class="slide-subtitle">Data real-time untuk pengambilan keputusan strategis pimpinan perusahaan</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📉</div>
+            <div class="info-card-title">Recruitment Conversion Funnel</div>
+          </div>
+          <div class="info-card-desc">
+            Melacak kecepatan konversi kandidat dari tahap awal hingga penempatan:<br>
+            • Resume Sourced -> Resume Passed (Tingkat lolos seleksi berkas)<br>
+            • Interview -> Offering Issued -> Offer Accepted -> Official Entry<br>
+            Mengidentifikasi titik kemacetan (*bottleneck*) dalam proses seleksi klien.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📊</div>
+            <div class="info-card-title">Monthly Talent Inflow Velocity</div>
+          </div>
+          <div class="info-card-desc">
+            Grafik visual bar inflow kandidat per bulan beraksen Neon Lime khas Eduplex:<br>
+            • Mengukur produktivitas konsultan dalam menambah database talenta.<br>
+            • Tren pertumbuhan talent pool aktif berdasar spesialisasi posisi.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Di layar Data Analysis ini, manajemen dapat mengevaluasi performa hiring: di tahap mana kandidat paling banyak gugur, berapa lama rata-rata kandidat berada di tahap interview, serta seberapa cepat pipeline terisi setiap bulannya."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Di sidebar navigasi, buka 'Data Analysis' -> 'Recruitment Funnel'.</li>
+              <li>Arahkan kursor pada bar inflow bulanan untuk melihat jumlah kandidat masuk.</li>
+              <li>Jelaskan rasio konversi funnel dari New hingga Entry.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 10: AUDIT TRAIL & MASTER SETTINGS -->
+    <article class="slide-card" data-slide="10">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 4: Enterprise Compliance</span>
+        <span class="slide-index-tag">Slide 10 / 12</span>
+      </div>
+      <h2 class="slide-title">Immutable Audit Trail & Master Data Dictionary</h2>
+      <p class="slide-subtitle">Kepatuhan penuh ISO/SOC2 dan fleksibilitas kamus 17 status rekrutmen</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">📜</div>
+            <div class="info-card-title">Immutable Audit Logs</div>
+          </div>
+          <div class="info-card-desc">
+            Setiap aksi tercatat rapi: tanggal & waktu ISO, user ID pelaksana, jenis aksi (Status Transition, Candidate Edit, Export, Rule Validation), serta data sebelum dan sesudah perubahan. Tidak dapat dimanipulasi.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">🌐</div>
+            <div class="info-card-title">17 Status Codes & Multilingual</div>
+          </div>
+          <div class="info-card-desc">
+            Standardisasi 17 kode status (0 s/d 91) dengan lokalisasi bawaan 3 bahasa utama (Bahasa Indonesia, English, Mandarin). Dapat dikustomisasi oleh Super Admin sesuai terminologi perusahaan klien.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Bagi perusahaan yang mementingkan kepatuhan audit dan keamanan informasi, setiap klik dan perubahan status tercatat secara permanen di Audit Trail. Anda selalu tahu siapa yang mengubah data, kapan, dan untuk kandidat mana."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Pilih role 'Super Admin' di header kanan atas.</li>
+              <li>Buka 'Audit Logs' di sidebar untuk memperlihatkan log aktivitas real-time.</li>
+              <li>Buka 'Settings (Master Data)' untuk memperlihatkan 17 status dictionary.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 11: CLIENT ONBOARDING ROADMAP -->
+    <article class="slide-card" data-slide="11">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 5: Implementation & Next Steps</span>
+        <span class="slide-index-tag">Slide 11 / 12</span>
+      </div>
+      <h2 class="slide-title">Roadmap Implementasi & Onboarding (7 Hari Go-Live)</h2>
+      <p class="slide-subtitle">Transisi mulus tanpa downtime operasional</p>
+
+      <div class="content-grid-3">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#ccf535; color:#161922;">01</div>
+            <div class="info-card-title">Hari 1 - 2: Setup & Migrasi</div>
+          </div>
+          <div class="info-card-desc">
+            • Penyiapan instance TemuTalenta.<br>
+            • Migrasi data kandidat lama via bulk Import CSV/Excel.<br>
+            • Konfigurasi role user tim recruiter dan PIC klien.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#ccf535; color:#161922;">02</div>
+            <div class="info-card-title">Hari 3 - 4: Pelatihan Tim</div>
+          </div>
+          <div class="info-card-desc">
+            • Sesi pelatihan intensif (Recruiter, Manager, dan Klien).<br>
+            • Praktek live simulasi 6 Aturan Rekomendasi & Outreach WhatsApp.<br>
+            • Setup template pesan dan kriteria job portal.
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon" style="background:#ccf535; color:#161922;">03</div>
+            <div class="info-card-title">Hari 5 - 7: Go-Live Resmi</div>
+          </div>
+          <div class="info-card-desc">
+            • Peluncuran portal publik dan job requisitions aktif.<br>
+            • Didampingi Dedicated Account Manager selama 30 hari pertama.<br>
+            • Evaluasi weekly pipeline dan review konversi funnel.
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Speaker Notes</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">What to say to the Client:</div>
+            <p class="speaker-say-text">"Bapak/Ibu tidak perlu khawatir mengenai proses adaptasi tim. Kami menyediakan paket onboarding lengkap dalam 7 hari kerja: mulai dari migrasi data database Anda yang sudah ada, pelatihan staf, hingga pendampingan langsung saat go-live."</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action & Demo Guidance:</div>
+            <ul class="speaker-action-list">
+              <li>Tekankan kemudahan tombol 'Import CSV/Excel' di aplikasi.</li>
+              <li>Tawarkan sesi Proof of Concept (POC) selama 14 hari dengan data uji coba.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- SLIDE 12: Q&A & OBJECTION HANDLING -->
+    <article class="slide-card" data-slide="12">
+      <div class="slide-meta-row">
+        <span class="slide-act-tag">ACT 5: Closing & Discussion</span>
+        <span class="slide-index-tag">Slide 12 / 12</span>
+      </div>
+      <h2 class="slide-title">Tanya Jawab & Panduan Menjawab Keraguan Klien</h2>
+      <p class="slide-subtitle">Solusi siap pakai atas pertanyaan umum seputar integrasi, keamanan, dan biaya</p>
+
+      <div class="content-grid-2">
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">❓</div>
+            <div class="info-card-title">Q1: "Apakah data kandidat kami aman dan tidak bocor?"</div>
+          </div>
+          <div class="info-card-desc">
+            <strong>Jawaban:</strong> "Tentu. Setiap instansi memiliki enkripsi database terisolasi. Hak akses berbasis peran (RBAC) memastikan konsultan hanya dapat melihat kandidat yang diotorisasi, dan setiap akses terekam di Audit Trail yang tidak bisa diedit."
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">❓</div>
+            <div class="info-card-title">Q2: "Bagaimana cara kerja WhatsApp Outreach?"</div>
+          </div>
+          <div class="info-card-desc">
+            <strong>Jawaban:</strong> "Sistem merangkai pesan otomatis berdasar data spesifik kandidat, lalu membuka tautan API WhatsApp Web/Desktop resmi. Tidak memerlukan nomor bot khusus yang rentan banned, dan 100% menggunakan akun resmi konsultan."
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">❓</div>
+            <div class="info-card-title">Q3: "Bisa impor data lama dari Excel/ATS lain?"</div>
+          </div>
+          <div class="info-card-desc">
+            <strong>Jawaban:</strong> "Sangat bisa. Kami menyediakan tombol 'Import CSV/Excel' dengan auto-mapping kolom nama, nomor telepon, email, kewarganegaraan, dan riwayat kerja sehingga migrasi selesai dalam hitungan menit."
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-header">
+            <div class="info-icon">❓</div>
+            <div class="info-card-title">Q4: "Apakah bisa dioperasikan lewat HP saat di luar kantor?"</div>
+          </div>
+          <div class="info-card-desc">
+            <strong>Jawaban:</strong> "Pasti. TemuTalenta dirancang 100% responsif dengan bottom navigation bar khusus mobile, sehingga konsultan dapat mengecek status, membalas chat kandidat, dan mengatur jadwal langsung dari smartphone."
+          </div>
+        </div>
+      </div>
+
+      <div class="speaker-notes-box">
+        <div class="speaker-notes-badge">Presenter Script & Closing Statement</div>
+        <div class="speaker-notes-grid">
+          <div>
+            <div class="note-col-title">Closing Pitch:</div>
+            <p class="speaker-say-text">"Terima kasih atas waktu dan perhatian Bapak/Ibu sekalian. Kami mengundang tim Anda untuk langsung mencoba sesi live demo atau menjadwalkan workshop implementasi minggu ini. Apakah ada hal yang ingin kita diskusikan lebih lanjut?"</p>
+          </div>
+          <div>
+            <div class="note-col-title">Action Checklist:</div>
+            <ul class="speaker-action-list">
+              <li>Buka sesi tanya jawab interaktif.</li>
+              <li>Ajak klien menekan tombol 'Launch Live App' untuk mencoba langsung.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- FOOTER NAV CONTROLS -->
+    <div class="pres-footer">
+      <div class="deck-nav-btns">
+        <button type="button" id="btnPrevSlide" class="btn-nav" onclick="changeSlide(-1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Previous</span>
+        </button>
+        <button type="button" id="btnNextSlide" class="btn-nav btn-nav-primary" onclick="changeSlide(1)">
+          <span>Next Slide</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      <div id="slideDotsContainer" class="slide-dots">
+        <!-- Dots generated via JS -->
+      </div>
+
+      <div class="kbd-hint">
+        <span>Gunakan keyboard:</span>
+        <span class="kbd-key">←</span>
+        <span class="kbd-key">→</span>
+        <span class="kbd-key">Space</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       HANDBOOK / EXECUTIVE MANUAL VIEW (DOCUMENT MODE)
+       ======================================================================== -->
+  <section id="handbookView" class="handbook-view">
+    <div class="handbook-toc">
+      <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 14px;">Buku Panduan Eksekutif: TemuTalenta ATS</h2>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+        Dokumen ini merangkum seluruh modul sistem, tata kelola hak akses, kamus kode status internasional, dan prosedur penanganan sengketa penempatan kandidat.
+      </p>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="#sec1" class="btn-nav" style="font-size: 12px; padding: 4px 12px;">1. Ikhtisar & Arsitektur</a>
+        <a href="#sec2" class="btn-nav" style="font-size: 12px; padding: 4px 12px;">2. Kamus 17 Status Kode</a>
+        <a href="#sec3" class="btn-nav" style="font-size: 12px; padding: 4px 12px;">3. 6 Aturan Rekomendasi</a>
+        <a href="#sec4" class="btn-nav" style="font-size: 12px; padding: 4px 12px;">4. Alur Wawancara & Garansi 90 Hari</a>
+      </div>
+    </div>
+
+    <!-- SECTION 1 -->
+    <article id="sec1" class="handbook-section">
+      <h2>1. Ikhtisar & Hak Akses Peran (RBAC)</h2>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+        TemuTalenta membagi hak akses ke dalam empat level peran untuk menjaga integritas data dan kerahasiaan klien:
+      </p>
+      <table class="table-spec">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Kewenangan Utama</th>
+            <th>Batasan Keamanan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Recruitment Consultant</strong></td>
+            <td>Sourcing, filter kandidat, penjadwalan interview, WhatsApp outreach, kirim rekomendasi.</td>
+            <td>Tidak dapat merubah kamus master data atau menghapus log audit.</td>
+          </tr>
+          <tr>
+            <td><strong>Recruitment Manager</strong></td>
+            <td>Supervisi tim, approve override konflik (Rule 4), approval klaim garansi penempatan.</td>
+            <td>Melihat seluruh aktivitas konsultan di bawah divisinya.</td>
+          </tr>
+          <tr>
+            <td><strong>Super Admin</strong></td>
+            <td>Akses penuh: Master Settings (17 status dictionary), ekspor database, inspeksi Audit Logs.</td>
+            <td>Hanya diperuntukkan bagi IT Owner dan Direksi.</td>
+          </tr>
+          <tr>
+            <td><strong>Client HR (Self-Service)</strong></td>
+            <td>Melihat shortlist kandidat rekomendasi, beri catatan approve/reject CV, posting lowongan baru.</td>
+            <td>Terisolasi hanya pada lowongan dan kandidat perusahaannya sendiri.</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <!-- SECTION 2 -->
+    <article id="sec2" class="handbook-section">
+      <h2>2. Kamus Standardisasi 17 Kode Status Rekrutmen</h2>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+        Setiap kandidat memiliki status dua digit yang terstandarisasi untuk memudahkan koordinasi lintas cabang dan bahasa:
+      </p>
+      <table class="table-spec">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Tahap (Stage)</th>
+            <th>Nama Status (ID)</th>
+            <th>Keterangan Operasional</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>0</strong></td><td>New</td><td>Kandidat Baru</td><td>Baru diinput, belum diajukan ke klien mana pun.</td></tr>
+          <tr><td><strong>10</strong></td><td>Pending</td><td>Direkomendasikan ke Klien</td><td>CV telah dikirim ke PIC Klien untuk review.</td></tr>
+          <tr><td><strong>11</strong></td><td>Pending</td><td>Klien Meninjau CV</td><td>Sedang dalam proses screening internal klien.</td></tr>
+          <tr><td><strong>12</strong></td><td>Pass</td><td>Lolos Seleksi CV</td><td>Klien menyetujui kualifikasi dan meminta interview.</td></tr>
+          <tr><td><strong>19</strong></td><td>Failed</td><td>CV Ditolak Klien</td><td>Wajib menyertakan alasan penolakan (DK-05).</td></tr>
+          <tr><td><strong>20</strong></td><td>Interview</td><td>Wawancara Dijadwalkan</td><td>Tanggal & waktu interview disepakati.</td></tr>
+          <tr><td><strong>21</strong></td><td>Interview</td><td>Lolos Wawancara Awal</td><td>Melangkah ke babak teknis / user.</td></tr>
+          <tr><td><strong>22</strong></td><td>Interview</td><td>Wawancara Direksi</td><td>Tahap wawancara final dengan pimpinan klien.</td></tr>
+          <tr><td><strong>29</strong></td><td>Failed</td><td>Gagal Wawancara</td><td>Wajib mengisi feedback evaluasi kemampuan.</td></tr>
+          <tr><td><strong>30</strong></td><td>Offer</td><td>Penawaran Diberikan</td><td>Offering letter resmi diterbitkan.</td></tr>
+          <tr><td><strong>31</strong></td><td>Offer</td><td>Penawaran Diterima</td><td>Kandidat menandatangani offering letter.</td></tr>
+          <tr><td><strong>39</strong></td><td>Failed</td><td>Penawaran Ditolak</td><td>Kandidat menolak penawaran (wajib alasan).</td></tr>
+          <tr><td><strong>40</strong></td><td>Entry</td><td>Masuk Kerja (Entry)</td><td>Memulai hari pertama kerja; hitungan garansi 90 hari aktif.</td></tr>
+          <tr><td><strong>41</strong></td><td>Entry</td><td>Lolos Masa Percobaan</td><td>Probation 90 hari sukses; garansi agency tuntas.</td></tr>
+          <tr><td><strong>49</strong></td><td>Failed</td><td>Resign / Gagal Probation</td><td>Keluar sebelum 90 hari; memicu klaim penggantian.</td></tr>
+          <tr><td><strong>90</strong></td><td>Failed</td><td>Mengundurkan Diri</td><td>Kandidat mundur atas kemauan sendiri.</td></tr>
+          <tr><td><strong>91</strong></td><td>Failed</td><td>Blacklisted</td><td>Daftar hitam perilaku/etika; diblokir permanen.</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <!-- SECTION 3 -->
+    <article id="sec3" class="handbook-section">
+      <h2>3. Logika 6 Aturan Validasi Rekomendasi (Anti-Conflict)</h2>
+      <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+        <p>Sebelum tombol submit rekomendasi dapat dieksekusi, sistem menjalankan 6 checkpoint otomatis:</p>
+        <ol style="margin-left: 20px; margin-top: 10px;">
+          <li style="margin-bottom: 8px;"><strong>Rule 1 (Blacklist Block):</strong> Jika kandidat memiliki status <code>91</code>, pengajuan otomatis ditolak mutlak.</li>
+          <li style="margin-bottom: 8px;"><strong>Rule 2 (Duplicate Active 180 Hari):</strong> Jika kandidat sedang aktif (status <code>10 - 31</code>) di perusahaan yang sama dalam kurun waktu 180 hari, sistem menolak pengajuan untuk mencegah duplikasi.</li>
+          <li style="margin-bottom: 8px;"><strong>Rule 3 (Re-apply Gagal):</strong> Jika berstatus gagal (<code>19, 29, 39</code>) di perusahaan yang sama dalam 180 hari, wajib mengisi formulir justifikasi perubahan kualifikasi.</li>
+          <li style="margin-bottom: 8px;"><strong>Rule 4 (Konflik Antar Konsultan):</strong> Jika kandidat pernah diajukan konsultan lain dalam 30 hari, pengajuan ditahan hingga mendapat approval Manager.</li>
+          <li style="margin-bottom: 8px;"><strong>Rule 5 (Kadaluarsa > 6 Bulan):</strong> Jika riwayat pengajuan telah lebih dari 180 hari, sistem mengizinkan pengajuan sebagai siklus rekrutmen baru.</li>
+          <li style="margin-bottom: 8px;"><strong>Rule 6 (Perusahaan Berbeda):</strong> Kandidat dapat direkomendasikan ke perusahaan klien yang berbeda secara paralel tanpa batasan.</li>
+        </ol>
+      </div>
+    </article>
+  </section>
+
+  <!-- ========================================================================
+       PRESENTATION SCRIPT & LOGIC
+       ======================================================================== -->
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 12;
+
+    function initDeck() {
+      const dotsContainer = document.getElementById('slideDotsContainer');
+      dotsContainer.innerHTML = '';
+      for (let i = 1; i <= totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (i === 1 ? ' active' : '');
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+      }
+      updateDeckState();
+    }
+
+    function changeSlide(direction) {
+      goToSlide(currentSlide + direction);
+    }
+
+    function goToSlide(slideNum) {
+      if (slideNum < 1 || slideNum > totalSlides) return;
+      currentSlide = slideNum;
+      
+      document.querySelectorAll('.slide-card').forEach((slide, idx) => {
+        slide.classList.toggle('active', (idx + 1) === currentSlide);
+      });
+
+      document.querySelectorAll('.dot').forEach((dot, idx) => {
+        dot.classList.toggle('active', (idx + 1) === currentSlide);
+      });
+
+      updateDeckState();
+    }
+
+    function updateDeckState() {
+      const progressBar = document.getElementById('deckProgressBar');
+      const pct = (currentSlide / totalSlides) * 100;
+      progressBar.style.width = pct + '%';
+
+      document.getElementById('btnPrevSlide').disabled = (currentSlide === 1);
+      const nextBtn = document.getElementById('btnNextSlide');
+      if (currentSlide === totalSlides) {
+        nextBtn.innerHTML = '<span>Finish & Open App</span> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
+        nextBtn.onclick = () => window.open('./index.html', '_blank');
+      } else {
+        nextBtn.innerHTML = '<span>Next Slide</span> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
+        nextBtn.onclick = () => changeSlide(1);
+      }
+    }
+
+    function setMode(mode) {
+      const isDeck = (mode === 'deck');
+      document.getElementById('btnModeDeck').classList.toggle('active', isDeck);
+      document.getElementById('btnModeHandbook').classList.toggle('active', !isDeck);
+      document.getElementById('deckView').style.display = isDeck ? 'flex' : 'none';
+      document.getElementById('handbookView').style.display = isDeck ? 'none' : 'block';
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+      if (document.getElementById('deckView').style.display === 'none') return;
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        changeSlide(-1);
+      }
+    });
+
+    initDeck();
+  </script>
+</body>
+</html>
