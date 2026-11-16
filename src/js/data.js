@@ -18,7 +18,9 @@ const STORAGE_KEYS = {
   USERS: "temutalenta_users_v4",
   OPEN_JOBS: "temutalenta_open_jobs_v4",
   INTERVIEWS: "temutalenta_interviews_v4",
-  SETTINGS: "temutalenta_system_settings_v1"
+  SETTINGS: "temutalenta_system_settings_v1",
+  MASTER_LANGUAGES: "temutalenta_master_languages_v1",
+  MASTER_COUNTRIES: "temutalenta_master_countries_v1"
 };
 
 // Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan, dan Klien Portal)
@@ -220,6 +222,9 @@ const I18N = {
     btnPostJob: "+ Post Job Order",
     btnAcceptOfferEsign: "Sign & Accept Offer (Code 31)",
     lblBackupRestore: "Database Backup & Restore",
+    btnContactWa: "Contact (WA/Email)",
+    lblMonthlyInflow: "Monthly Candidate Inflow (DA-02)",
+    lblBatchSelected: "selected",
     msgRefreshed: "Data refreshed.",
     msgResetDone: "Restored to default candidate records.",
     msgResumeDownloaded: "Downloaded resume for",
@@ -396,6 +401,9 @@ const I18N = {
     btnPostJob: "+ 发布招聘岗位",
     btnAcceptOfferEsign: "签署并接受录用 (状态 31)",
     lblBackupRestore: "数据备份与恢复",
+    btnContactWa: "联系候选人 (WA/邮件)",
+    lblMonthlyInflow: "每月新增候选人趋势 (DA-02)",
+    lblBatchSelected: "已选择",
     msgRefreshed: "数据已刷新。",
     msgResetDone: "已恢复为默认候选人数据。",
     msgResumeDownloaded: "已下载简历：",
@@ -572,6 +580,9 @@ const I18N = {
     btnPostJob: "+ Buat Lowongan Baru",
     btnAcceptOfferEsign: "Tanda Tangani & Terima Offer (Kode 31)",
     lblBackupRestore: "Backup & Restore Database",
+    btnContactWa: "Hubungi (WA/Email)",
+    lblMonthlyInflow: "Tren Kandidat Baru Bulanan (DA-02)",
+    lblBatchSelected: "dipilih",
     msgRefreshed: "Data berhasil dimuat ulang.",
     msgResetDone: "Data awal berhasil dipulihkan.",
     msgResumeDownloaded: "Dokumen resume diunduh untuk",
@@ -1281,5 +1292,40 @@ function getStoredSystemSettings() {
 function saveSystemSettings(settings) {
   try {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  } catch (e) {}
+}
+
+const INITIAL_LANGUAGES = ["Indonesian", "English", "Chinese (Mandarin)", "Japanese", "Korean"];
+const INITIAL_COUNTRIES = ["Indonesia", "Singapore", "Malaysia", "China", "Vietnam"];
+
+function getStoredMasterLanguages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.MASTER_LANGUAGES);
+    if (!raw) return [...INITIAL_LANGUAGES];
+    return JSON.parse(raw);
+  } catch (e) {
+    return [...INITIAL_LANGUAGES];
+  }
+}
+
+function saveMasterLanguages(list) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MASTER_LANGUAGES, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function getStoredMasterCountries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.MASTER_COUNTRIES);
+    if (!raw) return [...INITIAL_COUNTRIES];
+    return JSON.parse(raw);
+  } catch (e) {
+    return [...INITIAL_COUNTRIES];
+  }
+}
+
+function saveMasterCountries(list) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MASTER_COUNTRIES, JSON.stringify(list));
   } catch (e) {}
 }

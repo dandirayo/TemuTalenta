@@ -23,6 +23,9 @@ let openJobs = [];
 let scheduledInterviews = [];
 let systemSettings = {};
 let resumeViewMode = "table";
+let masterLanguages = [];
+let masterCountries = [];
+let selectedCandidateIds = new Set();
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -35,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
   notifications = getStoredNotifications();
   masterCompanies = getStoredMasterCompanies();
   masterPositions = getStoredMasterPositions();
+  masterLanguages = getStoredMasterLanguages();
+  masterCountries = getStoredMasterCountries();
   openJobs = getStoredOpenJobs();
   scheduledInterviews = getStoredInterviews();
   systemSettings = getStoredSystemSettings();
@@ -408,7 +413,7 @@ function bindGlobalEvents() {
     }
   });
 
-  ["advNationality", "advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService", "advLanguage", "advCompany", "advOwner", "advArchiveMode"].forEach(id => {
+  ["advNationality", "advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService", "advMaxService", "advPosition", "advDateFrom", "advDateTo", "advLanguage", "advCompany", "advOwner", "advArchiveMode"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener("input", () => {
@@ -560,6 +565,17 @@ function bindGlobalEvents() {
   document.getElementById("formPostJob")?.addEventListener("submit", handlePostJobSubmit);
   document.getElementById("btnSaveSystemSettings")?.addEventListener("click", handleSaveSystemSettings);
 
+  // Fase 6: Master Dictionaries, Batch Actions & Candidate Outreach Hub
+  document.getElementById("formAddMasterLanguage")?.addEventListener("submit", handleAddMasterLanguage);
+  document.getElementById("formAddMasterCountry")?.addEventListener("submit", handleAddMasterCountry);
+  document.getElementById("btnBatchRecommend")?.addEventListener("click", handleBatchRecommend);
+  document.getElementById("btnBatchTag")?.addEventListener("click", handleBatchTag);
+  document.getElementById("btnBatchArchive")?.addEventListener("click", handleBatchArchive);
+  document.getElementById("btnBatchClear")?.addEventListener("click", clearBatchSelection);
+  document.getElementById("outreachTemplateSelect")?.addEventListener("change", refreshOutreachMessageDraft);
+  document.getElementById("btnCopyOutreach")?.addEventListener("click", copyOutreachDraft);
+  document.getElementById("outreachMessageText")?.addEventListener("input", syncOutreachLinks);
+
   // User Avatar Profile Popover & JSON Backup / Restore
   const avatarBtn = document.getElementById("userAvatarIndicator");
   const profileDrop = document.getElementById("userProfileDropdown");
@@ -631,7 +647,7 @@ function syncStageTabsUI() {
 }
 
 function resetSearchFilters() {
-  const ids = ["searchCandidateName", "searchKeyword", "advMinAge", "advMaxAge", "advMinService", "advNationality", "advLanguage", "advCompany"];
+  const ids = ["searchCandidateName", "searchKeyword", "advMinAge", "advMaxAge", "advMinService", "advMaxService", "advPosition", "advDateFrom", "advDateTo", "advNationality", "advLanguage", "advCompany"];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
@@ -702,6 +718,11 @@ function getFilteredCandidates() {
   const maxAge = parseInt(document.getElementById("advMaxAge")?.value || "999", 10);
   const eduQ = document.getElementById("advEducation")?.value || "all";
   const minService = parseFloat(document.getElementById("advMinService")?.value || "0");
+  const maxServiceRaw = document.getElementById("advMaxService")?.value;
+  const maxService = maxServiceRaw !== undefined && maxServiceRaw !== "" ? parseFloat(maxServiceRaw) : 999;
+  const posQ = (document.getElementById("advPosition")?.value || "").toLowerCase().trim();
+  const dateFrom = document.getElementById("advDateFrom")?.value || "";
+  const dateTo = document.getElementById("advDateTo")?.value || "";
   const langQ = (document.getElementById("advLanguage")?.value || "").toLowerCase().trim();
   const compQ = (document.getElementById("advCompany")?.value || "").toLowerCase().trim();
   const ownerQ = document.getElementById("advOwner")?.value || "all";
@@ -732,7 +753,14 @@ function getFilteredCandidates() {
     const matchGender = genderQ === "all" || c.gender === genderQ;
     const matchAge = calculatedAge >= (isNaN(minAge) ? 0 : minAge) && calculatedAge <= (isNaN(maxAge) ? 999 : maxAge);
     const matchEdu = eduQ === "all" || c.education === eduQ;
-    const matchService = c.yearsOfService >= (isNaN(minService) ? 0 : minService);
+    const matchService = c.yearsOfService >= (isNaN(minService) ? 0 : minService) && c.yearsOfService <= (isNaN(maxService) ? 999 : maxService);
+    const matchPos =
+      !posQ ||
+      (c.recommendedPosition || "").toLowerCase().includes(posQ) ||
+      (c.recommendations || []).some(r => (r.position || "").toLowerCase().includes(posQ));
+    const entryDay = (c.entryTime || "").split(" ")[0];
+    const matchDateFrom = !dateFrom || (entryDay && entryDay >= dateFrom);
+    const matchDateTo = !dateTo || (entryDay && entryDay <= dateTo);
     const matchLang = !langQ || (c.language || "").toLowerCase().includes(langQ);
     const matchComp =
       !compQ ||
@@ -747,7 +775,7 @@ function getFilteredCandidates() {
                     (c.recommendedCompany || "").toLowerCase() === activeUser.clientCompany.toLowerCase();
     }
 
-    return matchName && matchKw && matchStage && matchNat && matchGender && matchAge && matchEdu && matchService && matchLang && matchComp && matchOwner && matchClient;
+    return matchName && matchKw && matchStage && matchNat && matchGender && matchAge && matchEdu && matchService && matchPos && matchDateFrom && matchDateTo && matchLang && matchComp && matchOwner && matchClient;
   });
 }
 
@@ -777,6 +805,22 @@ function renderResumeTable() {
     const isSorted = sortState.columnId === col.id;
     const ariaSortAttr = isSorted ? ` aria-sort="${sortState.direction}"` : "";
 
+    if (col.id === "candidate") {
+      return `
+        <th scope="col" data-col-id="${col.id}" data-type="${sortType}"${ariaSortAttr}>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px; padding-inline-start: 6px;">
+            <input type="checkbox" id="selectAllCandidatesCb" aria-label="Select all visible candidates" title="Select all visible candidates">
+            <button type="button" class="sort-header-btn" data-sort-col="${col.id}">
+              <span>${t(col.key)}</span>
+              <span class="sort-icons" aria-hidden="true">
+                <span class="sort-up">▲</span>
+                <span class="sort-down">▼</span>
+              </span>
+            </button>
+          </div>
+        </th>
+      `;
+    }
     if (sortType) {
       return `
         <th scope="col" data-col-id="${col.id}" data-type="${sortType}"${ariaSortAttr}>
@@ -843,6 +887,19 @@ function renderResumeTable() {
 
   tbody.innerHTML = pagedRecords.map(c => buildCandidateRowHtml(c, activeCols)).join("");
   bindTableRowActions(tbody);
+  const selectAllCb = document.getElementById("selectAllCandidatesCb");
+  if (selectAllCb) {
+    selectAllCb.checked = pagedRecords.length > 0 && pagedRecords.every(c => selectedCandidateIds.has(c.id));
+    selectAllCb.addEventListener("change", () => {
+      pagedRecords.forEach(c => {
+        if (selectAllCb.checked) selectedCandidateIds.add(c.id);
+        else selectedCandidateIds.delete(c.id);
+      });
+      renderResumeTable();
+      updateBatchToolbarUI();
+    });
+  }
+  updateBatchToolbarUI();
   syncTableResponsiveLabels();
   if (resumeViewMode === "kanban") {
     renderKanbanBoard(filtered);
@@ -868,11 +925,14 @@ function buildCandidateRowHtml(c, activeCols) {
       case "candidate":
         return `
           <th scope="row" data-value="${escapeHtml(c.name)}">
-            <button type="button" class="candidate-link" data-action="profile" data-id="${c.id}">
-              ${escapeHtml(c.name).replace(" ", '<span class="name-break"> </span>')}
-              ${c.isUnviewed ? `<span style="display:inline-block; width:6px; height:6px; background-color:var(--danger-dot); border-radius:50%; margin-left:3px;" title="Unviewed"></span>` : ""}
-              ${c.isDeleted ? `<span style="font-size:10px; color:var(--danger-dot); font-weight:700;"> [Archived]</span>` : ""}
-            </button>
+            <div class="candidate-select-wrap">
+              <input type="checkbox" class="candidate-row-check" value="${c.id}" ${selectedCandidateIds.has(c.id) ? "checked" : ""} aria-label="Select ${escapeHtml(c.name)}">
+              <button type="button" class="candidate-link" data-action="profile" data-id="${c.id}">
+                ${escapeHtml(c.name).replace(" ", '<span class="name-break"> </span>')}
+                ${c.isUnviewed ? `<span style="display:inline-block; width:6px; height:6px; background-color:var(--danger-dot); border-radius:50%; margin-left:3px;" title="Unviewed"></span>` : ""}
+                ${c.isDeleted ? `<span style="font-size:10px; color:var(--danger-dot); font-weight:700;"> [Archived]</span>` : ""}
+              </button>
+            </div>
           </th>
         `;
       case "nationality":
@@ -920,6 +980,7 @@ function buildCandidateRowHtml(c, activeCols) {
               <button type="button" class="op-btn" data-action="list" data-id="${c.id}">${t("actRecList")}</button>
               <button type="button" class="op-btn" data-action="schedule" data-id="${c.id}" title="Schedule Interview">Interview</button>
               <button type="button" class="op-btn" data-action="offer" data-id="${c.id}" title="Generate Offer Letter">Offer</button>
+              <button type="button" class="op-btn" data-action="outreach" data-id="${c.id}" title="WhatsApp / Email Outreach">Contact</button>
             </div>
           </td>
         `;
@@ -969,6 +1030,15 @@ function bindTableRowActions(container) {
       if (action === "client-reject") clientRejectResume(id);
       if (action === "schedule") openScheduleInterviewModal(id);
       if (action === "offer") openOfferLetterModal(id);
+      if (action === "outreach") openOutreachModal(id);
+    });
+  });
+
+  container.querySelectorAll(".candidate-row-check").forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) selectedCandidateIds.add(cb.value);
+      else selectedCandidateIds.delete(cb.value);
+      updateBatchToolbarUI();
     });
   });
 }
@@ -1018,6 +1088,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           ${currentBadge} - ${getStatusName(currentBadge)}
         </span>
         <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+          <button type="button" class="btn-outlined" id="btnProfileOutreach" style="height: 24px; font-size: 11px; padding: 0 8px;">Contact WA / Email</button>
           <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 24px; font-size: 11px; padding: 0 8px;">Schedule Interview</button>
           <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 24px; font-size: 11px; padding: 0 8px;">Generate Offer</button>
           <button type="button" class="btn-outlined" id="btnToggleSoftDelete" style="height: 24px; font-size: 11px; padding: 0 8px; color: var(--warning-color);">
@@ -1144,7 +1215,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     <!-- PANE 2: Experience & Education (DK-02) -->
     <div id="pane-workEdu" class="profile-tab-pane ${activeTab === 'workEdu' ? 'active' : ''}">
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Employment History</h4>
-      <div class="table-wrapper" style="margin-bottom: 16px;">
+      <div class="table-wrapper" style="margin-bottom: 10px;">
         <table class="data-table data-table--compact">
           <thead>
             <tr>
@@ -1168,9 +1239,16 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           </tbody>
         </table>
       </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 6px; margin-bottom: 18px; padding: 10px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-sm);">
+        <input type="text" id="workRoleInput" class="ctrl-input" placeholder="Role / Job Title" style="height: 28px; font-size: 12px;">
+        <input type="text" id="workCompanyInput" class="ctrl-input" placeholder="Company Name" style="height: 28px; font-size: 12px;">
+        <input type="text" id="workPeriodInput" class="ctrl-input" placeholder="Period (e.g. 2021 - 2025)" style="height: 28px; font-size: 12px;">
+        <input type="text" id="workDescInput" class="ctrl-input" placeholder="Key Responsibilities" style="height: 28px; font-size: 12px;">
+        <button type="button" id="btnAddWorkHistory" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Add Work</button>
+      </div>
 
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Education & Degrees</h4>
-      <div class="table-wrapper">
+      <div class="table-wrapper" style="margin-bottom: 10px;">
         <table class="data-table data-table--compact">
           <thead>
             <tr>
@@ -1191,6 +1269,12 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
             `).join("")}
           </tbody>
         </table>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 6px; padding: 10px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-sm);">
+        <input type="text" id="eduDegreeInput" class="ctrl-input" placeholder="Degree (e.g. Bachelor S1)" style="height: 28px; font-size: 12px;">
+        <input type="text" id="eduInstInput" class="ctrl-input" placeholder="University / Institution" style="height: 28px; font-size: 12px;">
+        <input type="text" id="eduYearInput" class="ctrl-input" placeholder="Graduation Year (e.g. 2020)" style="height: 28px; font-size: 12px;">
+        <button type="button" id="btnAddEduHistory" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Add Education</button>
       </div>
     </div>
 
@@ -1331,6 +1415,48 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
         sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
       }
     });
+  });
+
+  body.querySelector("#btnProfileOutreach")?.addEventListener("click", () => {
+    dialog.close();
+    openOutreachModal(c.id);
+  });
+
+  body.querySelector("#btnAddWorkHistory")?.addEventListener("click", () => {
+    const role = body.querySelector("#workRoleInput")?.value.trim();
+    const company = body.querySelector("#workCompanyInput")?.value.trim();
+    const period = body.querySelector("#workPeriodInput")?.value.trim() || "2023 - Present";
+    const desc = body.querySelector("#workDescInput")?.value.trim() || "-";
+    if (!role || !company) {
+      showToast("Please fill Role and Company name.", "error");
+      return;
+    }
+    if (!Array.isArray(c.workHistory)) {
+      c.workHistory = [{ role: c.recommendedPosition || "Professional", company: "Previous Tech Firm", period: "2020 - 2026", desc: "Handled key project deliverables." }];
+    }
+    c.workHistory.unshift({ role, company, period, desc });
+    saveCandidates(candidates);
+    addAuditLog("ADD_WORK_HISTORY", `Candidate ${c.name}`, `Added employment ${role} at ${company}`);
+    showToast(`Added employment history: ${role}`);
+    openCandidateProfileModal(c.id, "workEdu");
+  });
+
+  body.querySelector("#btnAddEduHistory")?.addEventListener("click", () => {
+    const degree = body.querySelector("#eduDegreeInput")?.value.trim();
+    const institution = body.querySelector("#eduInstInput")?.value.trim();
+    const year = body.querySelector("#eduYearInput")?.value.trim() || "2022";
+    if (!degree || !institution) {
+      showToast("Please fill Degree and Institution name.", "error");
+      return;
+    }
+    if (!Array.isArray(c.educationHistory)) {
+      c.educationHistory = [{ degree: c.education || "Bachelor", institution: "Reputable University", year: "2019" }];
+    }
+    c.educationHistory.unshift({ degree, institution, year });
+    saveCandidates(candidates);
+    addAuditLog("ADD_EDU_HISTORY", `Candidate ${c.name}`, `Added education ${degree} at ${institution}`);
+    showToast(`Added education record: ${degree}`);
+    openCandidateProfileModal(c.id, "workEdu");
   });
 
   body.querySelector("#btnProfileScheduleInt")?.addEventListener("click", () => {
@@ -2193,27 +2319,57 @@ function renderClientCompaniesView() {
 /**
  * 12C. ADVANCED DATA ANALYSIS & DEMOGRAPHICS (DA-01 s.d DA-05)
  */
+function getAnalyticsScopedCandidates() {
+  const range = document.getElementById("analyticsDateRange")?.value || "all";
+  const baseList = candidates.filter(c => !c.isDeleted);
+  if (range === "all") return baseList;
+
+  const refNow = new Date("2026-11-16T23:59:59");
+  let cutoff = new Date("2026-01-01T00:00:00");
+  if (range === "30d") {
+    cutoff = new Date(refNow.getTime() - 30 * 86400000);
+  } else if (range === "quarter") {
+    cutoff = new Date(refNow.getTime() - 90 * 86400000);
+  }
+
+  return baseList.filter(c => {
+    const datePart = String(c.entryTime || "").slice(0, 10);
+    if (!datePart) return false;
+    const d = new Date(`${datePart}T12:00:00`);
+    return !isNaN(d.getTime()) && d >= cutoff;
+  });
+}
+
+function getAnalyticsStageSummary(list) {
+  return {
+    totalRaw: list.length,
+    totalDivisor: list.length || 1,
+    countNew: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length,
+    countPending: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length,
+    countPass: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length,
+    countInterview: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length,
+    countOffer: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length,
+    countEntry: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length,
+    countFailed: list.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length
+  };
+}
+
 function renderAdvancedAnalytics() {
   const funnelContainer = document.getElementById("funnelVisualContainer");
   const kpiContainer = document.getElementById("analyticsKpiContainer");
 
-  const total = candidates.length || 1;
-  const countNew = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length;
-  const countPending = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length;
-  const countPass = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length;
-  const countInterview = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length;
-  const countOffer = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length;
-  const countEntry = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length;
-  const countFailed = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length;
+  const scopedCandidates = getAnalyticsScopedCandidates();
+  const s = getAnalyticsStageSummary(scopedCandidates);
+  const total = s.totalDivisor;
 
   if (funnelContainer) {
     const funnelSteps = [
-      { name: "1. New (Code 0)", count: countNew, color: "var(--brand-primary)" },
-      { name: "2. Pending Client (10, 11)", count: countPending, color: "#4f46e5" },
-      { name: "3. Original Resume Pass (12)", count: countPass, color: "#06b6d4" },
-      { name: "4. Interview Stages (20, 21, 22)", count: countInterview, color: "#0ea5e9" },
-      { name: "5. Offer Issued / Accepted (30, 31)", count: countOffer, color: "#8b5cf6" },
-      { name: "6. Onboarded / Entry (40, 41)", count: countEntry, color: "var(--success-color)" }
+      { name: "1. New (Code 0)", count: s.countNew, color: "var(--brand-primary)" },
+      { name: "2. Pending Client (10, 11)", count: s.countPending, color: "#4f46e5" },
+      { name: "3. Original Resume Pass (12)", count: s.countPass, color: "#06b6d4" },
+      { name: "4. Interview Stages (20, 21, 22)", count: s.countInterview, color: "#0ea5e9" },
+      { name: "5. Offer Issued / Accepted (30, 31)", count: s.countOffer, color: "#8b5cf6" },
+      { name: "6. Onboarded / Entry (40, 41)", count: s.countEntry, color: "var(--success-color)" }
     ];
 
     funnelContainer.innerHTML = funnelSteps.map(step => {
@@ -2232,25 +2388,72 @@ function renderAdvancedAnalytics() {
 
   if (kpiContainer) {
     kpiContainer.innerHTML = `
-      <div class="kpi-card"><div>Total Talent Bank</div><div class="kpi-num">${candidates.length}</div></div>
-      <div class="kpi-card"><div>Active in Pipeline</div><div class="kpi-num">${countPending + countPass + countInterview + countOffer}</div></div>
-      <div class="kpi-card"><div>Successful Placements</div><div class="kpi-num" style="color: var(--success-color);">${countEntry}</div></div>
-      <div class="kpi-card"><div>Rejections / Failed</div><div class="kpi-num" style="color: var(--danger-dot);">${countFailed}</div></div>
+      <div class="kpi-card"><div>Total Talent Bank</div><div class="kpi-num">${s.totalRaw}</div></div>
+      <div class="kpi-card"><div>Active in Pipeline</div><div class="kpi-num">${s.countPending + s.countPass + s.countInterview + s.countOffer}</div></div>
+      <div class="kpi-card"><div>Successful Placements</div><div class="kpi-num" style="color: var(--success-color);">${s.countEntry}</div></div>
+      <div class="kpi-card"><div>Rejections / Failed</div><div class="kpi-num" style="color: var(--danger-dot);">${s.countFailed}</div></div>
     `;
   }
 
-  // Demographics Distribution (DA-03)
+  // Monthly Talent Inflow Chart (DA-02)
+  const inflowContainer = document.getElementById("monthlyInflowContainer");
+  if (inflowContainer) {
+    const monthLabels = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11"];
+    const monthCounts = {};
+    monthLabels.forEach(m => { monthCounts[m] = 0; });
+
+    scopedCandidates.forEach(c => {
+      const ym = String(c.entryTime || "").slice(0, 7);
+      if (/^\d{4}-\d{2}$/.test(ym)) {
+        monthCounts[ym] = (monthCounts[ym] || 0) + 1;
+      }
+    });
+
+    const orderedMonths = Object.keys(monthCounts).sort().slice(-8);
+    const maxMonthCount = Math.max(1, ...orderedMonths.map(m => monthCounts[m]));
+
+    inflowContainer.innerHTML = orderedMonths.map(m => {
+      const cnt = monthCounts[m] || 0;
+      const heightPct = cnt > 0 ? Math.max(12, Math.round((cnt / maxMonthCount) * 100)) : 4;
+      const shortMonth = m.slice(2);
+      return `
+        <div class="inflow-bar-col">
+          <span style="font-weight: 700; color: var(--brand-primary);">${cnt}</span>
+          <div class="inflow-bar-track" title="${m}: ${cnt} candidates">
+            <div class="inflow-bar-fill" style="height: ${heightPct}%; ${cnt === 0 ? "opacity: 0.2;" : ""}"></div>
+          </div>
+          <span style="color: var(--text-secondary);">${shortMonth}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Demographics Distribution (DA-03) + Failed & Consultant Breakdown (DA-01 / DA-04)
   const eduCounts = { undergraduate: 0, master: 0, diploma: 0 };
   const natCounts = {};
   const companyCounts = {};
+  const failedCodes = [19, 29, 39, 49, 90, 91];
+  const failedCounts = Object.fromEntries(failedCodes.map(code => [code, 0]));
+  const consultantStats = {};
 
-  candidates.forEach(c => {
+  scopedCandidates.forEach(c => {
     const edu = (c.education || "undergraduate").toLowerCase();
     if (eduCounts[edu] !== undefined) eduCounts[edu]++;
     else eduCounts.undergraduate++;
 
     const nat = c.nationality || "Indonesia";
     natCounts[nat] = (natCounts[nat] || 0) + 1;
+
+    const owner = c.ownerName || "Unassigned";
+    if (!consultantStats[owner]) consultantStats[owner] = { handled: 0, placed: 0 };
+    consultantStats[owner].handled++;
+    const badge = computeCandidateBadge(c);
+    if (getStageTabForCode(badge) === "entry") {
+      consultantStats[owner].placed++;
+    }
+    if (failedCounts[badge] !== undefined) {
+      failedCounts[badge]++;
+    }
 
     (c.recommendations || []).forEach(r => {
       const comp = r.company || "Other";
@@ -2286,39 +2489,66 @@ function renderAdvancedAnalytics() {
 
   const distComp = document.getElementById("distCompaniesContainer");
   if (distComp) {
-    const topComps = Object.entries(companyCounts).sort((a,b) => b[1] - a[1]).slice(0, 4);
+    const topComps = Object.entries(companyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
     distComp.innerHTML = topComps.map(([key, count]) => {
       const p = Math.round((count / total) * 100);
       return `
         <div class="dist-bar-item">
-          <div class="dist-bar-meta"><strong>${key}</strong><span>${count} recs</span></div>
+          <div class="dist-bar-meta"><strong>${escapeHtml(key)}</strong><span>${count} recs</span></div>
           <div class="dist-bar-track"><div class="dist-bar-fill" style="width: ${Math.min(100, p * 2)}%; background-color: var(--success-color);"></div></div>
         </div>
       `;
     }).join("");
   }
+
+  const distFailedAndCons = document.getElementById("distFailedAndConsContainer");
+  if (distFailedAndCons) {
+    const failedRows = failedCodes
+      .map(code => ({ code, label: getStatusName(code), count: failedCounts[code] || 0 }))
+      .filter(item => item.count > 0);
+
+    const failedHtml = (failedRows.length > 0 ? failedRows : [{ code: 0, label: "No failed/rejected candidates in range", count: 0 }])
+      .map(item => `
+        <div class="dist-bar-item">
+          <div class="dist-bar-meta"><span>${item.code ? `Code ${item.code}: ` : ""}${escapeHtml(item.label)}</span><span>${item.count}</span></div>
+          <div class="dist-bar-track"><div class="dist-bar-fill" style="width: ${item.count ? Math.max(10, Math.round((item.count / total) * 100)) : 0}%; background-color: var(--danger-dot);"></div></div>
+        </div>
+      `).join("");
+
+    const consHtml = Object.entries(consultantStats)
+      .sort((a, b) => b[1].placed - a[1].placed || b[1].handled - a[1].handled)
+      .slice(0, 4)
+      .map(([name, st]) => `
+        <div class="dist-bar-item">
+          <div class="dist-bar-meta"><strong>${escapeHtml(name)}</strong><span>${st.placed} hired / ${st.handled} total</span></div>
+          <div class="dist-bar-track"><div class="dist-bar-fill" style="width: ${Math.max(6, Math.round((st.handled / total) * 100))}%; background-color: #8b5cf6;"></div></div>
+        </div>
+      `).join("");
+
+    distFailedAndCons.innerHTML = `
+      <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Failed Reasons (19/29/39/49/90/91)</div>
+      ${failedHtml}
+      <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-top: 8px;">Consultant Placements</div>
+      ${consHtml}
+    `;
+  }
 }
 
 function exportAnalyticsCsv() {
-  const total = candidates.length || 1;
-  const countNew = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length;
-  const countPending = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length;
-  const countPass = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length;
-  const countInterview = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length;
-  const countOffer = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length;
-  const countEntry = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length;
-  const countFailed = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length;
+  const scoped = getAnalyticsScopedCandidates();
+  const s = getAnalyticsStageSummary(scoped);
+  const total = s.totalDivisor;
 
   const rows = [
     ["Metric / Stage", "Count", "Percentage"],
-    ["Total Talent Bank", total, "100%"],
-    ["New Candidates (Code 0)", countNew, `${Math.round((countNew/total)*100)}%`],
-    ["Pending Review (10, 11)", countPending, `${Math.round((countPending/total)*100)}%`],
-    ["Resume Pass (12)", countPass, `${Math.round((countPass/total)*100)}%`],
-    ["Interviews (20-22)", countInterview, `${Math.round((countInterview/total)*100)}%`],
-    ["Offers (30, 31)", countOffer, `${Math.round((countOffer/total)*100)}%`],
-    ["Hired / Entry (40, 41)", countEntry, `${Math.round((countEntry/total)*100)}%`],
-    ["Failed / Resigned (x9, 90)", countFailed, `${Math.round((countFailed/total)*100)}%`]
+    ["Total Talent Bank", s.totalRaw, "100%"],
+    ["New Candidates (Code 0)", s.countNew, `${Math.round((s.countNew/total)*100)}%`],
+    ["Pending Review (10, 11)", s.countPending, `${Math.round((s.countPending/total)*100)}%`],
+    ["Resume Pass (12)", s.countPass, `${Math.round((s.countPass/total)*100)}%`],
+    ["Interviews (20-22)", s.countInterview, `${Math.round((s.countInterview/total)*100)}%`],
+    ["Offers (30, 31)", s.countOffer, `${Math.round((s.countOffer/total)*100)}%`],
+    ["Hired / Entry (40, 41)", s.countEntry, `${Math.round((s.countEntry/total)*100)}%`],
+    ["Failed / Resigned (x9, 90)", s.countFailed, `${Math.round((s.countFailed/total)*100)}%`]
   ];
 
   const csvContent = "\uFEFF" + rows.map(r => r.join(",")).join("\n");
@@ -2743,6 +2973,49 @@ function runDemoScenario(index) {
       }, 200);
       break;
     }
+    case 16: {
+      // Scenario 16: Multi-Select Batch Operations Toolbar (Fase 6A)
+      switchWorkspaceView("resumeLib");
+      switchResumeViewMode("table");
+      setTimeout(() => {
+        selectedCandidateIds.clear();
+        const checks = Array.from(document.querySelectorAll("#resumeTableBody .candidate-row-check")).slice(0, 2);
+        checks.forEach(cb => {
+          const cid = cb.value || cb.getAttribute("data-id");
+          if (cid) {
+            cb.checked = true;
+            selectedCandidateIds.add(cid);
+          }
+        });
+        updateBatchToolbarUI();
+        showToast(`Demo 16: Selected ${selectedCandidateIds.size} candidates! Try Batch Recommend, Batch Tag, or Archive.`);
+      }, 200);
+      break;
+    }
+    case 17: {
+      // Scenario 17: Candidate WhatsApp & Email Outreach Generator (Fase 6B)
+      switchWorkspaceView("resumeLib");
+      setTimeout(() => {
+        const targetCand = candidates.find(c => c.id === "CND-1001" && !c.isDeleted) || candidates.find(c => !c.isDeleted);
+        if (targetCand) {
+          openOutreachModal(targetCand.id, "interview_invite");
+          showToast(`Demo 17: Outreach draft ready for ${targetCand.name} (WhatsApp / Email).`);
+        }
+      }, 150);
+      break;
+    }
+    case 18: {
+      // Scenario 18: Monthly Talent Inflow & Failed/Consultant Analytics (Fase 6C)
+      const rangeSel = document.getElementById("analyticsDateRange");
+      if (rangeSel) rangeSel.value = "all";
+      switchWorkspaceView("pipelineReport");
+      setTimeout(() => {
+        renderAdvancedAnalytics();
+        document.getElementById("monthlyInflowContainer")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        showToast("Demo 18: Viewing Monthly Inflow Chart (DA-02), Failed Stage Reasons (DA-01) & Consultant Placements (DA-04).");
+      }, 150);
+      break;
+    }
   }
 }
 
@@ -2753,38 +3026,67 @@ function resetAllDemoData() {
     notifications = getStoredNotifications();
     masterCompanies = getStoredMasterCompanies();
     masterPositions = getStoredMasterPositions();
+    masterLanguages = getStoredMasterLanguages();
+    masterCountries = getStoredMasterCountries();
+    selectedCandidateIds.clear();
+    resumeViewMode = "table";
     USERS = getStoredUsers();
     activeUser = USERS[0];
     openJobs = getStoredOpenJobs();
     scheduledInterviews = getStoredInterviews();
     systemSettings = getStoredSystemSettings();
     document.getElementById("demoGuideModal")?.close();
+    updateBatchToolbarUI();
     renderAllViews();
     applyRolePermissions();
     showToast("All data successfully restored to default demo state.");
   }
 }
 
+function renderMasterChipList(listEl, items, deleteFnName) {
+  if (!listEl) return;
+  listEl.innerHTML = items.map((item, i) => `
+    <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border-table);">
+      <span>${escapeHtml(item)}</span>
+      <button type="button" class="btn-outlined" onclick="${deleteFnName}(${i})" style="padding: 2px 6px; font-size: 11px;">✕</button>
+    </li>
+  `).join("");
+}
+
 function renderMasterDataLists() {
-  const compList = document.getElementById("settingsCompanyList");
-  const posList = document.getElementById("settingsPositionList");
+  renderMasterChipList(document.getElementById("settingsCompanyList"), masterCompanies, "deleteMasterCompany");
+  renderMasterChipList(document.getElementById("settingsPositionList"), masterPositions, "deleteMasterPosition");
+  renderMasterChipList(document.getElementById("settingsLanguageList"), masterLanguages, "deleteMasterLanguage");
+  renderMasterChipList(document.getElementById("settingsCountryList"), masterCountries, "deleteMasterCountry");
 
-  if (compList) {
-    compList.innerHTML = masterCompanies.map((c, i) => `
-      <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border-table);">
-        <span>${escapeHtml(c)}</span>
-        <button type="button" class="btn-outlined" onclick="deleteMasterCompany(${i})" style="padding: 2px 6px; font-size: 11px;">✕</button>
-      </li>
-    `).join("");
-  }
-
-  if (posList) {
-    posList.innerHTML = masterPositions.map((p, i) => `
-      <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border-table);">
-        <span>${escapeHtml(p)}</span>
-        <button type="button" class="btn-outlined" onclick="deleteMasterPosition(${i})" style="padding: 2px 6px; font-size: 11px;">✕</button>
-      </li>
-    `).join("");
+  const statusDictBody = document.getElementById("settingsStatusDictTableBody");
+  if (statusDictBody) {
+    const entries = Object.values(STATUS_CODES).sort((a, b) => a.code - b.code);
+    statusDictBody.innerHTML = entries.map(st => {
+      let ruleFlag = "Active Pipeline";
+      let flagColor = "var(--brand-primary)";
+      if (st.isFailed) {
+        ruleFlag = "Terminal Failed";
+        flagColor = "var(--danger-dot)";
+      } else if (st.code >= 40) {
+        ruleFlag = "Locked / Onboarded";
+        flagColor = "var(--success-color)";
+      } else if (st.code === 31) {
+        ruleFlag = "Signed Offer (Auto-close 90)";
+        flagColor = "#8b5cf6";
+      }
+      return `
+        <tr>
+          <th scope="row"><strong>${st.code}</strong></th>
+          <td>${escapeHtml(st.nameEn)}</td>
+          <td>${escapeHtml(st.nameZh)}</td>
+          <td>${escapeHtml(st.nameId)}</td>
+          <td><code>${escapeHtml(st.tab)}</code></td>
+          <td><span style="font-size: 11px; font-weight: 600; color: ${flagColor};">${ruleFlag}</span></td>
+        </tr>
+      `;
+    }).join("");
+    syncTableResponsiveLabels();
   }
 }
 
@@ -2800,48 +3102,61 @@ function populateCompanyAndPositionSelects(compId, posId) {
   }
 }
 
-function handleAddMasterCompany(e) {
+function addMasterDictionaryItem(e, inputId, list, saveFn, label) {
   e.preventDefault();
-  const input = document.getElementById("newMasterCompanyName");
+  const input = document.getElementById(inputId);
   const val = input?.value.trim();
   if (!val) return;
-  if (!masterCompanies.includes(val)) {
-    masterCompanies.push(val);
-    saveMasterCompanies(masterCompanies);
+  if (!list.includes(val)) {
+    list.push(val);
+    saveFn(list);
     input.value = "";
     renderMasterDataLists();
-    showToast(`Added client company: ${val}`);
+    showToast(`Added ${label}: ${val}`);
+  } else {
+    showToast(`${label} "${val}" already exists.`);
   }
+}
+
+function deleteMasterDictionaryItem(list, index, saveFn, label) {
+  if (index < 0 || index >= list.length) return;
+  if (confirm(`Delete ${label} "${list[index]}"?`)) {
+    list.splice(index, 1);
+    saveFn(list);
+    renderMasterDataLists();
+  }
+}
+
+function handleAddMasterCompany(e) {
+  addMasterDictionaryItem(e, "newMasterCompanyName", masterCompanies, saveMasterCompanies, "client company");
 }
 
 function deleteMasterCompany(index) {
-  if (confirm(`Delete client company "${masterCompanies[index]}"?`)) {
-    masterCompanies.splice(index, 1);
-    saveMasterCompanies(masterCompanies);
-    renderMasterDataLists();
-  }
+  deleteMasterDictionaryItem(masterCompanies, index, saveMasterCompanies, "client company");
 }
 
 function handleAddMasterPosition(e) {
-  e.preventDefault();
-  const input = document.getElementById("newMasterPositionName");
-  const val = input?.value.trim();
-  if (!val) return;
-  if (!masterPositions.includes(val)) {
-    masterPositions.push(val);
-    saveMasterPositions(masterPositions);
-    input.value = "";
-    renderMasterDataLists();
-    showToast(`Added position: ${val}`);
-  }
+  addMasterDictionaryItem(e, "newMasterPositionName", masterPositions, saveMasterPositions, "position");
 }
 
 function deleteMasterPosition(index) {
-  if (confirm(`Delete position "${masterPositions[index]}"?`)) {
-    masterPositions.splice(index, 1);
-    saveMasterPositions(masterPositions);
-    renderMasterDataLists();
-  }
+  deleteMasterDictionaryItem(masterPositions, index, saveMasterPositions, "position");
+}
+
+function handleAddMasterLanguage(e) {
+  addMasterDictionaryItem(e, "newMasterLanguageName", masterLanguages, saveMasterLanguages, "language");
+}
+
+function deleteMasterLanguage(index) {
+  deleteMasterDictionaryItem(masterLanguages, index, saveMasterLanguages, "language");
+}
+
+function handleAddMasterCountry(e) {
+  addMasterDictionaryItem(e, "newMasterCountryName", masterCountries, saveMasterCountries, "country");
+}
+
+function deleteMasterCountry(index) {
+  deleteMasterDictionaryItem(masterCountries, index, saveMasterCountries, "country");
 }
 
 /**
@@ -4272,3 +4587,226 @@ window.switchResumeViewMode = switchResumeViewMode;
 window.updateWarrantyAction = updateWarrantyAction;
 window.toggleSoftDeleteCandidate = toggleSoftDeleteCandidate;
 window.hardDeleteCandidate = hardDeleteCandidate;
+
+/**
+ * 16. FASE 6: MULTI-SELECT BATCH OPERATIONS & CANDIDATE OUTREACH HUB
+ */
+function updateBatchToolbarUI() {
+  const toolbar = document.getElementById("batchActionToolbar");
+  const countEl = document.getElementById("batchSelectedCount");
+  const selectAllCb = document.getElementById("selectAllCandidatesCb");
+
+  if (toolbar) {
+    toolbar.style.display = selectedCandidateIds.size > 0 ? "flex" : "none";
+  }
+  if (countEl) {
+    countEl.textContent = `${selectedCandidateIds.size} ${t("lblBatchSelected") || "selected"}`;
+  }
+  if (selectAllCb) {
+    const visibleChecks = Array.from(document.querySelectorAll("#resumeTableBody .candidate-row-check"));
+    if (visibleChecks.length === 0) {
+      selectAllCb.checked = false;
+      selectAllCb.indeterminate = false;
+    } else {
+      const checkedCount = visibleChecks.filter(cb => selectedCandidateIds.has(cb.value)).length;
+      selectAllCb.checked = checkedCount === visibleChecks.length;
+      selectAllCb.indeterminate = checkedCount > 0 && checkedCount < visibleChecks.length;
+    }
+  }
+}
+
+function clearBatchSelection() {
+  selectedCandidateIds.clear();
+  document.querySelectorAll("#resumeTableBody .candidate-row-check").forEach(cb => {
+    cb.checked = false;
+  });
+  const selectAllCb = document.getElementById("selectAllCandidatesCb");
+  if (selectAllCb) {
+    selectAllCb.checked = false;
+    selectAllCb.indeterminate = false;
+  }
+  updateBatchToolbarUI();
+}
+
+function handleBatchTag() {
+  if (selectedCandidateIds.size === 0) return;
+  const tag = prompt("Enter tag to add to selected candidates (e.g. Fast Track, Mandarin Fluent):")?.trim();
+  if (!tag) return;
+
+  let updatedCount = 0;
+  candidates.forEach(c => {
+    if (!selectedCandidateIds.has(c.id)) return;
+    if (!Array.isArray(c.tags)) c.tags = ["Siap Relokasi", "Verified"];
+    if (!c.tags.includes(tag)) c.tags.push(tag);
+    updatedCount++;
+  });
+
+  saveCandidates(candidates);
+  addAuditLog("BATCH_TAG", `${updatedCount} Candidates`, `Applied tag "${tag}" in bulk`);
+  clearBatchSelection();
+  renderAllViews();
+  showToast(`Added tag "${tag}" to ${updatedCount} candidate(s).`);
+}
+
+function handleBatchArchive() {
+  if (selectedCandidateIds.size === 0) return;
+  if (!confirm(`Archive ${selectedCandidateIds.size} selected candidate(s)? Onboarded records (>= Code 40) are automatically protected.`)) {
+    return;
+  }
+
+  let archivedCount = 0;
+  let lockedSkipped = 0;
+  candidates.forEach(c => {
+    if (!selectedCandidateIds.has(c.id)) return;
+    if (computeCandidateBadge(c) >= 40) {
+      lockedSkipped++;
+      return;
+    }
+    c.isDeleted = true;
+    archivedCount++;
+  });
+
+  saveCandidates(candidates);
+  addAuditLog("BATCH_ARCHIVE", `${archivedCount} Candidates`, `Archived ${archivedCount}, skipped ${lockedSkipped} locked`);
+  clearBatchSelection();
+  renderAllViews();
+  showToast(`Archived ${archivedCount} candidate(s)${lockedSkipped ? ` (${lockedSkipped} locked onboarded records skipped)` : ""}.`);
+}
+
+function handleBatchRecommend() {
+  if (selectedCandidateIds.size === 0) return;
+  const company = prompt("Enter Target Client Company:", masterCompanies[0] || "alauda")?.trim();
+  if (!company) return;
+
+  const customPos = prompt("Enter Target Position (leave empty to use each candidate's current position):", "");
+  if (customPos === null) return;
+
+  const nowStr = formatTimestamp(new Date());
+  let passedCount = 0;
+  const blockedList = [];
+
+  candidates.forEach(c => {
+    if (!selectedCandidateIds.has(c.id)) return;
+    const targetPos = customPos.trim() || c.recommendedPosition || masterPositions[0] || "Senior Engineer";
+    const evalResult = evaluateRecRepeatRules(c, company, targetPos, activeUser.name);
+
+    if (evalResult.blocked || (evalResult.requiresManager && activeUser.role === "consultant")) {
+      blockedList.push(c.name);
+      return;
+    }
+
+    c.recommendedCompany = company;
+    c.recommendedPosition = targetPos;
+    c.entryTime = nowStr;
+    if (!Array.isArray(c.recommendations)) c.recommendations = [];
+    c.recommendations.unshift({
+      id: `REC-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 90 + 10)}`,
+      company,
+      position: targetPos,
+      statusCode: 10,
+      consultantName: activeUser.name,
+      timestamp: nowStr,
+      reason: evalResult.requiresReason ? "Batch campaign submission" : "",
+      notes: "Batch recommended via Resume Lib.",
+      isActive: true
+    });
+    passedCount++;
+  });
+
+  if (passedCount > 0) {
+    saveCandidates(candidates);
+    addAuditLog("BATCH_RECOMMEND", `${passedCount} Candidates`, `Batch recommended to ${company} (blocked: ${blockedList.length})`);
+  }
+
+  clearBatchSelection();
+  renderAllViews();
+  showToast(`Recommended ${passedCount} candidate(s) to ${company}${blockedList.length ? ` (${blockedList.length} blocked by 6-rule check: ${blockedList.join(", ")})` : ""}.`);
+}
+
+function openOutreachModal(candidateId, defaultTemplate = "interview_invite") {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return;
+
+  const modal = document.getElementById("outreachModal");
+  const idInput = document.getElementById("outreachCandidateId");
+  const infoBox = document.getElementById("outreachRecipientInfo");
+  const tmplSelect = document.getElementById("outreachTemplateSelect");
+  if (!modal || !idInput || !infoBox || !tmplSelect) return;
+
+  idInput.value = c.id;
+  infoBox.innerHTML = `
+    <strong>${escapeHtml(c.name)}</strong> (${escapeHtml(c.id)}) —
+    ${escapeHtml(c.recommendedPosition || "-")} at <strong>${escapeHtml(c.recommendedCompany || "-")}</strong><br>
+    <span style="color: var(--text-secondary);">Email: ${escapeHtml(c.email || "-")} | WhatsApp: ${escapeHtml(c.whatsapp || c.phone || "-")}</span>
+  `;
+
+  tmplSelect.value = defaultTemplate;
+  refreshOutreachMessageDraft();
+  if (!modal.open) {
+    modal.showModal();
+  }
+}
+
+function refreshOutreachMessageDraft() {
+  const cid = document.getElementById("outreachCandidateId")?.value;
+  const tmpl = document.getElementById("outreachTemplateSelect")?.value || "interview_invite";
+  const textArea = document.getElementById("outreachMessageText");
+  const c = candidates.find(item => item.id === cid);
+  if (!textArea || !c) return;
+
+  const pos = c.recommendedPosition || "Senior Role";
+  const comp = c.recommendedCompany || "our partner client";
+  const sender = activeUser?.name || "TemuTalenta Recruitment Team";
+
+  const templates = {
+    interview_invite:
+      `Halo ${c.name},\n\nSaya ${sender} dari TemuTalenta. Klien kami (${comp}) sangat tertarik dengan profil Anda untuk posisi ${pos}.\n\nApakah Anda bersedia untuk jadwal interview online dalam 2 hari ke depan? Mohon info slot waktu yang paling nyaman untuk Anda.\n\nTerima kasih,\n${sender}`,
+    offer_followup:
+      `Halo ${c.name},\n\nSelamat! Surat penawaran resmi (Offer Letter) untuk posisi ${pos} di ${comp} telah kami terbitkan.\n\nSilakan tinjau detail kompensasi dan lengkapi tanda tangan digital Anda agar proses onboarding dapat segera dijadwalkan.\n\nSalam hangat,\n${sender}`,
+    headhunter_intro:
+      `Hi ${c.name},\n\nI'm ${sender} at TemuTalenta Executive Search. Given your background, we have an exciting ${pos} mandate with ${comp} offering competitive compensation and career growth.\n\nWould you be open to a brief 15-minute confidential chat this week?\n\nBest regards,\n${sender}`,
+    probation_checkin:
+      `Halo ${c.name},\n\nSemoga masa onboarding dan probation Anda sebagai ${pos} di ${comp} berjalan lancar! Sebagai bentuk layanan garansi 90 hari TemuTalenta, kami ingin memastikan adaptasi tim dan target berjalan optimal.\n\nKabari jika ada hal yang perlu kami bantu koordinasikan.\n\nTerima kasih,\n${sender}`
+  };
+
+  textArea.value = templates[tmpl] || templates.interview_invite;
+  syncOutreachLinks();
+}
+
+function syncOutreachLinks() {
+  const cid = document.getElementById("outreachCandidateId")?.value;
+  const c = candidates.find(item => item.id === cid);
+  const msg = document.getElementById("outreachMessageText")?.value || "";
+  const waBtn = document.getElementById("btnOpenWhatsApp");
+  const mailBtn = document.getElementById("btnOpenMailto");
+
+  const rawPhone = String(c?.whatsapp || c?.phone || "6281200000000").replace(/[^\d]/g, "");
+  const cleanPhone = rawPhone.startsWith("0") ? `62${rawPhone.slice(1)}` : rawPhone;
+
+  if (waBtn) {
+    waBtn.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+  }
+  if (mailBtn) {
+    const subject = `TemuTalenta Opportunity: ${c?.recommendedPosition || "Recruitment Update"} - ${c?.recommendedCompany || ""}`;
+    mailBtn.href = `mailto:${encodeURIComponent(c?.email || "")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
+  }
+}
+
+function copyOutreachDraft() {
+  const text = document.getElementById("outreachMessageText")?.value || "";
+  if (!text) return;
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast("Outreach message copied to clipboard."))
+      .catch(() => showToast("Select and copy message manually from text box."));
+  } else {
+    const area = document.getElementById("outreachMessageText");
+    area?.select();
+    showToast("Message highlighted — press Ctrl+C / Cmd+C to copy.");
+  }
+}
+
+window.openOutreachModal = openOutreachModal;
+window.deleteMasterLanguage = deleteMasterLanguage;
+window.deleteMasterCountry = deleteMasterCountry;

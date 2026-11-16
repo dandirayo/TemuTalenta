@@ -404,6 +404,22 @@
             <input type="number" id="advMinService" class="ctrl-input" min="0" max="40" placeholder="0">
           </div>
           <div class="adv-field">
+            <label for="advMaxService">Max Year of Service</label>
+            <input type="number" id="advMaxService" class="ctrl-input" min="0" max="40" placeholder="40">
+          </div>
+          <div class="adv-field">
+            <label for="advPosition" data-i18n="colRecPosition">Recommended Position</label>
+            <input type="text" id="advPosition" class="ctrl-input" placeholder="e.g. Pre sales, Backend">
+          </div>
+          <div class="adv-field">
+            <label for="advDateFrom">Entry Date From</label>
+            <input type="date" id="advDateFrom" class="ctrl-input">
+          </div>
+          <div class="adv-field">
+            <label for="advDateTo">Entry Date To</label>
+            <input type="date" id="advDateTo" class="ctrl-input">
+          </div>
+          <div class="adv-field">
             <label for="advLanguage" data-i18n="colLanguage">Language</label>
             <input type="text" id="advLanguage" class="ctrl-input" placeholder="e.g. English, Chinese">
           </div>
@@ -464,6 +480,17 @@
               </svg>
             </button>
             <div id="colDropdownMenu" class="col-dropdown-menu"></div>
+          </div>
+        </div>
+
+        <!-- Batch Action Bar (Fase 6 Multi-Select) -->
+        <div id="batchActionToolbar" class="batch-action-bar" style="display: none;">
+          <span id="batchSelectedCount" style="font-weight: 700; color: var(--brand-primary);">0 selected</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" id="btnBatchRecommend" class="btn-solid" style="height: 28px; font-size: 12px;">Batch Recommend to Client</button>
+            <button type="button" id="btnBatchTag" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Batch Add Tag</button>
+            <button type="button" id="btnBatchArchive" class="btn-outlined" style="height: 28px; font-size: 12px; color: var(--warning-color);">Batch Archive</button>
+            <button type="button" id="btnBatchClear" class="btn-outlined" style="height: 28px; font-size: 12px;">Clear Selection</button>
           </div>
         </div>
 
@@ -656,10 +683,16 @@
           <div id="funnelVisualContainer" class="funnel-container"></div>
         </div>
 
-        <!-- Demographics & Distribution (DA-03, DA-04) -->
+        <!-- Monthly Candidate Inflow Trend (DA-02) -->
+        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblMonthlyInflow">Monthly Candidate Inflow (DA-02)</h3>
+          <div id="monthlyInflowContainer" class="inflow-chart-grid"></div>
+        </div>
+
+        <!-- Demographics & Distribution (DA-01, DA-03, DA-04) -->
         <div style="margin-top: 24px;">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblDemographics">Candidate Demographics & Distribution</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px;">
             <!-- Education Distribution -->
             <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
               <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Education Breakdown</h4>
@@ -676,6 +709,12 @@
             <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
               <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Top Client Placements</h4>
               <div id="distCompaniesContainer" class="dist-bar-group"></div>
+            </div>
+
+            <!-- Failed Stages & Consultant Performance (DA-01 / DA-04) -->
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Failed Stage & Consultant Breakdown</h4>
+              <div id="distFailedAndConsContainer" class="dist-bar-group"></div>
             </div>
           </div>
         </div>
@@ -731,6 +770,46 @@
               <button type="submit" class="btn-solid" data-i18n="btnAddPosition">+ Add Position</button>
             </form>
             <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
+
+          <!-- Master Languages (PG-02) -->
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Languages (PG-02)</h3>
+            <form id="formAddMasterLanguage" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="text" id="newMasterLanguageName" class="ctrl-input" placeholder="New Language..." required style="flex: 1;">
+              <button type="submit" class="btn-solid">+ Add Language</button>
+            </form>
+            <ul id="settingsLanguageList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
+
+          <!-- Master Countries / Nationalities (PG-02) -->
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Countries / Nationalities (PG-02)</h3>
+            <form id="formAddMasterCountry" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="text" id="newMasterCountryName" class="ctrl-input" placeholder="New Country..." required style="flex: 1;">
+              <button type="submit" class="btn-solid">+ Add Country</button>
+            </form>
+            <ul id="settingsCountryList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
+        </div>
+
+        <!-- Master 2-Digit Status Code Dictionary (PG-02 Reference) -->
+        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px; margin-bottom: 18px;">
+          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Master Status Code Dictionary (PG-02 Tri-Lingual Registry)</h3>
+          <div tabindex="0" role="region" aria-label="Master Status Codes" class="table-wrapper" style="max-height: 260px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>English Label</th>
+                  <th>ä¸­æ–‡åç§°</th>
+                  <th>Nama (Indonesia)</th>
+                  <th>Stage Tab</th>
+                  <th>Rule Flag</th>
+                </tr>
+              </thead>
+              <tbody id="settingsStatusDictTableBody"></tbody>
+            </table>
           </div>
         </div>
 
@@ -1286,6 +1365,36 @@
             </div>
             <button type="button" class="btn-solid" onclick="runDemoScenario(15)">Uji Skenario 15 (Post Job Order)</button>
           </div>
+
+          <!-- Scenario 16 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 6A: Batch Operations</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Seleksi Massal & Rekomendasi Batch</div>
+              <p class="demo-scenario-desc">Centang beberapa kandidat sekaligus di Resume Lib untuk memberi tag massal atau rekomendasi serentak ke klien.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(16)">Uji Skenario 16 (Batch Action)</button>
+          </div>
+
+          <!-- Scenario 17 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 6B: Outreach Generator</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Template WhatsApp & Email Kandidat</div>
+              <p class="demo-scenario-desc">Hasilkan pesan undangan interview atau follow-up offer otomatis siap kirim ke WhatsApp Web atau Email.</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(17)">Uji Skenario 17 (WA/Email Hub)</button>
+          </div>
+
+          <!-- Scenario 18 -->
+          <div class="demo-scenario-card">
+            <div>
+              <span class="demo-badge-rule">Fase 6C: DA-02 & Master PG-02</span>
+              <div class="demo-scenario-title" style="margin-top: 6px;">Grafik Inflow Bulanan & Kamus Status</div>
+              <p class="demo-scenario-desc">Tinjau tren kandidat baru bulanan (DA-02), rincian gagal per tahap (DA-01), dan kamus master bahasa/status (PG-02).</p>
+            </div>
+            <button type="button" class="btn-solid" onclick="runDemoScenario(18)">Uji Skenario 18 (Analitik DA-02)</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer" style="justify-content: space-between;">
@@ -1503,6 +1612,43 @@
           <button type="submit" class="btn-solid">Publish to Career Portal</button>
         </div>
       </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 11: Candidate WhatsApp & Email Outreach Generator (Fase 6B) -->
+  <dialog id="outreachModal" aria-labelledby="outreachModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="outreachModalTitle" data-i18n="btnContactWa">Contact Candidate (WhatsApp / Email)</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+      </div>
+      <div class="modal-body form-grid">
+        <input type="hidden" id="outreachCandidateId">
+        <div class="form-field full">
+          <div id="outreachRecipientInfo" style="padding: 10px 14px; background: var(--bg-subtle); border-radius: 4px; font-size: 12.5px;"></div>
+        </div>
+        <div class="form-field full">
+          <label for="outreachTemplateSelect">Outreach Message Template</label>
+          <select id="outreachTemplateSelect" class="ctrl-select">
+            <option value="interview_invite">Interview Schedule Invitation</option>
+            <option value="offer_followup">Offer Letter & Start Date Follow-Up</option>
+            <option value="headhunter_intro">Executive Opportunity Reachout</option>
+            <option value="probation_checkin">90-Day Probation Check-In</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label for="outreachMessageText">Message Content (Editable before sending)</label>
+          <textarea id="outreachMessageText" rows="6"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" id="btnCopyOutreach" class="btn-outlined">Copy Text</button>
+          <a id="btnOpenMailto" href="#" target="_blank" rel="noopener noreferrer" class="btn-outlined" style="display:inline-flex; align-items:center; text-decoration:none;">Send Email</a>
+          <a id="btnOpenWhatsApp" href="#" target="_blank" rel="noopener noreferrer" class="btn-solid" style="display:inline-flex; align-items:center; text-decoration:none; background-color:#059669; border-color:#059669;">Send via WhatsApp</a>
+        </div>
+      </div>
     </div>
   </dialog>
 

@@ -140,6 +140,10 @@ Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
    - Memungkinkan pemindahan kandidat antar-tahap melalui *drag-and-drop* atau kontrol keyboard dengan seluruh validasi bisnis tetap berlaku.
 9. **`Placement Fee & Warranty Tracker` (`Pelacak Komisi & Garansi 90 Hari`)**:
    - Menghitung estimasi kompensasi agensi, melacak masa garansi *probation* 90 hari, status *invoice*, serta pengarsipan *Soft Delete* dan pencadangan JSON penuh.
+10. **`Multi-Select Batch Operations` (`Operasi Massal Kandidat`)**:
+   - Mendukung aksi *Batch Recommend* (tetap menegakkan 6 aturan validasi pengajuan berulang), *Batch Tag*, dan *Batch Archive* (otomatis melewati kandidat berstatus terkunci `>= 40`).
+11. **`Master Dictionaries & Candidate Outreach` (`Kamus PG-02 & Outreach WA/Email`)**:
+   - Mengelola daftar bahasa, negara/kebangsaan, serta referensi resmi kamus 17 kode status tri-lingual (`0`–`91`), dilengkapi draf pesan cepat kandidat ke WhatsApp (`wa.me`) dan email (`mailto:`).
 
 ---
 
