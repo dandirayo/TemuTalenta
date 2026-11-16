@@ -1,0 +1,18 @@
+{
+  "name": "temutalenta",
+  "version": "1.0.0",
+  "description": "Platform pencarian & smart matchmaking talenta profesional Indonesia (Offline-First)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "talent",
+    "matchmaking",
+    "offline-first",
+    "recruitment",
+    "indonesia"
+  ],
+  "author": "dandirayo",
+  "license": "MIT"
+}

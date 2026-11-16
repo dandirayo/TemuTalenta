@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TemuTalenta - Platform Pencarian & Matchmaking Talenta Profesional</title>
+  <meta name="description" content="Platform kurasi, pencarian, dan pencocokan talenta profesional Indonesia. Bekerja secara mandiri dan offline-first.">
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Header & Navigasi -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand" onclick="switchTab('discovery')">
+        <span class="brand-badge">TT</span>
+        <span>TemuTalenta</span>
+        <span class="brand-offline-tag">Offline-First</span>
+      </div>
+
+      <nav class="nav-tabs" aria-label="Navigasi Utama">
+        <button type="button" class="nav-btn active" data-tab="discovery">
+          🔍 Eksplorasi Talenta
+        </button>
+        <button type="button" class="nav-btn" data-tab="matchmaker">
+          🎯 Smart Matchmaker
+        </button>
+        <button type="button" class="nav-btn" data-tab="addTalent">
+          ➕ Tambah Talenta
+        </button>
+        <button type="button" class="nav-btn" data-tab="bookmarks">
+          ⭐ Tersimpan
+        </button>
+        <button type="button" class="nav-btn" data-tab="docs">
+          📖 Blueprint & Core
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="exportJsonBtn" title="Ekspor Data JSON">
+          💾
+        </button>
+        <button type="button" class="icon-btn" id="themeToggleBtn" title="Beralih Tema">
+          🌙
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Konten Utama -->
+  <main class="main-content">
+
+    <!-- TAB 1: EKSPLORASI TALENTA -->
+    <section id="discoveryView" class="tab-view active">
+      <div class="hero-banner">
+        <h1 class="hero-title">Temukan Talenta Terbaik Sesuai Kebutuhan Anda</h1>
+        <p class="hero-desc">
+          Platform kurasi talenta profesional Indonesia terintegrasi. Jelajahi kandidat di bidang software engineering, data & AI, desain produk, hingga keamanan siber secara mandiri dan offline.
+        </p>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-value" id="statTotalTalents">0</span>
+            <span class="stat-label">Total Talenta</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statAvailTalents">0</span>
+            <span class="stat-label">Siap Kerja Sekarang</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value" id="statAvgRating">⭐ 4.9</span>
+            <span class="stat-label">Rata-rata Rating</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">100%</span>
+            <span class="stat-label">Offline-Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="filter-toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="talentSearchInput" class="search-input" placeholder="Cari nama, keahlian (Go, Figma, Python), atau peran...">
+        </div>
+
+        <div class="filter-group">
+          <select id="categoryFilter" class="select-ctrl" aria-label="Filter Kategori">
+            <option value="ALL">Semua Kategori</option>
+            <option value="TECH-ENG">Software Engineering</option>
+            <option value="DATA-AI">Data & AI</option>
+            <option value="PROD-DES">Product & Design</option>
+            <option value="CYBER-SEC">Cybersecurity & Infra</option>
+          </select>
+
+          <select id="workPrefFilter" class="select-ctrl" aria-label="Filter Preferensi Kerja">
+            <option value="ALL">Semua Tipe Kerja</option>
+            <option value="remote">Remote</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="onsite">Onsite</option>
+          </select>
+
+          <select id="availabilityFilter" class="select-ctrl" aria-label="Filter Ketersediaan">
+            <option value="ALL">Semua Ketersediaan</option>
+            <option value="Available Now">Available Now</option>
+            <option value="Open to Offers">Open to Offers</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <span id="talentCountBadge" class="badge badge-primary">Memuat...</span>
+        <button type="button" class="btn btn-outline" id="resetDataBtn" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
+          🔄 Reset ke Data Default
+        </button>
+      </div>
+
+      <!-- Grid Talenta -->
+      <div id="talentGrid" class="talent-grid">
+        <!-- Render otomatis via JavaScript -->
+      </div>
+    </section>
+
+    <!-- TAB 2: SMART MATCHMAKER -->
+    <section id="matchmakerView" class="tab-view">
+      <div class="hero-banner">
+        <h2 class="hero-title">🎯 Smart Matchmaker Simulation</h2>
+        <p class="hero-desc">
+          Masukkan parameter proyek atau kebutuhan tim Anda. Algoritma pembobotan multi-faktor (Skill 45%, Pengalaman 25%, Budget 20%, Ketersediaan 10%) akan secara instan menghitung skor kecocokan kandidat.
+        </p>
+      </div>
+
+      <div class="matchmaker-container">
+        <!-- Form Kriteria Proyek -->
+        <div class="form-panel">
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Parameter Kebutuhan Proyek</h3>
+          <form id="matchmakerForm">
+            <div class="form-group">
+              <label for="reqSkills" class="form-label">Keahlian yang Dibutuhkan</label>
+              <input type="text" id="reqSkills" class="form-input" placeholder="contoh: Go, PostgreSQL, Docker" value="Go, PostgreSQL, Docker">
+              <p class="form-helper">Pisahkan keahlian dengan tanda koma.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="targetCategory" class="form-label">Kategori Utama</label>
+              <select id="targetCategory" class="form-select">
+                <option value="ALL">Semua Kategori</option>
+                <option value="TECH-ENG" selected>Software Engineering</option>
+                <option value="DATA-AI">Data & AI</option>
+                <option value="PROD-DES">Product & Design</option>
+                <option value="CYBER-SEC">Cybersecurity & Infra</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="minExp" class="form-label">Minimal Pengalaman (Tahun)</label>
+              <input type="number" id="minExp" class="form-input" min="0" max="25" step="0.5" value="4">
+            </div>
+
+            <div class="form-group">
+              <label for="maxBudget" class="form-label">Maksimal Anggaran (IDR / Bulan)</label>
+              <input type="number" id="maxBudget" class="form-input" min="1000000" step="500000" value="25000000">
+              <p class="form-helper">Contoh: Rp 25.000.000 / bulan</p>
+            </div>
+
+            <div class="form-group">
+              <label for="reqWorkPref" class="form-label">Preferensi Lokasi Kerja</label>
+              <select id="reqWorkPref" class="form-select">
+                <option value="ALL">Fleksibel (Semua Tipe)</option>
+                <option value="remote" selected>Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">Onsite</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
+              ⚡ Kalkulasi Kecocokan Kandidat
+            </button>
+          </form>
+        </div>
+
+        <!-- Hasil Ranking Matchmaker -->
+        <div id="matchResultsContainer">
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <h3>Siap Melakukan Pencocokan</h3>
+            <p>Sesuaikan parameter di sebelah kiri dan klik tombol <strong>Kalkulasi Kecocokan</strong> untuk melihat skor dan peringkat talenta.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: TAMBAH TALENTA (OFFLINE STORAGE) -->
+    <section id="addTalentView" class="tab-view">
+      <div class="hero-banner">
+        <h2 class="hero-title">➕ Daftarkan Profil Talenta Baru</h2>
+        <p class="hero-desc">
+          Data disimpan secara lokal di peramban (LocalStorage) dan dapat diekspor menjadi format JSON baku sesuai spesifikasi di <code>docs/core.md</code>.
+        </p>
+      </div>
+
+      <div class="form-panel" style="max-width: 800px; margin: 0 auto;">
+        <form id="addTalentForm">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label for="newFullName" class="form-label">Nama Lengkap *</label>
+              <input type="text" id="newFullName" class="form-input" placeholder="contoh: Bayu Wicaksono" required>
+            </div>
+            <div class="form-group">
+              <label for="newTitle" class="form-label">Gelar / Spesialisasi Peran *</label>
+              <input type="text" id="newTitle" class="form-input" placeholder="contoh: Cloud Architect" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label for="newCategory" class="form-label">Kategori *</label>
+              <select id="newCategory" class="form-select" required>
+                <option value="TECH-ENG">Software Engineering</option>
+                <option value="DATA-AI">Data & AI</option>
+                <option value="PROD-DES">Product & Design</option>
+                <option value="CYBER-SEC">Cybersecurity & Infra</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="newLocation" class="form-label">Domisili / Kota</label>
+              <input type="text" id="newLocation" class="form-input" placeholder="contoh: Jakarta">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+              <label for="newWorkPref" class="form-label">Preferensi Kerja</label>
+              <select id="newWorkPref" class="form-select">
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">Onsite</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="newExpYears" class="form-label">Pengalaman (Tahun)</label>
+              <input type="number" id="newExpYears" class="form-input" min="0" step="0.5" value="3">
+            </div>
+            <div class="form-group">
+              <label for="newAvailability" class="form-label">Ketersediaan</label>
+              <select id="newAvailability" class="form-select">
+                <option value="Available Now">Available Now</option>
+                <option value="Open to Offers">Open to Offers</option>
+                <option value="Busy">Busy</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="newRate" class="form-label">Expected Rate Standar (IDR / Bulan) *</label>
+            <input type="number" id="newRate" class="form-input" min="1000000" step="500000" value="15000000" required>
+          </div>
+
+          <div class="form-group">
+            <label for="newSkills" class="form-label">Daftar Keahlian & Teknologi *</label>
+            <input type="text" id="newSkills" class="form-input" placeholder="contoh: Python, FastAPI, Docker, PostgreSQL" required>
+            <p class="form-helper">Pisahkan keahlian dengan tanda koma.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="newBio" class="form-label">Ringkasan Profil (Bio) *</label>
+            <textarea id="newBio" class="form-textarea" rows="3" placeholder="Ceritakan keunggulan, pencapaian proyek, dan fokus keahlian..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="newEmail" class="form-label">Alamat Email Kontak</label>
+            <input type="email" id="newEmail" class="form-input" placeholder="nama@email.com">
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem;">
+            Simpan Talenta ke Penyimpanan Lokal
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 4: KANDIDAT TERSIMPAN (BOOKMARKS) -->
+    <section id="bookmarksView" class="tab-view">
+      <div class="hero-banner">
+        <h2 class="hero-title">⭐ Kandidat Tersimpan (*Bookmarks*)</h2>
+        <p class="hero-desc">
+          Daftar kandidat yang telah Anda tandai untuk pertimbangan tindak lanjut, wawancara, atau penawaran proyek.
+        </p>
+      </div>
+
+      <div id="bookmarksGrid" class="talent-grid">
+        <!-- Render otomatis via JavaScript -->
+      </div>
+    </section>
+
+    <!-- TAB 5: BLUEPRINT & KNOWLEDGE CORE VIEWER -->
+    <section id="docsView" class="tab-view">
+      <div class="hero-banner">
+        <h2 class="hero-title">📖 Blueprint Perencanaan & Knowledge Core</h2>
+        <p class="hero-desc">
+          Ringkasan panduan arsitektur, standar taksonomi keahlian, formula algoritma pencocokan, serta kepatuhan hukum ketenagakerjaan dan perpajakan (PPh 21).
+        </p>
+      </div>
+
+      <div class="doc-box">
+        <h2>1. Blueprint Perencanaan (Ringkasan)</h2>
+        <p>
+          TemuTalenta mengadopsi prinsip <strong>Offline-First & Local-First Architecture</strong>. Sistem dapat beroperasi mandiri di browser tanpa server eksternal, memastikan demonstrasi, kurasi internal, dan pengujian berjalan cepat dan aman.
+        </p>
+        <pre><code>Arsitektur:
+[Browser UI (HTML5, Semantic)] &lt;---&gt; [Offline Engine (Scoring, LocalStorage, JSON Export)]
+                                      |
+                                      +--- (Fase Lanjutan: PWA & Sync Backend API)</code></pre>
+
+        <h3>Peta Jalan (*Roadmap*):</h3>
+        <ul>
+          <li><strong>M1 (Saat Ini)</strong>: Standalone Offline MVP dengan database talenta lokal, filter multi-kategori, dan simulasi matchmaking.</li>
+          <li><strong>M2</strong>: Ekspor & impor profil JSON standar, manajemen bookmark, dan kalkulator kepatuhan pajak PPh 21 tenaga ahli.</li>
+          <li><strong>M3</strong>: Dukungan Progressive Web App (PWA) dengan Service Worker untuk akses penuh saat tidak terkoneksi jaringan.</li>
+          <li><strong>M4</strong>: Integrasi REST API & database terpusat (PostgreSQL) jika beralih ke mode cloud multi-tenant.</li>
+        </ul>
+
+        <h2>2. Knowledge Core (Formula Matchmaking & Standar)</h2>
+        <p>Formula penilaian kesesuaian kandidat terhadap parameter kebutuhan:</p>
+        <pre><code>Total Match Score = (0.45 * Skill) + (0.25 * Pengalaman) + (0.20 * Budget) + (0.10 * Ketersediaan)</code></pre>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Faktor Penilaian</th>
+              <th>Bobot</th>
+              <th>Metode Evaluasi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Keahlian (Skills)</strong></td>
+              <td>45%</td>
+              <td>Rasio perbandingan keahlian yang dimiliki kandidat terhadap syarat wajib.</td>
+            </tr>
+            <tr>
+              <td><strong>Pengalaman (Experience)</strong></td>
+              <td>25%</td>
+              <td>Pencapaian batas minimum tahun pengalaman yang disyaratkan.</td>
+            </tr>
+            <tr>
+              <td><strong>Kesesuaian Anggaran</strong></td>
+              <td>20%</td>
+              <td>Evaluasi rate ekspektasi talenta vs batas maksimal anggaran proyek.</td>
+            </tr>
+            <tr>
+              <td><strong>Ketersediaan</strong></td>
+              <td>10%</td>
+              <td>Status kesiapan bergabung (Available Now = 100%, Open to Offers = 75%).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>3. Kepatuhan Hukum & Pajak Indonesia</h2>
+        <p>
+          Platform mengadopsi standar perlakuan <strong>PPh 21 Tenaga Ahli Bukan Pegawai</strong>:
+        </p>
+        <ul>
+          <li>Dasar Pengenaan Pajak (DPP) = <strong>50% × Penghasilan Bruto</strong>.</li>
+          <li>PPh 21 Terutang = <strong>Tarif Pasal 17 UU HPP × DPP</strong>.</li>
+          <li>Kerahasiaan data dan portofolio dilindungi sesuai <strong>UU Pelindungan Data Pribadi (UU No. 27/2022)</strong>.</li>
+        </ul>
+
+        <div style="margin-top: 1.5rem; padding: 1rem; background-color: var(--bg-subtle); border-radius: var(--radius-sm);">
+          📄 Dokumen lengkap tersimpan di direktori repositori:
+          <ul style="margin-top: 0.5rem;">
+            <li><code>docs/blueprint-perencanaan.md</code></li>
+            <li><code>docs/core.md</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Native Modal Dialog untuk Detail Profil Talenta (Sesuai Modern Web Guidance) -->
+  <dialog id="talentDetailModal" aria-labelledby="modalTalentTitle" closedby="any">
+    <div class="dialog-inner">
+      <div class="dialog-header">
+        <h3 id="modalTalentTitle" class="dialog-title">Detail Profil Talenta</h3>
+        <button type="button" class="btn btn-outline" id="modalCloseBtn" style="padding: 0.35rem 0.65rem;" autofocus>
+          ✕
+        </button>
+      </div>
+
+      <div class="dialog-content" id="modalBodyContent">
+        <!-- Render otomatis via JavaScript -->
+      </div>
+
+      <div class="dialog-footer">
+        <form method="dialog">
+          <button type="submit" class="btn btn-outline">Tutup</button>
+        </form>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div>
+        <strong>TemuTalenta</strong> © 2026. Offline-First Talent Discovery Platform.
+      </div>
+      <div>
+        Berjalan mandiri di browser tanpa server eksternal.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="./js/data.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
