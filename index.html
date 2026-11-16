@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <script>
     try {
@@ -26,11 +26,14 @@
        ======================================================================== -->
   <aside id="appSidebar" class="app-sidebar" aria-label="Main Navigation">
     <div class="sidebar-brand">
-      <svg class="brand-logo-svg" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-        <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
-        <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#4c78e8"/>
-      </svg>
-      <span>TemuTalenta</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg class="brand-logo-svg" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
+          <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#4c78e8"/>
+        </svg>
+        <span>TemuTalenta</span>
+      </div>
+      <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close Navigation">✕</button>
     </div>
 
     <nav class="sidebar-menu">
@@ -194,6 +197,7 @@
       </div>
     </nav>
   </aside>
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <!-- ========================================================================
        MAIN APPLICATION SHELL
@@ -210,12 +214,13 @@
             <line x1="3" y1="18" x2="21" y2="18"/>
           </svg>
         </button>
+        <span class="mobile-header-brand">TemuTalenta</span>
       </div>
 
       <div class="header-right">
         <!-- Role Switcher (Super Admin, Manager, Consultant, Client HR) -->
         <div style="display: flex; align-items: center; gap: 6px;">
-          <select id="roleSelect" class="ctrl-select" style="min-width: 150px; height: 26px; font-size: 11.5px;" aria-label="Switch User Role">
+          <select id="roleSelect" class="ctrl-select header-role-select" aria-label="Switch User Role">
             <option value="USR-01">Rina (Consultant)</option>
             <option value="USR-02">Budi Hartono (Manager)</option>
             <option value="USR-ADMIN">Super Admin (Admin)</option>
@@ -231,7 +236,7 @@
           </button>
           <span id="langLabelEn" class="lang-label active" data-i18n="langEnglish">English</span>
 
-          <select id="langSelectorDropdown" class="ctrl-select" style="min-width: 95px; height: 26px; font-size: 11.5px; margin-left: 6px;" aria-label="Select Language">
+          <select id="langSelectorDropdown" class="ctrl-select header-lang-select" aria-label="Select Language">
             <option value="en">English</option>
             <option value="zh">中文 (ZH)</option>
             <option value="id">Bahasa (ID)</option>
@@ -335,7 +340,7 @@
           <button type="button" id="btnSearch" class="btn-solid" data-i18n="btnSearch">Search</button>
           <button type="button" id="btnSearchAll" class="btn-solid" data-i18n="btnSearchAll">Search All</button>
           <button type="button" id="btnToggleAdvSearch" class="btn-outlined" data-i18n="btnAdvSearch">Advanced Search</button>
-          <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
+          <div class="search-actions-group">
             <button type="button" id="btnExportCsv" class="btn-outlined" style="display: none;" data-i18n="btnExportCsv">Export CSV</button>
             <button type="button" id="btnOpenImportModal" class="btn-outlined" data-i18n="btnImportCsv">Import CSV</button>
             <button type="button" id="btnOpenAddModal" class="btn-solid" data-i18n="btnNewCandidate">+ New Candidate</button>
@@ -559,7 +564,7 @@
             <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navPipelineReport">Pipeline Report</h2>
             <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Comprehensive recruitment funnel, candidate demographics, and monthly inflow analysis.</p>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
             <select id="analyticsDateRange" class="ctrl-select" style="min-width: 120px; height: 28px; font-size: 12px;">
               <option value="all">All Time</option>
               <option value="30d">Last 30 Days</option>
@@ -633,11 +638,11 @@
           <span style="font-size: 11px; color: var(--text-muted);">Super Admin Access</span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-bottom: 24px;">
+        <div class="settings-master-grid">
           <!-- Master Companies -->
           <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblClientCompanies">Client Companies</h3>
-            <form id="formAddMasterCompany" style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <form id="formAddMasterCompany" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterCompanyName" class="ctrl-input" placeholder="New Client Company..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddCompany">+ Add Client</button>
             </form>
@@ -647,7 +652,7 @@
           <!-- Master Positions -->
           <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblPositions">Job Positions</h3>
-            <form id="formAddMasterPosition" style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <form id="formAddMasterPosition" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterPositionName" class="ctrl-input" placeholder="New Position..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddPosition">+ Add Position</button>
             </form>
@@ -661,7 +666,7 @@
             <h3 style="font-size: 13.5px; font-weight: 600;" data-i18n="lblUserManagement">User Management & Role Access (PG-01)</h3>
           </div>
 
-          <form id="formAddUser" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) 110px; gap: 10px; margin-bottom: 16px;">
+          <form id="formAddUser" class="user-add-form">
             <input type="text" id="newUserName" class="ctrl-input" placeholder="Full Name *" required>
             <input type="email" id="newUserEmail" class="ctrl-input" placeholder="Email Address *" required>
             <select id="newUserRole" class="ctrl-select">
@@ -703,7 +708,7 @@
               Explore and apply for open positions across our client companies. Submitted applications directly enter Resume Lib as New candidates.
             </p>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
             <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
               <option value="all">All Companies</option>
             </select>
@@ -762,6 +767,49 @@
       </section>
 
     </main>
+
+    <!-- Mobile Quick Bottom Navigation Bar (HP Viewports <= 767px) -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile Quick Navigation">
+      <button type="button" class="mobile-nav-item active" data-view="resumeLib">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span data-i18n="navResumeLib">Resume Lib</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-view="careerPortal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        <span>Jobs</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-view="interviewCalendar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Calendar</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-view="recList">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+        </svg>
+        <span>Business</span>
+      </button>
+      <button type="button" id="mobileBottomMenuBtn" class="mobile-nav-item" aria-label="Open Full Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <span>Menu</span>
+      </button>
+    </nav>
   </div>
 
   <!-- ========================================================================

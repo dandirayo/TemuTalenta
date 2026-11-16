@@ -109,6 +109,7 @@ function setLanguage(lang) {
   saveLang(lang);
   applyTranslations();
   renderAllViews();
+  syncTableResponsiveLabels();
 }
 
 function applyTranslations() {
@@ -246,9 +247,70 @@ function restoreFiltersFromUrl() {
 /**
  * 5. GLOBAL EVENTS BINDING
  */
+function closeMobileSidebar() {
+  document.getElementById("appSidebar")?.classList.remove("mobile-open");
+  document.getElementById("sidebarBackdrop")?.classList.remove("open");
+}
+
+function scrollTabIntoView(tabEl) {
+  if (!tabEl) return;
+  try {
+    tabEl.scrollIntoView({ block: "nearest", inline: "nearest", container: "nearest" });
+  } catch (e) {
+    tabEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+}
+
+function syncTableResponsiveLabels() {
+  document.querySelectorAll(".data-table").forEach(table => {
+    const headRow = table.tHead?.rows?.[0];
+    if (!headRow) return;
+    Array.from(headRow.cells).forEach((th, idx) => {
+      const btn = th.querySelector(".sort-header-btn");
+      let labelText = "";
+      if (btn) {
+        const span = btn.querySelector("span[data-i18n], span:not(.sort-icons)");
+        labelText = (span ? span.textContent : btn.textContent).trim();
+      } else {
+        labelText = th.textContent.trim();
+      }
+      labelText = labelText.replace(/[▲▼]/g, "").trim();
+      table.style.setProperty(`--label-${idx + 1}`, JSON.stringify(labelText || `Col ${idx + 1}`));
+    });
+  });
+}
+
 function bindGlobalEvents() {
   document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
-    document.getElementById("appSidebar")?.classList.toggle("collapsed");
+    const sidebar = document.getElementById("appSidebar");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    if (window.matchMedia("(max-width: 1024px)").matches) {
+      const isOpen = sidebar?.classList.toggle("mobile-open");
+      backdrop?.classList.toggle("open", Boolean(isOpen));
+    } else {
+      sidebar?.classList.toggle("collapsed");
+    }
+  });
+
+  document.getElementById("sidebarCloseBtn")?.addEventListener("click", closeMobileSidebar);
+  document.getElementById("sidebarBackdrop")?.addEventListener("click", closeMobileSidebar);
+
+  document.getElementById("mobileBottomMenuBtn")?.addEventListener("click", () => {
+    document.getElementById("appSidebar")?.classList.add("mobile-open");
+    document.getElementById("sidebarBackdrop")?.classList.add("open");
+  });
+
+  document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const view = btn.getAttribute("data-view");
+      if (view) switchWorkspaceView(view);
+    });
+  });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      closeMobileSidebar();
+    }
   });
 
   document.querySelectorAll(".menu-group-btn").forEach(btn => {
@@ -389,6 +451,7 @@ function bindGlobalEvents() {
       syncStageTabsUI();
       syncFiltersToUrl();
       renderResumeTable();
+      scrollTabIntoView(tab);
     });
   });
 
@@ -434,8 +497,14 @@ function bindGlobalEvents() {
   });
 
   // Consultant Business Tab Pills & Filters (CB-01, CB-02, CB-03)
-  document.getElementById("tabBtnCbRecs")?.addEventListener("click", () => switchCbTab("recs"));
-  document.getElementById("tabBtnCbLeaderboard")?.addEventListener("click", () => switchCbTab("leaderboard"));
+  document.getElementById("tabBtnCbRecs")?.addEventListener("click", e => {
+    switchCbTab("recs");
+    scrollTabIntoView(e.currentTarget);
+  });
+  document.getElementById("tabBtnCbLeaderboard")?.addEventListener("click", e => {
+    switchCbTab("leaderboard");
+    scrollTabIntoView(e.currentTarget);
+  });
   document.getElementById("cbFilterConsultant")?.addEventListener("change", renderConsultantBusinessHub);
   document.getElementById("cbFilterCompany")?.addEventListener("change", renderConsultantBusinessHub);
   document.getElementById("cbFilterStatus")?.addEventListener("change", renderConsultantBusinessHub);
@@ -478,10 +547,15 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
   });
 
+  document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+  });
+
   document.querySelectorAll(".workspace-panel").forEach(panel => {
     panel.classList.toggle("active", panel.id === `panel-${viewId}`);
   });
 
+  closeMobileSidebar();
   renderAllViews();
 }
 
@@ -681,6 +755,7 @@ function renderResumeTable() {
 
   tbody.innerHTML = pagedRecords.map(c => buildCandidateRowHtml(c, activeCols)).join("");
   bindTableRowActions(tbody);
+  syncTableResponsiveLabels();
 }
 
 function getRawSortValue(candidate, colId) {
@@ -703,7 +778,7 @@ function buildCandidateRowHtml(c, activeCols) {
         return `
           <th scope="row" data-value="${escapeHtml(c.name)}">
             <button type="button" class="candidate-link" data-action="profile" data-id="${c.id}">
-              ${escapeHtml(c.name).replace(" ", "<br>")}
+              ${escapeHtml(c.name).replace(" ", '<span class="name-break"> </span>')}
               ${c.isUnviewed ? `<span style="display:inline-block; width:6px; height:6px; background-color:var(--danger-dot); border-radius:50%; margin-left:3px;" title="Unviewed"></span>` : ""}
             </button>
           </th>
@@ -721,15 +796,15 @@ function buildCandidateRowHtml(c, activeCols) {
       case "age":
         return `<td data-value="${calculatedAge}">${calculatedAge}</td>`;
       case "education":
-        return `<td style="max-width: 95px; word-break: break-word;">${escapeHtml(c.education || "")}</td>`;
+        return `<td class="cell-wrap">${escapeHtml(c.education || "")}</td>`;
       case "language":
-        return `<td style="max-width: 115px;">${escapeHtml(c.language || "")}</td>`;
+        return `<td class="cell-wrap">${escapeHtml(c.language || "")}</td>`;
       case "yearsOfService":
         return `<td data-value="${c.yearsOfService}">${c.yearsOfService}</td>`;
       case "recommendedPosition":
-        return `<td style="max-width: 130px;">${escapeHtml(c.recommendedPosition || "")}</td>`;
+        return `<td class="cell-wrap">${escapeHtml(c.recommendedPosition || "")}</td>`;
       case "recommendedCompany":
-        return `<td style="max-width: 110px;">${escapeHtml(c.recommendedCompany || "")}</td>`;
+        return `<td class="cell-wrap">${escapeHtml(c.recommendedCompany || "")}</td>`;
       case "entryTime":
         const parts = (c.entryTime || "").split(" ");
         return `<td data-value="${escapeHtml(c.entryTime)}">${parts[0] || ""}<br>${parts[1] || ""}</td>`;
@@ -822,7 +897,7 @@ function openCandidateProfileModal(candidateId) {
 
   body.innerHTML = `
     <!-- Candidate Header -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
       <div>
         <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">${escapeHtml(c.name)}</h3>
         <p style="color: var(--text-secondary); margin-top: 2px;">
@@ -836,7 +911,7 @@ function openCandidateProfileModal(candidateId) {
         <span class="status-count-badge" style="font-size: 13px; padding: 3px 9px;">
           ${currentBadge} - ${getStatusName(currentBadge)}
         </span>
-        <div style="display: flex; gap: 6px; margin-top: 6px;">
+        <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
           <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 24px; font-size: 11px; padding: 0 8px;">Schedule Interview</button>
           <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 24px; font-size: 11px; padding: 0 8px;">Generate Offer</button>
         </div>
@@ -931,7 +1006,7 @@ function openCandidateProfileModal(candidateId) {
     <div id="pane-workEdu" class="profile-tab-pane">
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Employment History</h4>
       <div class="table-wrapper" style="margin-bottom: 16px;">
-        <table class="data-table" style="min-inline-size: 500px;">
+        <table class="data-table data-table--compact">
           <thead>
             <tr>
               <th>Role</th>
@@ -945,7 +1020,7 @@ function openCandidateProfileModal(candidateId) {
               { role: c.recommendedPosition || "Professional", company: "Previous Tech Firm", period: "2020 - 2026", desc: "Handled key project deliverables." }
             ]).map(w => `
               <tr>
-                <td><strong>${escapeHtml(w.role)}</strong></td>
+                <th scope="row"><strong>${escapeHtml(w.role)}</strong></th>
                 <td>${escapeHtml(w.company)}</td>
                 <td>${escapeHtml(w.period)}</td>
                 <td style="text-align: left; font-size: 11.5px;">${escapeHtml(w.desc)}</td>
@@ -957,7 +1032,7 @@ function openCandidateProfileModal(candidateId) {
 
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Education & Degrees</h4>
       <div class="table-wrapper">
-        <table class="data-table" style="min-inline-size: 500px;">
+        <table class="data-table data-table--compact">
           <thead>
             <tr>
               <th>Degree / Level</th>
@@ -970,7 +1045,7 @@ function openCandidateProfileModal(candidateId) {
               { degree: c.education || "Bachelor", institution: "Reputable University", year: "2019" }
             ]).map(e => `
               <tr>
-                <td><strong>${escapeHtml(e.degree)}</strong></td>
+                <th scope="row"><strong>${escapeHtml(e.degree)}</strong></th>
                 <td>${escapeHtml(e.institution)}</td>
                 <td>${escapeHtml(e.year)}</td>
               </tr>
@@ -982,7 +1057,7 @@ function openCandidateProfileModal(candidateId) {
 
     <!-- PANE 3: CV Document Viewer (DK-03) -->
     <div id="pane-cvViewer" class="profile-tab-pane">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
         <span style="font-size: 12px; color: var(--text-muted);">Standard Candidate CV Document (Pre-formatted Preview)</span>
         <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}')" style="height: 28px; padding: 0 10px; font-size: 12px;">
           Download Resume File
@@ -1019,6 +1094,7 @@ function openCandidateProfileModal(candidateId) {
       tBtn.classList.add("active");
       const targetPane = body.querySelector(`#pane-${tBtn.getAttribute("data-ptab")}`);
       if (targetPane) targetPane.classList.add("active");
+      scrollTabIntoView(tBtn);
     });
   });
 
@@ -1082,6 +1158,7 @@ function openCandidateProfileModal(candidateId) {
     openOfferLetterModal(c.id);
   });
 
+  syncTableResponsiveLabels();
   dialog.showModal();
 }
 
@@ -1376,7 +1453,7 @@ function openRecListModal(candidateId) {
       </button>
     </div>
     <div class="table-wrapper" style="max-height: 360px;">
-      <table class="data-table" style="min-inline-size: 640px;">
+      <table class="data-table">
         <thead>
           <tr>
             <th>${t("colRecPosition")}</th>
@@ -1390,7 +1467,7 @@ function openRecListModal(candidateId) {
         <tbody>
           ${recs.map(r => `
             <tr>
-              <td><strong>${escapeHtml(r.position)}</strong></td>
+              <th scope="row"><strong>${escapeHtml(r.position)}</strong></th>
               <td>${escapeHtml(r.company)}</td>
               <td>
                 <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">
@@ -1416,6 +1493,7 @@ function openRecListModal(candidateId) {
     openRecRepeatModal(c.id);
   });
 
+  syncTableResponsiveLabels();
   dialog.showModal();
 }
 
@@ -1726,6 +1804,7 @@ function renderSecondaryViews() {
   renderUserManagementList();
   renderCareerPortal();
   renderInterviewCalendar();
+  syncTableResponsiveLabels();
 }
 
 /**
@@ -1824,7 +1903,7 @@ function renderConsultantBusinessHub() {
     } else {
       recTbody.innerHTML = filteredRecs.map(item => `
         <tr>
-          <td><button type="button" class="candidate-link" onclick="openCandidateProfileModal('${item.candidate.id}')">${escapeHtml(item.candidate.name)}</button></td>
+          <th scope="row"><button type="button" class="candidate-link" onclick="openCandidateProfileModal('${item.candidate.id}')">${escapeHtml(item.candidate.name)}</button></th>
           <td>${escapeHtml(item.rec.position)}</td>
           <td><strong>${escapeHtml(item.rec.company)}</strong></td>
           <td>
@@ -1858,7 +1937,7 @@ function renderConsultantBusinessHub() {
 
       return `
         <tr>
-          <td><strong>${escapeHtml(staff.name)}</strong></td>
+          <th scope="row"><strong>${escapeHtml(staff.name)}</strong></th>
           <td>${escapeHtml(staff.roleName)}</td>
           <td><span class="status-count-badge">${staffCandidates.length}</span></td>
           <td>${staffRecs.length}</td>
@@ -1897,7 +1976,7 @@ function renderClientCompaniesView() {
 
   clientTbody.innerHTML = Object.values(companyMap).map(info => `
     <tr>
-      <td><strong>${escapeHtml(info.name)}</strong></td>
+      <th scope="row"><strong>${escapeHtml(info.name)}</strong></th>
       <td><span class="status-count-badge">${info.count}</span></td>
       <td style="text-align: left;">${[...info.roles].map(r => escapeHtml(r)).join(" • ")}</td>
       <td>${escapeHtml(info.latest)}</td>
@@ -2058,7 +2137,7 @@ function renderAuditLogsView() {
     const logs = getStoredAuditLogs();
     auditTbody.innerHTML = logs.map(l => `
       <tr>
-        <td><code>${escapeHtml(l.id)}</code></td>
+        <th scope="row"><code>${escapeHtml(l.id)}</code></th>
         <td><strong>${escapeHtml(l.action)}</strong></td>
         <td>${escapeHtml(l.entity)}</td>
         <td style="text-align: left;">${escapeHtml(l.details)}</td>
@@ -2079,7 +2158,7 @@ function renderUserManagementList() {
 
   userTbody.innerHTML = USERS.map((u, i) => `
     <tr>
-      <td><code>${escapeHtml(u.id)}</code></td>
+      <th scope="row"><code>${escapeHtml(u.id)}</code></th>
       <td><strong>${escapeHtml(u.name)}</strong></td>
       <td><span class="status-count-badge" style="background-color: var(--brand-primary);">${escapeHtml(u.roleName)}</span></td>
       <td>${escapeHtml(u.email || "-")} ${u.clientCompany ? `<br><small style="color:var(--text-muted);">(Client: ${escapeHtml(u.clientCompany)})</small>` : ""}</td>
@@ -3131,7 +3210,7 @@ function openOfferLetterModal(candidateId) {
       </p>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed var(--border-base);">
+    <div class="offer-sig-grid">
       <div>
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 40px;">Sincerely,<br><strong>Authorized Signatory</strong><br>${escapeHtml(companyName)}</p>
         <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
