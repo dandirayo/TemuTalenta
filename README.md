@@ -1,19 +1,27 @@
-# TemuTalenta
+# TemuTalenta (Enterprise Recruitment & Resume Library)
 
-Platform kurasi, pencarian, dan *smart matchmaking* talenta profesional (*Offline-First Talent Discovery Platform*).
+Sistem manajemen rekrutmen konsultan dan pustaka resume (*Applicant Tracking System & Resume Library*) berstandar enterprise yang berjalan mandiri (*Offline-First*).
 
 ---
 
-## 📌 Deskripsi Singkat
-**TemuTalenta** dirancang untuk mempermudah proses pencarian, kurasi, evaluasi kecocokan (*matchmaking*), serta pengelolaan talenta profesional. Platform ini dibangun dengan pendekatan **offline-first & zero-dependency**, sehingga dapat dijalankan dan didemonstrasikan langsung di browser lokal tanpa membutuhkan server eksternal maupun koneksi internet.
+## 📌 Fitur Utama (Versi 2.0)
 
-## 🚀 Fitur Utama
-- **Eksplorasi & Filter Talenta**: Pencarian instan berdasarkan nama, peran, keterampilan teknis (Go, Figma, Python, Flutter, dll.), kategori industri, tipe kerja (*remote/hybrid/onsite*), dan status ketersediaan.
-- **🎯 Smart Matchmaker Simulation**: Algoritma pembobotan otomatis berbasis formula terstandarisasi (Keahlian 45%, Pengalaman 25%, Budget/Rate 20%, Ketersediaan 10%) untuk menghitung peringkat dan skor kecocokan (*Match Score*) kandidat.
-- **Detail Profil & Modal Native `<dialog>`**: Tampilan modal interaktif lengkap dengan portofolio, teknologi terverifikasi, kontak, serta estimasi perhitungan pajak penghasilan **PPh 21 Tenaga Ahli Lepas**.
-- **Penyimpanan Mandiri (Offline LocalStorage)**: Fitur pendaftaran profil talenta baru secara lokal dan manajemen *bookmark* kandidat favorit.
-- **Portabilitas Data (JSON Export)**: Kemampuan mengekspor seluruh database talenta ke berkas JSON standar.
-- **Dark & Light Mode**: Desain modern responsif dengan deteksi preferensi sistem dan tombol toggle instan.
+1. **Tata Letak Enterprise Resume Library (`Resume Lib`)**:
+   - Navigasi samping (*collapsible sidebar*) dengan 3 pilar: **Talent Management**, **Consultant Business**, dan **Data Analysis**.
+   - Tabel kandidat kepadatan tinggi dengan 12 kolom standar (`Candidate`, `Nationality`, `Status`, `Gender`, `Age`, `Education`, `Language`, `Year of service`, `Recommended Position`, `Recommended Company`, `Entry time`, `Operation`).
+2. **Bilingual Instant Switcher (`Indonesia` / `English`)**:
+   - Sakelar dwibahasa interaktif di bilah atas yang menerjemahkan seluruh menu, filter, header kolom, dan tombol operasi secara instan.
+3. **Dual Theme (`Light Mode` & `Dark Mode`)**:
+   - Mendukung skema warna terang dan gelap dengan sinkronisasi `<meta name="color-scheme">` dan variabel CSS tanpa *flash* saat dimuat.
+4. **Filter Pipeline 7 Tahapan & Pencarian Lanjutan**:
+   - Filter cepat berdasarkan tahapan seleksi: `All`, `New`, `Pending`, `Original resume pass`, `Interview`, `Failed`, dan `Entry`.
+   - Pengaturan visibilitas kolom dinamis (`Columns: Candidate × | + 11`) dan pengurutan kolom (`Entry time`, `Status`, `Age`, `Year of service`).
+5. **Operasi Kandidat Fungsional**:
+   - **`Download Resume`**: Mengunduh berkas ringkasan CV kandidat terstruktur.
+   - **`Recommended Repeat`**: Mengajukan kandidat ke posisi dan perusahaan klien baru sekaligus menambah skor riwayat rekomendasi.
+   - **`Recommended List`**: Menampilkan tabel riwayat seluruh pengajuan kandidat lintas perusahaan klien.
+6. **Ikonografi Vektor Bersih (Non-AI Look)**:
+   - Seluruh antarmuka menggunakan ikon garis tipis **Inline SVG** standar aplikasi B2B enterprise tanpa penggunaan emoji dekoratif.
 
 ---
 
@@ -22,51 +30,38 @@ Platform kurasi, pencarian, dan *smart matchmaking* talenta profesional (*Offlin
 ```text
 TemuTalenta/
 ├── docs/
-│   ├── blueprint-perencanaan.md  # Blueprint arsitektur, user journey, skema data & roadmap
-│   └── core.md                   # Knowledge core: ontologi domain, formula scoring & PPh 21
+│   ├── PRD.md                    # Product Requirements Document (Spesifikasi Produk Lengkap)
+│   ├── blueprint-perencanaan.md  # Blueprint arsitektur & alur operasional konsultan
+│   └── core.md                   # Knowledge core: skema data, status pipeline & aturan bisnis
 ├── src/
 │   ├── css/
-│   │   └── style.css             # Desain antarmuka modern, responsif & accessible
+│   │   └── style.css             # Stylesheet B2B Enterprise (Light & Dark Mode)
 │   ├── js/
-│   │   ├── data.js               # Dataset awal talenta terkurasi & manajemen storage
-│   │   └── app.js                # State machine, algoritma matchmaking & event handlers
-│   └── index.html                # Alternatif entri point dalam direktori src
-├── index.html                    # Entri point utama website (dapat langsung dibuka di browser)
-├── server.js                     # Server lokal zero-dependency (Node.js native http)
-├── package.json                  # Konfigurasi npm script (npm start)
-├── .editorconfig                 # Standarisasi format kode
-├── .gitignore                    # Konfigurasi pengabaian Git
-└── README.md                     # Informasi utama repositori
+│   │   ├── data.js               # Dataset kandidat, riwayat rekomendasi & kamus ID/EN
+│   │   └── app.js                # Mesin filter, sortir tabel, i18n, tema & operasi modal
+│   └── index.html                # Entri point dalam direktori src
+├── index.html                    # Entri point utama (siap dibuka langsung di browser)
+├── server.js                     # Server HTTP lokal zero-dependency (Node.js)
+├── package.json                  # Konfigurasi npm script
+└── README.md                     # Dokumentasi utama repositori
 ```
 
 ---
 
-## 🛠️ Cara Menjalankan Website (Offline)
+## 🚀 Cara Menjalankan Secara Offline
 
-### Opsi 1: Langsung Buka di Browser (Paling Cepat)
-Anda dapat langsung membuka berkas `index.html` dengan klik ganda (*double-click*) pada file explorer atau membuka tautan:
-- [index.html](file:///C:/Users/901191/GitHub/TemuTalenta/index.html) di peramban favorit Anda (Chrome, Edge, Firefox).
-
-### Opsi 2: Menggunakan Local Server (Node.js)
-```bash
-cd TemuTalenta
-npm start
-```
-Buka peramban pada alamat [http://localhost:3000](http://localhost:3000).
-
-### Opsi 3: Menggunakan Python HTTP Server
-```bash
-cd TemuTalenta
-python -m http.server 3000
-```
+1. **Langsung Buka di Browser**:
+   Klik ganda pada berkas [index.html](file:///C:/Users/901191/GitHub/TemuTalenta/index.html).
+2. **Melalui Local Server Node.js**:
+   ```powershell
+   cd C:\Users\901191\GitHub\TemuTalenta
+   npm start
+   ```
+   Buka `http://localhost:3000` di peramban Anda.
 
 ---
 
-## 📖 Referensi Dokumentasi Inti
-- [docs/blueprint-perencanaan.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/blueprint-perencanaan.md) – Dokumen strategi produk dan peta jalan teknis.
-- [docs/core.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/core.md) – Basis pengetahuan domain, taksonomi keahlian, dan regulasi lokal.
-
----
-
-## 📄 Lisensi
-[MIT License](LICENSE)
+## 📖 Dokumentasi Perencanaan & Spesifikasi
+- [docs/PRD.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/PRD.md) – Product Requirements Document (PRD v2.0).
+- [docs/blueprint-perencanaan.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/blueprint-perencanaan.md) – Blueprint Perencanaan Sistem.
+- [docs/core.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/core.md) – Knowledge Core & Standar Skema Data.

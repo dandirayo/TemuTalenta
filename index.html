@@ -1,418 +1,602 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TemuTalenta - Platform Pencarian & Matchmaking Talenta Profesional</title>
-  <meta name="description" content="Platform kurasi, pencarian, dan pencocokan talenta profesional Indonesia. Bekerja secara mandiri dan offline-first.">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    try {
+      const savedScheme = localStorage.getItem("color-scheme");
+      document.querySelector('meta[name="color-scheme"]').content = savedScheme ?? "light dark";
+      if (savedScheme === "dark" || savedScheme === "light") {
+        document.documentElement.setAttribute("data-theme", savedScheme);
+      }
+    } catch (e) {}
+  </script>
+  <title>TemuTalenta - Enterprise Recruitment & Resume Library</title>
   <link rel="stylesheet" href="./src/css/style.css">
 </head>
 <body>
 
-  <!-- Header & Navigasi -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="brand" onclick="switchTab('discovery')">
-        <span class="brand-badge">TT</span>
-        <span>TemuTalenta</span>
-        <span class="brand-offline-tag">Offline-First</span>
+  <!-- Screen Reader Sort Status Region -->
+  <div id="sortStatusRegion" role="status" class="sr-only"></div>
+
+  <!-- ========================================================================
+       LEFT SIDEBAR NAVIGATION
+       ======================================================================== -->
+  <aside id="appSidebar" class="app-sidebar" aria-label="Main Navigation">
+    <div class="sidebar-brand">
+      <svg class="brand-logo-svg" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
+        <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#4c78e8"/>
+      </svg>
+      <span>TemuTalenta</span>
+    </div>
+
+    <nav class="sidebar-menu">
+      <!-- Group 1: Talent Management -->
+      <div class="menu-group open">
+        <button type="button" class="menu-group-btn">
+          <span class="menu-group-label">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span data-i18n="navTalentMgmt">Talent Management</span>
+          </span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <ul class="submenu-list">
+          <li>
+            <button type="button" class="submenu-item-btn active" data-view="resumeLib">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="14" y2="17"/>
+              </svg>
+              <span data-i18n="navResumeLib">Resume Lib</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="addCandidateModalTrigger">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              <span data-i18n="navAddCandidate">Add Candidate</span>
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <nav class="nav-tabs" aria-label="Navigasi Utama">
-        <button type="button" class="nav-btn active" data-tab="discovery">
-          🔍 Eksplorasi Talenta
+      <!-- Group 2: Consultant Business -->
+      <div class="menu-group">
+        <button type="button" class="menu-group-btn">
+          <span class="menu-group-label">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="3.6" y1="9" x2="20.4" y2="9"/>
+              <line x1="3.6" y1="15" x2="20.4" y2="15"/>
+              <path d="M11.5 3a17 17 0 0 0 0 18"/>
+              <path d="M12.5 3a17 17 0 0 1 0 18"/>
+            </svg>
+            <span data-i18n="navConsultantBiz">Consultant Business</span>
+          </span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
-        <button type="button" class="nav-btn" data-tab="matchmaker">
-          🎯 Smart Matchmaker
-        </button>
-        <button type="button" class="nav-btn" data-tab="addTalent">
-          ➕ Tambah Talenta
-        </button>
-        <button type="button" class="nav-btn" data-tab="bookmarks">
-          ⭐ Tersimpan
-        </button>
-        <button type="button" class="nav-btn" data-tab="docs">
-          📖 Blueprint & Core
-        </button>
-      </nav>
+        <ul class="submenu-list">
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="recList">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+              <span data-i18n="navRecList">Recommended List</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="clientList">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="2" y="7" width="20" height="14" rx="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <span data-i18n="navClientList">Client Companies</span>
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      <div class="header-actions">
-        <button type="button" class="icon-btn" id="exportJsonBtn" title="Ekspor Data JSON">
-          💾
+      <!-- Group 3: Data Analysis -->
+      <div class="menu-group">
+        <button type="button" class="menu-group-btn">
+          <span class="menu-group-label">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            <span data-i18n="navDataAnalysis">Data Analysis</span>
+          </span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
         </button>
-        <button type="button" class="icon-btn" id="themeToggleBtn" title="Beralih Tema">
-          🌙
+        <ul class="submenu-list">
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="pipelineReport">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span data-i18n="navPipelineReport">Pipeline Report</span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="submenu-item-btn" data-view="prdDocs">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+              <span data-i18n="navPrdDocs">PRD & Blueprint</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ========================================================================
+       MAIN APPLICATION SHELL
+       ======================================================================== -->
+  <div class="app-shell">
+
+    <!-- TOP UTILITY HEADER -->
+    <header class="top-header">
+      <div class="header-left">
+        <button type="button" id="sidebarToggleBtn" class="hamburger-btn" aria-label="Toggle Sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="header-right">
+        <!-- Bilingual Switcher: Indonesia [Switch] English -->
+        <div class="lang-switch-group">
+          <span id="langLabelId" class="lang-label" data-i18n="langId">Indonesia</span>
+          <button type="button" id="langSwitchBtn" class="pill-switch" role="switch" aria-checked="true" aria-label="Switch Language Indonesia or English">
+            <span class="pill-switch-thumb"></span>
+          </button>
+          <span id="langLabelEn" class="lang-label active" data-i18n="langEn">English</span>
+        </div>
+
+        <!-- Notification Bell Icon -->
+        <button type="button" class="header-icon-btn" aria-label="Notifications" onclick="switchWorkspaceView('recList')">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </button>
+
+        <!-- Light / Dark Theme Switch -->
+        <button type="button" id="themeSwitchBtn" class="theme-switch-btn" role="switch" aria-checked="false" aria-label="Toggle Light or Dark Theme">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-left: 2px;">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+          </svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="margin-right: 2px;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span class="theme-switch-thumb"></span>
+        </button>
+
+        <!-- User Avatar -->
+        <div class="user-avatar" title="Recruitment Consultant">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+      </div>
+    </header>
+
+    <!-- SUB-NAVIGATION TOOLBAR (< , Refresh , Home) -->
+    <div class="sub-nav-bar">
+      <div class="nav-tool-group">
+        <button type="button" id="subNavBack" class="nav-tool-btn" aria-label="Back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <button type="button" id="subNavRefresh" class="nav-tool-btn" aria-label="Refresh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </button>
+        <button type="button" id="subNavHome" class="nav-tool-btn" aria-label="Home">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
         </button>
       </div>
     </div>
-  </header>
 
-  <!-- Konten Utama -->
-  <main class="main-content">
+    <!-- MAIN WORKSPACE BODY -->
+    <main class="workspace-body">
 
-    <!-- TAB 1: EKSPLORASI TALENTA -->
-    <section id="discoveryView" class="tab-view active">
-      <div class="hero-banner">
-        <h1 class="hero-title">Temukan Talenta Terbaik Sesuai Kebutuhan Anda</h1>
-        <p class="hero-desc">
-          Platform kurasi talenta profesional Indonesia terintegrasi. Jelajahi kandidat di bidang software engineering, data & AI, desain produk, hingga keamanan siber secara mandiri dan offline.
-        </p>
-        <div class="hero-stats">
-          <div class="stat-item">
-            <span class="stat-value" id="statTotalTalents">0</span>
-            <span class="stat-label">Total Talenta</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value" id="statAvailTalents">0</span>
-            <span class="stat-label">Siap Kerja Sekarang</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value" id="statAvgRating">⭐ 4.9</span>
-            <span class="stat-label">Rata-rata Rating</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-value">100%</span>
-            <span class="stat-label">Offline-Ready</span>
-          </div>
-        </div>
-      </div>
+      <!-- ====================================================================
+           PANEL 1: RESUME LIB (Matches Screenshot)
+           ==================================================================== -->
+      <section id="panel-resumeLib" class="workspace-panel active">
 
-      <!-- Filter & Search Toolbar -->
-      <div class="filter-toolbar">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input type="search" id="talentSearchInput" class="search-input" placeholder="Cari nama, keahlian (Go, Figma, Python), atau peran...">
-        </div>
+        <!-- Filter Row 1: Search Inputs & Action Buttons -->
+        <div class="search-row">
+          <input type="text" id="searchCandidateName" class="ctrl-input" data-i18n-ph="phCandidateName" placeholder="Candidate Name">
+          <input type="text" id="searchKeyword" class="ctrl-input" data-i18n-ph="phKeyword" placeholder="Key word">
 
-        <div class="filter-group">
-          <select id="categoryFilter" class="select-ctrl" aria-label="Filter Kategori">
-            <option value="ALL">Semua Kategori</option>
-            <option value="TECH-ENG">Software Engineering</option>
-            <option value="DATA-AI">Data & AI</option>
-            <option value="PROD-DES">Product & Design</option>
-            <option value="CYBER-SEC">Cybersecurity & Infra</option>
+          <select id="searchStateSelect" class="ctrl-select" aria-label="State">
+            <option value="all" data-i18n="phState">State</option>
+            <option value="new" data-i18n="stageNew">New</option>
+            <option value="pending" data-i18n="stagePending">Pending</option>
+            <option value="pass" data-i18n="stagePass">Original resume pass</option>
+            <option value="interview" data-i18n="stageInterview">Interview</option>
+            <option value="failed" data-i18n="stageFailed">Failed</option>
+            <option value="entry" data-i18n="stageEntry">Entry</option>
           </select>
 
-          <select id="workPrefFilter" class="select-ctrl" aria-label="Filter Preferensi Kerja">
-            <option value="ALL">Semua Tipe Kerja</option>
-            <option value="remote">Remote</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="onsite">Onsite</option>
-          </select>
-
-          <select id="availabilityFilter" class="select-ctrl" aria-label="Filter Ketersediaan">
-            <option value="ALL">Semua Ketersediaan</option>
-            <option value="Available Now">Available Now</option>
-            <option value="Open to Offers">Open to Offers</option>
-          </select>
+          <button type="button" id="btnSearch" class="btn-solid" data-i18n="btnSearch">Search</button>
+          <button type="button" id="btnSearchAll" class="btn-solid" data-i18n="btnSearchAll">Search All</button>
+          <button type="button" id="btnToggleAdvSearch" class="btn-outlined" data-i18n="btnAdvSearch">Advanced Search</button>
+          <button type="button" id="btnOpenAddModal" class="btn-outlined" style="margin-left: auto;" data-i18n="btnNewCandidate">+ New Candidate</button>
         </div>
-      </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <span id="talentCountBadge" class="badge badge-primary">Memuat...</span>
-        <button type="button" class="btn btn-outline" id="resetDataBtn" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
-          🔄 Reset ke Data Default
-        </button>
-      </div>
+        <!-- Expandable Advanced Search Row -->
+        <div id="advSearchBox" class="adv-search-box">
+          <div class="adv-field">
+            <label for="advGender" data-i18n="lblGender">Gender</label>
+            <select id="advGender" class="ctrl-select">
+              <option value="all" data-i18n="optAll">All</option>
+              <option value="Male" data-i18n="optMale">Male</option>
+              <option value="Female" data-i18n="optFemale">Female</option>
+            </select>
+          </div>
+          <div class="adv-field">
+            <label for="advMinAge" data-i18n="lblMinAge">Min Age</label>
+            <input type="number" id="advMinAge" class="ctrl-input" min="18" max="65" placeholder="18">
+          </div>
+          <div class="adv-field">
+            <label for="advMaxAge" data-i18n="lblMaxAge">Max Age</label>
+            <input type="number" id="advMaxAge" class="ctrl-input" min="18" max="65" placeholder="60">
+          </div>
+          <div class="adv-field">
+            <label for="advEducation" data-i18n="lblEducation">Education</label>
+            <select id="advEducation" class="ctrl-select">
+              <option value="all" data-i18n="optAll">All</option>
+              <option value="undergraduate" data-i18n="optUndergraduate">undergraduate</option>
+              <option value="master" data-i18n="optMaster">master</option>
+              <option value="diploma" data-i18n="optDiploma">diploma</option>
+            </select>
+          </div>
+          <div class="adv-field">
+            <label for="advMinService" data-i18n="lblMinService">Min Year of Service</label>
+            <input type="number" id="advMinService" class="ctrl-input" min="0" max="40" placeholder="0">
+          </div>
+          <button type="button" id="btnResetDatabase" class="btn-outlined" style="height: 30px; margin-left: auto;" data-i18n="btnResetData">Reset Default Data</button>
+        </div>
 
-      <!-- Grid Talenta -->
-      <div id="talentGrid" class="talent-grid">
-        <!-- Render otomatis via JavaScript -->
-      </div>
-    </section>
-
-    <!-- TAB 2: SMART MATCHMAKER -->
-    <section id="matchmakerView" class="tab-view">
-      <div class="hero-banner">
-        <h2 class="hero-title">🎯 Smart Matchmaker Simulation</h2>
-        <p class="hero-desc">
-          Masukkan parameter proyek atau kebutuhan tim Anda. Algoritma pembobotan multi-faktor (Skill 45%, Pengalaman 25%, Budget 20%, Ketersediaan 10%) akan secara instan menghitung skor kecocokan kandidat.
-        </p>
-      </div>
-
-      <div class="matchmaker-container">
-        <!-- Form Kriteria Proyek -->
-        <div class="form-panel">
-          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">Parameter Kebutuhan Proyek</h3>
-          <form id="matchmakerForm">
-            <div class="form-group">
-              <label for="reqSkills" class="form-label">Keahlian yang Dibutuhkan</label>
-              <input type="text" id="reqSkills" class="form-input" placeholder="contoh: Go, PostgreSQL, Docker" value="Go, PostgreSQL, Docker">
-              <p class="form-helper">Pisahkan keahlian dengan tanda koma.</p>
-            </div>
-
-            <div class="form-group">
-              <label for="targetCategory" class="form-label">Kategori Utama</label>
-              <select id="targetCategory" class="form-select">
-                <option value="ALL">Semua Kategori</option>
-                <option value="TECH-ENG" selected>Software Engineering</option>
-                <option value="DATA-AI">Data & AI</option>
-                <option value="PROD-DES">Product & Design</option>
-                <option value="CYBER-SEC">Cybersecurity & Infra</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="minExp" class="form-label">Minimal Pengalaman (Tahun)</label>
-              <input type="number" id="minExp" class="form-input" min="0" max="25" step="0.5" value="4">
-            </div>
-
-            <div class="form-group">
-              <label for="maxBudget" class="form-label">Maksimal Anggaran (IDR / Bulan)</label>
-              <input type="number" id="maxBudget" class="form-input" min="1000000" step="500000" value="25000000">
-              <p class="form-helper">Contoh: Rp 25.000.000 / bulan</p>
-            </div>
-
-            <div class="form-group">
-              <label for="reqWorkPref" class="form-label">Preferensi Lokasi Kerja</label>
-              <select id="reqWorkPref" class="form-select">
-                <option value="ALL">Fleksibel (Semua Tipe)</option>
-                <option value="remote" selected>Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="onsite">Onsite</option>
-              </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
-              ⚡ Kalkulasi Kecocokan Kandidat
+        <!-- Filter Row 2: Pipeline Status Tabs & Column Selector -->
+        <div class="pipeline-bar">
+          <div class="stage-tabs" role="tablist" aria-label="Pipeline Stage Filters">
+            <button type="button" class="stage-tab active" data-stage="all" data-i18n="stageAll">All</button>
+            <button type="button" class="stage-tab" data-stage="new" data-i18n="stageNew">New</button>
+            <button type="button" class="stage-tab" data-stage="pending" data-i18n="stagePending">Pending</button>
+            <button type="button" class="stage-tab" data-stage="pass" data-i18n="stagePass">Original resume pass</button>
+            <button type="button" class="stage-tab" data-stage="interview" data-i18n="stageInterview">Interview</button>
+            <button type="button" class="stage-tab" data-stage="failed">
+              <span data-i18n="stageFailed">Failed</span>
+              <span class="dot-danger" aria-hidden="true"></span>
             </button>
-          </form>
-        </div>
+            <button type="button" class="stage-tab" data-stage="entry" data-i18n="stageEntry">Entry</button>
+          </div>
 
-        <!-- Hasil Ranking Matchmaker -->
-        <div id="matchResultsContainer">
-          <div class="empty-state">
-            <div class="empty-icon">📊</div>
-            <h3>Siap Melakukan Pencocokan</h3>
-            <p>Sesuaikan parameter di sebelah kiri dan klik tombol <strong>Kalkulasi Kecocokan</strong> untuk melihat skor dan peringkat talenta.</p>
+          <!-- Display Columns Selector -->
+          <div class="col-selector-wrap">
+            <span class="col-selector-label" data-i18n="lblDisplayCols">Columns:</span>
+            <button type="button" id="colSelectorTrigger" class="col-selector-trigger" aria-label="Select Display Columns">
+              <span style="display: inline-flex; align-items: center; gap: 5px;">
+                <span class="col-tag"><span data-i18n="colCandidate">Candidate</span> ×</span>
+                <span id="colExtraCountTag" class="col-tag">+ 11</span>
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div id="colDropdownMenu" class="col-dropdown-menu"></div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <!-- TAB 3: TAMBAH TALENTA (OFFLINE STORAGE) -->
-    <section id="addTalentView" class="tab-view">
-      <div class="hero-banner">
-        <h2 class="hero-title">➕ Daftarkan Profil Talenta Baru</h2>
-        <p class="hero-desc">
-          Data disimpan secara lokal di peramban (LocalStorage) dan dapat diekspor menjadi format JSON baku sesuai spesifikasi di <code>docs/core.md</code>.
-        </p>
-      </div>
-
-      <div class="form-panel" style="max-width: 800px; margin: 0 auto;">
-        <form id="addTalentForm">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label for="newFullName" class="form-label">Nama Lengkap *</label>
-              <input type="text" id="newFullName" class="form-input" placeholder="contoh: Bayu Wicaksono" required>
-            </div>
-            <div class="form-group">
-              <label for="newTitle" class="form-label">Gelar / Spesialisasi Peran *</label>
-              <input type="text" id="newTitle" class="form-input" placeholder="contoh: Cloud Architect" required>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label for="newCategory" class="form-label">Kategori *</label>
-              <select id="newCategory" class="form-select" required>
-                <option value="TECH-ENG">Software Engineering</option>
-                <option value="DATA-AI">Data & AI</option>
-                <option value="PROD-DES">Product & Design</option>
-                <option value="CYBER-SEC">Cybersecurity & Infra</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="newLocation" class="form-label">Domisili / Kota</label>
-              <input type="text" id="newLocation" class="form-input" placeholder="contoh: Jakarta">
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-            <div class="form-group">
-              <label for="newWorkPref" class="form-label">Preferensi Kerja</label>
-              <select id="newWorkPref" class="form-select">
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="onsite">Onsite</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="newExpYears" class="form-label">Pengalaman (Tahun)</label>
-              <input type="number" id="newExpYears" class="form-input" min="0" step="0.5" value="3">
-            </div>
-            <div class="form-group">
-              <label for="newAvailability" class="form-label">Ketersediaan</label>
-              <select id="newAvailability" class="form-select">
-                <option value="Available Now">Available Now</option>
-                <option value="Open to Offers">Open to Offers</option>
-                <option value="Busy">Busy</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="newRate" class="form-label">Expected Rate Standar (IDR / Bulan) *</label>
-            <input type="number" id="newRate" class="form-input" min="1000000" step="500000" value="15000000" required>
-          </div>
-
-          <div class="form-group">
-            <label for="newSkills" class="form-label">Daftar Keahlian & Teknologi *</label>
-            <input type="text" id="newSkills" class="form-input" placeholder="contoh: Python, FastAPI, Docker, PostgreSQL" required>
-            <p class="form-helper">Pisahkan keahlian dengan tanda koma.</p>
-          </div>
-
-          <div class="form-group">
-            <label for="newBio" class="form-label">Ringkasan Profil (Bio) *</label>
-            <textarea id="newBio" class="form-textarea" rows="3" placeholder="Ceritakan keunggulan, pencapaian proyek, dan fokus keahlian..." required></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="newEmail" class="form-label">Alamat Email Kontak</label>
-            <input type="email" id="newEmail" class="form-input" placeholder="nama@email.com">
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1rem;">
-            Simpan Talenta ke Penyimpanan Lokal
-          </button>
-        </form>
-      </div>
-    </section>
-
-    <!-- TAB 4: KANDIDAT TERSIMPAN (BOOKMARKS) -->
-    <section id="bookmarksView" class="tab-view">
-      <div class="hero-banner">
-        <h2 class="hero-title">⭐ Kandidat Tersimpan (*Bookmarks*)</h2>
-        <p class="hero-desc">
-          Daftar kandidat yang telah Anda tandai untuk pertimbangan tindak lanjut, wawancara, atau penawaran proyek.
-        </p>
-      </div>
-
-      <div id="bookmarksGrid" class="talent-grid">
-        <!-- Render otomatis via JavaScript -->
-      </div>
-    </section>
-
-    <!-- TAB 5: BLUEPRINT & KNOWLEDGE CORE VIEWER -->
-    <section id="docsView" class="tab-view">
-      <div class="hero-banner">
-        <h2 class="hero-title">📖 Blueprint Perencanaan & Knowledge Core</h2>
-        <p class="hero-desc">
-          Ringkasan panduan arsitektur, standar taksonomi keahlian, formula algoritma pencocokan, serta kepatuhan hukum ketenagakerjaan dan perpajakan (PPh 21).
-        </p>
-      </div>
-
-      <div class="doc-box">
-        <h2>1. Blueprint Perencanaan (Ringkasan)</h2>
-        <p>
-          TemuTalenta mengadopsi prinsip <strong>Offline-First & Local-First Architecture</strong>. Sistem dapat beroperasi mandiri di browser tanpa server eksternal, memastikan demonstrasi, kurasi internal, dan pengujian berjalan cepat dan aman.
-        </p>
-        <pre><code>Arsitektur:
-[Browser UI (HTML5, Semantic)] &lt;---&gt; [Offline Engine (Scoring, LocalStorage, JSON Export)]
-                                      |
-                                      +--- (Fase Lanjutan: PWA & Sync Backend API)</code></pre>
-
-        <h3>Peta Jalan (*Roadmap*):</h3>
-        <ul>
-          <li><strong>M1 (Saat Ini)</strong>: Standalone Offline MVP dengan database talenta lokal, filter multi-kategori, dan simulasi matchmaking.</li>
-          <li><strong>M2</strong>: Ekspor & impor profil JSON standar, manajemen bookmark, dan kalkulator kepatuhan pajak PPh 21 tenaga ahli.</li>
-          <li><strong>M3</strong>: Dukungan Progressive Web App (PWA) dengan Service Worker untuk akses penuh saat tidak terkoneksi jaringan.</li>
-          <li><strong>M4</strong>: Integrasi REST API & database terpusat (PostgreSQL) jika beralih ke mode cloud multi-tenant.</li>
-        </ul>
-
-        <h2>2. Knowledge Core (Formula Matchmaking & Standar)</h2>
-        <p>Formula penilaian kesesuaian kandidat terhadap parameter kebutuhan:</p>
-        <pre><code>Total Match Score = (0.45 * Skill) + (0.25 * Pengalaman) + (0.20 * Budget) + (0.10 * Ketersediaan)</code></pre>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Faktor Penilaian</th>
-              <th>Bobot</th>
-              <th>Metode Evaluasi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Keahlian (Skills)</strong></td>
-              <td>45%</td>
-              <td>Rasio perbandingan keahlian yang dimiliki kandidat terhadap syarat wajib.</td>
-            </tr>
-            <tr>
-              <td><strong>Pengalaman (Experience)</strong></td>
-              <td>25%</td>
-              <td>Pencapaian batas minimum tahun pengalaman yang disyaratkan.</td>
-            </tr>
-            <tr>
-              <td><strong>Kesesuaian Anggaran</strong></td>
-              <td>20%</td>
-              <td>Evaluasi rate ekspektasi talenta vs batas maksimal anggaran proyek.</td>
-            </tr>
-            <tr>
-              <td><strong>Ketersediaan</strong></td>
-              <td>10%</td>
-              <td>Status kesiapan bergabung (Available Now = 100%, Open to Offers = 75%).</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h2>3. Kepatuhan Hukum & Pajak Indonesia</h2>
-        <p>
-          Platform mengadopsi standar perlakuan <strong>PPh 21 Tenaga Ahli Bukan Pegawai</strong>:
-        </p>
-        <ul>
-          <li>Dasar Pengenaan Pajak (DPP) = <strong>50% × Penghasilan Bruto</strong>.</li>
-          <li>PPh 21 Terutang = <strong>Tarif Pasal 17 UU HPP × DPP</strong>.</li>
-          <li>Kerahasiaan data dan portofolio dilindungi sesuai <strong>UU Pelindungan Data Pribadi (UU No. 27/2022)</strong>.</li>
-        </ul>
-
-        <div style="margin-top: 1.5rem; padding: 1rem; background-color: var(--bg-subtle); border-radius: var(--radius-sm);">
-          📄 Dokumen lengkap tersimpan di direktori repositori:
-          <ul style="margin-top: 0.5rem;">
-            <li><code>docs/blueprint-perencanaan.md</code></li>
-            <li><code>docs/core.md</code></li>
-          </ul>
+        <!-- Enterprise Data Table -->
+        <div tabindex="0" role="region" aria-labelledby="resume-table-caption" class="table-wrapper">
+          <table id="resumeDataTable" class="data-table">
+            <caption id="resume-table-caption" class="sr-only">Candidate Resume Library Table</caption>
+            <thead>
+              <tr id="resumeTableHeadRow"></tr>
+            </thead>
+            <tbody id="resumeTableBody"></tbody>
+          </table>
         </div>
+
+        <div class="table-footer">
+          <span id="tableFooterCount">Showing candidates</span>
+          <span>TemuTalenta Enterprise ATS v2.0 (Offline-First)</span>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 2: CONSULTANT BUSINESS - RECOMMENDED LIST
+           ==================================================================== -->
+      <section id="panel-recList" class="workspace-panel">
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navRecList">Recommended List</h2>
+          <button type="button" class="btn-outlined" onclick="switchWorkspaceView('resumeLib')" data-i18n="navResumeLib">Resume Lib</button>
+        </div>
+        <div tabindex="0" role="region" aria-label="Global Recommendations" class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="colCandidate">Candidate</th>
+                <th data-i18n="colRecPosition">Recommended Position</th>
+                <th data-i18n="colRecCompany">Recommended Company</th>
+                <th data-i18n="fldStage">Pipeline Stage</th>
+                <th data-i18n="fldConsultant">Consultant</th>
+                <th data-i18n="fldDate">Submission Time</th>
+                <th data-i18n="fldNotes">Evaluation Notes</th>
+              </tr>
+            </thead>
+            <tbody id="globalRecTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 3: CONSULTANT BUSINESS - CLIENT COMPANIES
+           ==================================================================== -->
+      <section id="panel-clientList" class="workspace-panel">
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navClientList">Client Companies</h2>
+        </div>
+        <div tabindex="0" role="region" aria-label="Client Companies" class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th data-i18n="colRecCompany">Recommended Company</th>
+                <th data-i18n="colStatus">Total Candidates</th>
+                <th data-i18n="colRecPosition">Recommended Positions</th>
+                <th data-i18n="colEntryTime">Latest Activity</th>
+              </tr>
+            </thead>
+            <tbody id="clientCompaniesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 4: DATA ANALYSIS - PIPELINE REPORT
+           ==================================================================== -->
+      <section id="panel-pipelineReport" class="workspace-panel">
+        <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;" data-i18n="navPipelineReport">Pipeline Report</h2>
+        <div id="analyticsKpiContainer" class="kpi-grid"></div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 5: PRD & BLUEPRINT DOCUMENTATION VIEWER
+           ==================================================================== -->
+      <section id="panel-prdDocs" class="workspace-panel" style="overflow-y: auto;">
+        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">Product Requirements Document (PRD v2.0) & Blueprint</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 14px;">
+          Dokumen spesifikasi lengkap tersedia di direktori repositori: <code>docs/PRD.md</code>, <code>docs/blueprint-perencanaan.md</code>, dan <code>docs/core.md</code>.
+        </p>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <strong>1. Modul Utama (Resume Lib)</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary);">
+              Tabel kandidat standar konsultan dengan 12 kolom terstruktur, filter 7 tahapan pipeline (All, New, Pending, Original resume pass, Interview, Failed, Entry), dan sortir waktu masuk.
+            </p>
+          </div>
+          <div class="kpi-card">
+            <strong>2. Operasi Kandidat Fungsional</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary);">
+              Mendukung <em>Download Resume</em> instan, <em>Recommended Repeat</em> (pengajuan kandidat ke perusahaan baru), serta <em>Recommended List</em> (pelacakan riwayat pengajuan).
+            </p>
+          </div>
+          <div class="kpi-card">
+            <strong>3. Bilingual & Dual Theme</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary);">
+              Dilengkapi sakelar bahasa <strong>Indonesia / English</strong> dan tema <strong>Light / Dark Mode</strong> di bilah atas tanpa ikon berbasis emoji.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========================================================================
+       MODALS (Native <dialog> per Modern Web Guidance)
+       ======================================================================== -->
+
+  <!-- Modal 1: Candidate Profile & Stage Editor -->
+  <dialog id="profileModal" aria-labelledby="profileModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="profileModalTitle" data-i18n="modalProfileTitle">Candidate Resume Profile</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
-    </section>
-
-  </main>
-
-  <!-- Native Modal Dialog untuk Detail Profil Talenta (Sesuai Modern Web Guidance) -->
-  <dialog id="talentDetailModal" aria-labelledby="modalTalentTitle" closedby="any">
-    <div class="dialog-inner">
-      <div class="dialog-header">
-        <h3 id="modalTalentTitle" class="dialog-title">Detail Profil Talenta</h3>
-        <button type="button" class="btn btn-outline" id="modalCloseBtn" style="padding: 0.35rem 0.65rem;" autofocus>
-          ✕
-        </button>
-      </div>
-
-      <div class="dialog-content" id="modalBodyContent">
-        <!-- Render otomatis via JavaScript -->
-      </div>
-
-      <div class="dialog-footer">
-        <form method="dialog">
-          <button type="submit" class="btn btn-outline">Tutup</button>
-        </form>
+      <div id="profileModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
       </div>
     </div>
   </dialog>
 
-  <!-- Footer -->
-  <footer class="app-footer">
-    <div class="footer-container">
-      <div>
-        <strong>TemuTalenta</strong> © 2026. Offline-First Talent Discovery Platform.
+  <!-- Modal 2: Recommended Repeat -->
+  <dialog id="recRepeatModal" aria-labelledby="recRepeatModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="recRepeatModalTitle" data-i18n="modalRecRepeatTitle">Recommended Repeat - Submit to Client</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
-      <div>
-        Berjalan mandiri di browser tanpa server eksternal.
+      <form id="formRecRepeat">
+        <div class="modal-body form-grid">
+          <input type="hidden" id="recRepeatCandidateId">
+          <div class="form-field full">
+            <label for="recRepeatCandidateName" data-i18n="fldFullName">Candidate Name</label>
+            <input type="text" id="recRepeatCandidateName" readonly style="background-color: var(--bg-subtle);">
+          </div>
+          <div class="form-field">
+            <label for="recRepeatPosition" data-i18n="fldRecPosition">Recommended Position *</label>
+            <input type="text" id="recRepeatPosition" required placeholder="e.g. Country Sales Lead">
+          </div>
+          <div class="form-field">
+            <label for="recRepeatCompany" data-i18n="fldRecCompany">Recommended Company *</label>
+            <input type="text" id="recRepeatCompany" required placeholder="e.g. alauda / Midea / Mico World">
+          </div>
+          <div class="form-field">
+            <label for="recRepeatStage" data-i18n="fldStage">Pipeline Stage</label>
+            <select id="recRepeatStage">
+              <option value="pending" data-i18n="stagePending">Pending</option>
+              <option value="pass" data-i18n="stagePass">Original resume pass</option>
+              <option value="interview" data-i18n="stageInterview">Interview</option>
+              <option value="entry" data-i18n="stageEntry">Entry</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="recRepeatConsultant" data-i18n="fldConsultant">Consultant</label>
+            <input type="text" id="recRepeatConsultant" value="Rina Wijaya">
+          </div>
+          <div class="form-field full">
+            <label for="recRepeatNotes" data-i18n="fldNotes">Consultant Evaluation Notes</label>
+            <textarea id="recRepeatNotes" rows="3" placeholder="Enter client submission notes..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn-solid" data-i18n="btnSubmitRec">Submit Recommendation</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 3: Recommended List History -->
+  <dialog id="recListModal" aria-labelledby="recListModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="recListModalTitle" data-i18n="modalRecListTitle">Candidate Recommendation History</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <div id="recListModalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Close</button>
       </div>
     </div>
-  </footer>
+  </dialog>
 
-  <!-- Scripts -->
+  <!-- Modal 4: Add New Candidate -->
+  <dialog id="addCandidateModal" aria-labelledby="addCandidateModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="addCandidateModalTitle" data-i18n="modalAddTitle">Add New Candidate to Resume Library</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formAddCandidate">
+        <div class="modal-body form-grid">
+          <div class="form-field">
+            <label for="addName" data-i18n="fldFullName">Candidate Name *</label>
+            <input type="text" id="addName" required placeholder="e.g. Bagus Setiawan">
+          </div>
+          <div class="form-field">
+            <label for="addNationality" data-i18n="fldNationality">Nationality</label>
+            <input type="text" id="addNationality" value="Indonesia">
+          </div>
+          <div class="form-field">
+            <label for="addGender" data-i18n="fldGender">Gender</label>
+            <select id="addGender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="addAge" data-i18n="fldAge">Age</label>
+            <input type="number" id="addAge" min="18" max="65" value="27">
+          </div>
+          <div class="form-field">
+            <label for="addEducation" data-i18n="fldEducation">Education</label>
+            <select id="addEducation">
+              <option value="undergraduate">undergraduate</option>
+              <option value="master">master</option>
+              <option value="diploma">diploma</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="addYears" data-i18n="fldYearsService">Year of Service</label>
+            <input type="number" id="addYears" min="0" max="40" value="5">
+          </div>
+          <div class="form-field full">
+            <label for="addLanguage" data-i18n="fldLanguages">Languages (comma separated)</label>
+            <input type="text" id="addLanguage" value="Indonesian, English">
+          </div>
+          <div class="form-field">
+            <label for="addPosition" data-i18n="fldRecPosition">Recommended Position *</label>
+            <input type="text" id="addPosition" required placeholder="e.g. Indonesia Pre sales">
+          </div>
+          <div class="form-field">
+            <label for="addCompany" data-i18n="fldRecCompany">Recommended Company *</label>
+            <input type="text" id="addCompany" required placeholder="e.g. alauda">
+          </div>
+          <div class="form-field">
+            <label for="addStage" data-i18n="fldStage">Pipeline Stage</label>
+            <select id="addStage">
+              <option value="new">New</option>
+              <option value="pending">Pending</option>
+              <option value="pass">Original resume pass</option>
+              <option value="interview">Interview</option>
+              <option value="entry">Entry</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="addEmail" data-i18n="fldEmail">Email Address</label>
+            <input type="email" id="addEmail" placeholder="candidate@example.id">
+          </div>
+          <div class="form-field full">
+            <label for="addSummary" data-i18n="fldSummary">Professional Summary</label>
+            <textarea id="addSummary" rows="2" placeholder="Brief summary of experience and industry domain..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn-solid" data-i18n="btnSave">Save</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <script src="./src/js/data.js"></script>
   <script src="./src/js/app.js"></script>
 </body>
