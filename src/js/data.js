@@ -1,19 +1,31 @@
 /**
  * TemuTalenta Enterprise ATS & Resume Library
- * Dataset, Status Codes, & Tri-lingual I18N (English, Chinese / 中文, Indonesian)
+ * Dataset, Status Codes, Master Data, & Tri-lingual I18N
  * Sesuai spesifikasi PRD.md (Nov 16, 2026)
  */
 
 const STORAGE_KEYS = {
-  CANDIDATES: "temutalenta_ats_candidates_v3",
-  LANG: "temutalenta_lang_v3",
+  CANDIDATES: "temutalenta_ats_candidates_v4",
+  LANG: "temutalenta_lang_v4",
   COLOR_SCHEME: "color-scheme",
-  VISIBLE_COLS: "temutalenta_visible_cols_v3",
-  AUDIT_LOGS: "temutalenta_audit_logs_v3",
-  PAGE_SIZE: "temutalenta_page_size_v3"
+  VISIBLE_COLS: "temutalenta_visible_cols_v4",
+  AUDIT_LOGS: "temutalenta_audit_logs_v4",
+  PAGE_SIZE: "temutalenta_page_size_v4",
+  ACTIVE_USER: "temutalenta_active_user_v4",
+  NOTIFICATIONS: "temutalenta_notifications_v4",
+  MASTER_COMPANIES: "temutalenta_master_companies_v4",
+  MASTER_POSITIONS: "temutalenta_master_positions_v4"
 };
 
-// Master Status Codes sesuai tabel PRD (Daftar kode status)
+// Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan)
+const USERS = [
+  { id: "USR-01", name: "Rina Wijaya", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "RW" },
+  { id: "USR-02", name: "Budi Hartono", role: "manager", roleName: "Team Manager", avatar: "BH" },
+  { id: "USR-03", name: "Hendra Kusuma", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "HK" },
+  { id: "USR-ADMIN", name: "Admin TemuTalenta", role: "superadmin", roleName: "Super Admin (IT)", avatar: "AD" }
+];
+
+// Master Status Codes sesuai tabel PRD
 const STATUS_CODES = {
   0:  { code: 0,  tab: "new",       nameEn: "New",                       nameZh: "新增简历",     nameId: "Kandidat Baru",         isFailed: false, isFinal: false },
   10: { code: 10, tab: "pending",   nameEn: "Recommended to Client",     nameZh: "已推荐给客户",   nameId: "Direkomendasikan",       isFailed: false, isFinal: false },
@@ -46,6 +58,7 @@ const I18N = {
     navDataAnalysis: "Data Analysis",
     navPipelineReport: "Pipeline Report",
     navAuditLogs: "Audit Logs",
+    navSettings: "Settings (Master Data)",
     navPrdDocs: "PRD & Specs",
 
     // Header & Subnav
@@ -55,6 +68,7 @@ const I18N = {
     btnBack: "Back",
     btnRefresh: "Refresh",
     btnHome: "Home",
+    lblActiveRole: "Active User:",
 
     // Search Controls
     phCandidateName: "Candidate Name",
@@ -65,6 +79,8 @@ const I18N = {
     btnAdvSearch: "Advanced Search",
     btnHideAdvSearch: "Hide Advanced Search",
     btnNewCandidate: "+ New Candidate",
+    btnImportCsv: "Import CSV/Excel",
+    btnExportCsv: "Export CSV",
     btnResetData: "Reset Data",
 
     // Advanced Search
@@ -82,7 +98,7 @@ const I18N = {
     optMaster: "master",
     optDiploma: "diploma",
 
-    // Stage Tabs (Matches PRD: All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry)
+    // Stage Tabs
     stageAll: "All",
     stageNew: "New",
     stagePending: "Pending",
@@ -124,10 +140,19 @@ const I18N = {
     modalRecRepeatTitle: "Recommended Repeat (Client Submission)",
     modalRecListTitle: "Candidate Recommendation History",
     modalAddTitle: "Add New Candidate",
+    modalImportTitle: "Import Candidates from CSV / Excel",
     btnClose: "Close",
     btnSave: "Save",
     btnCancel: "Cancel",
     btnSubmitRec: "Submit Recommendation",
+    btnUploadCsv: "Upload & Import",
+    btnDownloadTemplate: "Download CSV Template",
+
+    // Tabs inside Candidate Profile
+    tabOverview: "Overview & Contacts",
+    tabWorkEdu: "Experience & Education",
+    tabCvViewer: "CV Document Viewer",
+    tabTimeline: "Activity Timeline",
 
     // Fields
     fldFullName: "Candidate Name",
@@ -143,27 +168,37 @@ const I18N = {
     fldStage: "Status Code",
     fldEmail: "Email",
     fldPhone: "Phone",
+    fldWhatsApp: "WhatsApp",
+    fldDomicile: "Domicile / City",
+    fldSalaryExpectation: "Expected Salary",
+    fldCurrentSalary: "Current Salary",
+    fldAvailability: "Availability",
     fldSummary: "Summary",
+    fldTags: "Tags (comma separated)",
     fldReason: "Reason / Justification",
     fldNotes: "Consultant Notes",
     fldConsultant: "Consultant",
     fldDate: "Submission Date",
     fldManagerApproval: "Manager Approval Granted",
 
-    // Validation Warnings
-    warnBlacklist: "Action blocked: Candidate is Blacklisted (Code 91) and cannot be recommended.",
-    warnActiveSame: "Action blocked: Candidate has an ongoing recommendation for this company and position.",
-    warnDiffConsultant6Mo: "Warning: Recommended to this company by another consultant in the last 6 months. Manager approval and justification required.",
-    warnSameCompany6Mo: "Notice: Candidate was recommended to this company within the last 6 months. Reason is mandatory.",
-    warnAlreadyHired: "Notice: Candidate already accepted an offer (31) or started work (40). Reason is required.",
-
     // Notifications
+    lblNotifications: "Notifications",
+    btnMarkAllRead: "Mark all read",
+    lblRecruitmentFunnel: "Recruitment Pipeline Funnel",
+    lblMasterData: "Master Data Management",
+    lblClientCompanies: "Client Companies",
+    lblPositions: "Job Positions",
+    btnAddCompany: "+ Add Client",
+    btnAddPosition: "+ Add Position",
     msgRefreshed: "Data refreshed.",
     msgResetDone: "Restored to default candidate records.",
     msgResumeDownloaded: "Downloaded resume for",
     msgRecSuccess: "Recommendation submitted for",
     msgStatusChanged: "Status updated for",
-    msgCandidateAdded: "Candidate added:"
+    msgCandidateAdded: "Candidate added:",
+    msgExportSuccess: "Exported candidates to CSV.",
+    msgImportSuccess: "Successfully imported candidates:",
+    msgRoleChanged: "Switched active user to:"
   },
   zh: {
     // Sidebar
@@ -176,6 +211,7 @@ const I18N = {
     navDataAnalysis: "数据分析",
     navPipelineReport: "招聘漏斗报表",
     navAuditLogs: "操作日志",
+    navSettings: "系统设置 (基础数据)",
     navPrdDocs: "PRD需求文档",
 
     // Header & Subnav
@@ -185,6 +221,7 @@ const I18N = {
     btnBack: "返回",
     btnRefresh: "刷新",
     btnHome: "首页",
+    lblActiveRole: "当前用户:",
 
     // Search Controls
     phCandidateName: "候选人姓名",
@@ -195,6 +232,8 @@ const I18N = {
     btnAdvSearch: "显示高级搜索",
     btnHideAdvSearch: "隐藏高级搜索",
     btnNewCandidate: "+ 新增候选人",
+    btnImportCsv: "导入CSV/Excel",
+    btnExportCsv: "导出CSV",
     btnResetData: "重置数据",
 
     // Advanced Search
@@ -254,10 +293,19 @@ const I18N = {
     modalRecRepeatTitle: "查重与再次推荐 (Recommended Repeat)",
     modalRecListTitle: "推荐历史记录",
     modalAddTitle: "录入新候选人",
+    modalImportTitle: "批量导入候选人 (CSV / Excel)",
     btnClose: "关闭",
     btnSave: "保存",
     btnCancel: "取消",
     btnSubmitRec: "提交推荐",
+    btnUploadCsv: "上传并导入",
+    btnDownloadTemplate: "下载CSV模板",
+
+    // Tabs inside Candidate Profile
+    tabOverview: "基本信息与联系方式",
+    tabWorkEdu: "工作与教育履历",
+    tabCvViewer: "CV简历原件预览",
+    tabTimeline: "跟进与操作日志",
 
     // Fields
     fldFullName: "姓名",
@@ -273,27 +321,37 @@ const I18N = {
     fldStage: "状态代码",
     fldEmail: "邮箱",
     fldPhone: "电话",
+    fldWhatsApp: "WhatsApp",
+    fldDomicile: "常住城市",
+    fldSalaryExpectation: "期望薪资",
+    fldCurrentSalary: "目前薪资",
+    fldAvailability: "到岗时间",
     fldSummary: "个人简介",
+    fldTags: "个性化标签",
     fldReason: "推荐理由/说明",
     fldNotes: "顾问评估备注",
     fldConsultant: "经办顾问",
     fldDate: "提交时间",
     fldManagerApproval: "主管已审批同意",
 
-    // Validation Warnings
-    warnBlacklist: "操作受限：该候选人已被列入黑名单 (代码 91)，禁止推荐！",
-    warnActiveSame: "操作受限：该候选人在该公司的同职位推荐流程仍在进行中！",
-    warnDiffConsultant6Mo: "提示：过去6个月内已有其他顾问推荐该候选人至此公司，需经主管审批并填写理由。",
-    warnSameCompany6Mo: "提示：该候选人在过去6个月内曾被推荐至此公司，必须填写推荐理由。",
-    warnAlreadyHired: "提示：该候选人已接受Offer或已入职，再次推荐需填写必要理由。",
-
     // Notifications
+    lblNotifications: "消息通知",
+    btnMarkAllRead: "全部标为已读",
+    lblRecruitmentFunnel: "招聘漏斗转化分析",
+    lblMasterData: "基础数据设置 (字典)",
+    lblClientCompanies: "合作客户公司",
+    lblPositions: "标准岗位字典",
+    btnAddCompany: "+ 新增客户",
+    btnAddPosition: "+ 新增岗位",
     msgRefreshed: "数据已刷新。",
     msgResetDone: "已恢复为默认候选人数据。",
     msgResumeDownloaded: "已下载简历：",
     msgRecSuccess: "推荐提交成功：",
     msgStatusChanged: "状态已更新：",
-    msgCandidateAdded: "成功添加候选人："
+    msgCandidateAdded: "成功添加候选人：",
+    msgExportSuccess: "已成功导出候选人数据至CSV。",
+    msgImportSuccess: "成功批量导入候选人：",
+    msgRoleChanged: "已切换当前用户为："
   },
   id: {
     // Sidebar
@@ -306,6 +364,7 @@ const I18N = {
     navDataAnalysis: "Analisis Data",
     navPipelineReport: "Laporan Pipeline",
     navAuditLogs: "Log Audit",
+    navSettings: "Pengaturan (Master Data)",
     navPrdDocs: "PRD & Spesifikasi",
 
     // Header & Subnav
@@ -315,6 +374,7 @@ const I18N = {
     btnBack: "Kembali",
     btnRefresh: "Muat Ulang",
     btnHome: "Beranda",
+    lblActiveRole: "Pengguna Aktif:",
 
     // Search Controls
     phCandidateName: "Nama Kandidat",
@@ -325,6 +385,8 @@ const I18N = {
     btnAdvSearch: "Pencarian Lanjutan",
     btnHideAdvSearch: "Tutup Filter Lanjutan",
     btnNewCandidate: "+ Kandidat Baru",
+    btnImportCsv: "Impor CSV",
+    btnExportCsv: "Ekspor CSV",
     btnResetData: "Reset Data Awal",
 
     // Advanced Search
@@ -384,10 +446,19 @@ const I18N = {
     modalRecRepeatTitle: "Rekomendasi Ulang (Recommended Repeat)",
     modalRecListTitle: "Riwayat Rekomendasi Kandidat",
     modalAddTitle: "Tambah Kandidat Baru",
+    modalImportTitle: "Impor Kandidat Massal (CSV / Excel)",
     btnClose: "Tutup",
     btnSave: "Simpan",
     btnCancel: "Batal",
     btnSubmitRec: "Kirim Rekomendasi",
+    btnUploadCsv: "Unggah & Impor",
+    btnDownloadTemplate: "Unduh Template CSV",
+
+    // Tabs inside Candidate Profile
+    tabOverview: "Profil & Kontak",
+    tabWorkEdu: "Pengalaman & Pendidikan",
+    tabCvViewer: "Pratinjau CV Dokumen",
+    tabTimeline: "Linimasa Aktivitas",
 
     // Fields
     fldFullName: "Nama Lengkap",
@@ -403,34 +474,40 @@ const I18N = {
     fldStage: "Kode Status",
     fldEmail: "Email",
     fldPhone: "Nomor Telepon",
+    fldWhatsApp: "WhatsApp",
+    fldDomicile: "Domisili",
+    fldSalaryExpectation: "Ekspektasi Gaji",
+    fldCurrentSalary: "Gaji Saat Ini",
+    fldAvailability: "Ketersediaan Mulai Kerja",
     fldSummary: "Ringkasan Pengalaman",
+    fldTags: "Tag Bebas",
     fldReason: "Alasan / Justifikasi",
     fldNotes: "Catatan Evaluasi Konsultan",
     fldConsultant: "Konsultan PIC",
     fldDate: "Waktu Pengajuan",
     fldManagerApproval: "Persetujuan Manajer Telah Diberikan",
 
-    // Validation Warnings
-    warnBlacklist: "Aksi diblokir: Kandidat masuk daftar Blacklist (Kode 91) dan tidak boleh direkomendasikan.",
-    warnActiveSame: "Aksi diblokir: Pengajuan untuk perusahaan dan posisi yang sama masih berjalan.",
-    warnDiffConsultant6Mo: "Peringatan: Kandidat sudah pernah diajukan ke perusahaan ini oleh konsultan lain dalam 6 bulan terakhir. Membutuhkan persetujuan Manajer dan alasan.",
-    warnSameCompany6Mo: "Pemberitahuan: Kandidat pernah diajukan ke perusahaan ini dalam 6 bulan terakhir. Alasan pengajuan wajib diisi.",
-    warnAlreadyHired: "Pemberitahuan: Kandidat sedang dalam status Offer diterima (31) atau Mulai bekerja (40). Alasan wajib diisi.",
-
     // Notifications
+    lblNotifications: "Pemberitahuan",
+    btnMarkAllRead: "Tandai semua dibaca",
+    lblRecruitmentFunnel: "Corong Konversi Rekrutmen",
+    lblMasterData: "Manajemen Data Master",
+    lblClientCompanies: "Perusahaan Klien",
+    lblPositions: "Daftar Posisi Pekerjaan",
+    btnAddCompany: "+ Tambah Klien",
+    btnAddPosition: "+ Tambah Posisi",
     msgRefreshed: "Data berhasil dimuat ulang.",
     msgResetDone: "Data awal berhasil dipulihkan.",
     msgResumeDownloaded: "Dokumen resume diunduh untuk",
     msgRecSuccess: "Rekomendasi berhasil dikirim untuk",
     msgStatusChanged: "Status diperbarui untuk",
-    msgCandidateAdded: "Kandidat baru ditambahkan:"
+    msgCandidateAdded: "Kandidat baru ditambahkan:",
+    msgExportSuccess: "Data kandidat berhasil diekspor ke CSV.",
+    msgImportSuccess: "Kandidat berhasil diimpor:",
+    msgRoleChanged: "Pengguna aktif dialihkan ke:"
   }
 };
 
-/**
- * Initial candidate dataset matching the exact reference screenshot
- * Andi Candera (21), DIMAS RIZALDI (12), Zulfikri Akif (12), etc.
- */
 const INITIAL_CANDIDATES = [
   {
     id: "CND-1001",
@@ -446,16 +523,30 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-26 17:55:00",
     email: "andi.candera@example.id",
     phone: "+62 812-3456-7801",
+    whatsapp: "+62 812-3456-7801",
+    domicile: "Jakarta Selatan",
+    salaryExpectation: "IDR 35.000.000",
+    currentSalary: "IDR 28.000.000",
+    availability: "1 Month Notice",
     ownerId: "USR-01",
     ownerName: "Rina Wijaya",
-    skills: ["Cloud Native", "Pre-Sales", "Kubernetes", "Mandarin HSK 6", "Enterprise B2B"],
+    skills: ["Cloud Native", "Pre-Sales Solution", "Kubernetes", "Mandarin HSK 6", "Enterprise B2B"],
+    tags: ["Mandarin fasih", "Enterprise Cloud", "Siap presentasi C-Level"],
     summary: "Senior Pre-Sales specialist with 9 years in enterprise cloud platforms. Fluent in Mandarin, English, and Indonesian.",
+    isUnviewed: true,
+    workHistory: [
+      { role: "Senior Solutions Engineer", company: "PT Cloud Aksara Nusantara", period: "2021 - 2026", desc: "Led technical demonstrations and architecture designs for tier-1 banking clients." },
+      { role: "Pre-Sales Specialist", company: "Cyberindo Solusi", period: "2017 - 2021", desc: "Handled infrastructure sizing and RFP responses." }
+    ],
+    educationHistory: [
+      { degree: "Bachelor of Computer Science", institution: "Institut Teknologi Bandung", year: "2017" }
+    ],
     recommendations: [
       {
         id: "REC-101",
         company: "alauda",
         position: "Indonesia Pre sales",
-        statusCode: 21, // 21: Lolos interview awal (Matches screenshot badge 21)
+        statusCode: 21,
         consultantId: "USR-01",
         consultantName: "Rina Wijaya",
         timestamp: "2026-09-26 17:55:00",
@@ -470,7 +561,7 @@ const INITIAL_CANDIDATES = [
         consultantId: "USR-02",
         consultantName: "Budi Hartono",
         timestamp: "2026-08-10 10:15:00",
-        notes: "CV passed screening, later candidate prioritized Alauda role.",
+        notes: "CV passed screening, candidate prioritized Alauda role.",
         isActive: false
       }
     ]
@@ -489,16 +580,30 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-23 15:37:14",
     email: "dimas.rizaldi@example.id",
     phone: "+62 811-9870-2210",
+    whatsapp: "+62 811-9870-2210",
+    domicile: "Jakarta Pusat",
+    salaryExpectation: "IDR 30.000.000",
+    currentSalary: "IDR 24.000.000",
+    availability: "Immediately",
     ownerId: "USR-01",
     ownerName: "Rina Wijaya",
     skills: ["Business Development", "Sugo App", "Live Streaming", "Partnerships"],
+    tags: ["Live Streaming Agency", "High Network", "Commercial Acumen"],
     summary: "Commercial director with 10 years experience expanding international mobile apps and live entertainment platforms in Indonesia.",
+    isUnviewed: false,
+    workHistory: [
+      { role: "Head of BD", company: "StreamWave Media", period: "2019 - 2026", desc: "Managed 50+ talent agencies across Java and Bali." },
+      { role: "Senior Partnership Specialist", company: "MobileJoy ID", period: "2016 - 2019", desc: "Acquired key content creators and game publishers." }
+    ],
+    educationHistory: [
+      { degree: "Bachelor of Business Administration", institution: "Universitas Bina Nusantara", year: "2016" }
+    ],
     recommendations: [
       {
         id: "REC-102",
         company: "Mico World",
         position: "Business Development - Sugo Indonesia",
-        statusCode: 12, // 12: CV lolos (Matches screenshot badge 12)
+        statusCode: 12,
         consultantId: "USR-01",
         consultantName: "Rina Wijaya",
         timestamp: "2026-09-23 15:37:14",
@@ -521,16 +626,29 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-22 10:36:16",
     email: "zulfikri.akif@example.id",
     phone: "+62 813-8821-4090",
+    whatsapp: "+62 813-8821-4090",
+    domicile: "Bekasi / Cikarang",
+    salaryExpectation: "IDR 14.000.000",
+    currentSalary: "IDR 11.500.000",
+    availability: "2 Weeks Notice",
     ownerId: "USR-03",
     ownerName: "Hendra Kusuma",
     skills: ["Customs Documentation", "CEISA 4.0", "Import Clearance", "Bonded Logistics"],
+    tags: ["Kawasan Berikat", "CEISA 4.0 Expert"],
     summary: "Supply chain and customs documentation specialist with 6 years experience in manufacturing import compliance.",
+    isUnviewed: false,
+    workHistory: [
+      { role: "Senior Import Officer", company: "PT Global Logistics Cikarang", period: "2020 - 2026", desc: "Managed bonded zone customs clearance for electronic components." }
+    ],
+    educationHistory: [
+      { degree: "Diploma of Logistics & Customs", institution: "Politeknik Negeri Jakarta", year: "2019" }
+    ],
     recommendations: [
       {
         id: "REC-103",
         company: "Midea",
         position: "Customs Documentation Clerk",
-        statusCode: 12, // 12: CV lolos (Matches screenshot badge 12)
+        statusCode: 12,
         consultantId: "USR-03",
         consultantName: "Hendra Kusuma",
         timestamp: "2026-09-22 10:36:16",
@@ -553,16 +671,29 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-20 14:15:30",
     email: "clarissa.wijaya@example.id",
     phone: "+62 812-7700-1928",
+    whatsapp: "+62 812-7700-1928",
+    domicile: "Tangerang",
+    salaryExpectation: "IDR 22.000.000",
+    currentSalary: "IDR 18.000.000",
+    availability: "Employed (Entry Confirmed)",
     ownerId: "USR-01",
     ownerName: "Rina Wijaya",
     skills: ["HRBP", "Talent Acquisition", "Labor Law", "Bilingual HR"],
+    tags: ["Mandarin HSK 5", "Industrial Relations"],
     summary: "Bilingual HRBP experienced in corporate HR operations and industrial relations for multinational electronics manufacturers.",
+    isUnviewed: false,
+    workHistory: [
+      { role: "HR Specialist", company: "Foxconn Subcontractor", period: "2021 - 2026", desc: "Handled talent acquisition and onboarding for bilingual engineering staff." }
+    ],
+    educationHistory: [
+      { degree: "Bachelor of Psychology", institution: "Universitas Indonesia", year: "2021" }
+    ],
     recommendations: [
       {
         id: "REC-104",
         company: "Midea",
         position: "Regional HRBP Specialist",
-        statusCode: 40, // 40: Mulai bekerja (Entry)
+        statusCode: 40,
         consultantId: "USR-01",
         consultantName: "Rina Wijaya",
         timestamp: "2026-09-20 14:15:30",
@@ -585,16 +716,29 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-17 16:20:05",
     email: "fajar.nugroho@example.id",
     phone: "+62 818-4455-9901",
+    whatsapp: "+62 818-4455-9901",
+    domicile: "Surabaya",
+    salaryExpectation: "IDR 12.000.000",
+    currentSalary: "IDR 9.500.000",
+    availability: "Available Now",
     ownerId: "USR-03",
     ownerName: "Hendra Kusuma",
     skills: ["B2B Channel Sales", "Dealer Relations", "FMCG"],
+    tags: ["Retail Channel", "East Java Area"],
     summary: "Channel sales representative handling tier-1 electronics retailers.",
+    isUnviewed: false,
+    workHistory: [
+      { role: "Junior Account Officer", company: "Mitra Elektronika Surabaya", period: "2023 - 2026", desc: "Covered 40+ retailer stores in East Java." }
+    ],
+    educationHistory: [
+      { degree: "Bachelor of Economics", institution: "Universitas Airlangga", year: "2023" }
+    ],
     recommendations: [
       {
         id: "REC-105",
         company: "Mico World",
         position: "Channel Sales Supervisor",
-        statusCode: 29, // 29: Gagal interview (Failed, red badge)
+        statusCode: 29,
         consultantId: "USR-03",
         consultantName: "Hendra Kusuma",
         timestamp: "2026-09-17 16:20:05",
@@ -618,11 +762,24 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-16 11:05:49",
     email: "meilinda.tan@example.id",
     phone: "+62 812-6611-8823",
+    whatsapp: "+62 812-6611-8823",
+    domicile: "Jakarta Barat",
+    salaryExpectation: "IDR 15.000.000",
+    currentSalary: "IDR 11.000.000",
+    availability: "Immediately",
     ownerId: "USR-01",
     ownerName: "Rina Wijaya",
     skills: ["Interpretation", "HSK 6", "Project Coordinator"],
+    tags: ["Trilingual", "HSK 6 Certified", "Fresh Potential"],
     summary: "Fresh trilingual graduate with high fluency in Mandarin and English, ready for project coordinator and executive interpreter roles.",
-    recommendations: [] // 0: New (Never recommended)
+    isUnviewed: true,
+    workHistory: [
+      { role: "Interpreter Intern", company: "Sinohydro Project Office", period: "2024 - 2025", desc: "Assisted engineering translations for infrastructure EPC contracts." }
+    ],
+    educationHistory: [
+      { degree: "Bachelor of Chinese Studies", institution: "Universitas Indonesia", year: "2024" }
+    ],
+    recommendations: []
   },
   {
     id: "CND-1007",
@@ -638,16 +795,29 @@ const INITIAL_CANDIDATES = [
     entryTime: "2026-09-15 13:40:00",
     email: "kevin.ardianto@example.id",
     phone: "+62 813-9000-1122",
+    whatsapp: "+62 813-9000-1122",
+    domicile: "Bandung / Remote",
+    salaryExpectation: "IDR 40.000.000",
+    currentSalary: "IDR 33.000.000",
+    availability: "Offer Decision Stage",
     ownerId: "USR-02",
     ownerName: "Budi Hartono",
     skills: ["Terraform", "Kubernetes", "AWS", "CI/CD"],
+    tags: ["DevOps Lead", "Kubernetes CKA", "Cloud Security"],
     summary: "DevOps Engineer with Master's degree and extensive hands-on experience in production Kubernetes cluster architectures.",
+    isUnviewed: false,
+    workHistory: [
+      { role: "Lead DevOps Specialist", company: "Digital Finansial Mandiri", period: "2020 - 2026", desc: "Designed resilient multi-region cloud infrastructure." }
+    ],
+    educationHistory: [
+      { degree: "Master of Software Engineering", institution: "Institut Teknologi Bandung", year: "2020" }
+    ],
     recommendations: [
       {
         id: "REC-106",
         company: "alauda",
         position: "Senior DevOps Architect",
-        statusCode: 30, // 30: Offer diajukan (Tab: Offer)
+        statusCode: 30,
         consultantId: "USR-02",
         consultantName: "Budi Hartono",
         timestamp: "2026-09-15 13:40:00",
@@ -657,6 +827,15 @@ const INITIAL_CANDIDATES = [
     ]
   }
 ];
+
+const INITIAL_NOTIFICATIONS = [
+  { id: "NT-1", title: "New Candidate Assigned", message: "Andi Candera was assigned to your review queue.", candidateId: "CND-1001", read: false, time: "10 mins ago" },
+  { id: "NT-2", title: "Offer Stage Update", message: "Kevin Ardianto received formal offer from alauda (Code 30).", candidateId: "CND-1007", read: false, time: "1 hour ago" },
+  { id: "NT-3", title: "Candidate Started Work", message: "Clarissa Wijaya successfully onboarded at Midea (Code 40).", candidateId: "CND-1004", read: true, time: "2 days ago" }
+];
+
+const INITIAL_COMPANIES = ["alauda", "Midea", "Mico World", "Huawei Cloud", "ByteDance ID", "Shopee Indonesia"];
+const INITIAL_POSITIONS = ["Indonesia Pre sales", "Business Development - Sugo Indonesia", "Customs Documentation Clerk", "Regional HRBP Specialist", "Channel Sales Supervisor", "Senior DevOps Architect", "Product Manager", "Fullstack Engineer"];
 
 const ALL_COLUMNS = [
   { id: "candidate", key: "colCandidate", locked: true },
@@ -673,9 +852,6 @@ const ALL_COLUMNS = [
   { id: "operation", key: "colOperation", locked: false }
 ];
 
-/**
- * Calculates current candidate age from birthDate
- */
 function calculateAge(birthDateStr) {
   if (!birthDateStr) return 26;
   const birth = new Date(birthDateStr);
@@ -688,30 +864,19 @@ function calculateAge(birthDateStr) {
   return age;
 }
 
-/**
- * One badge per candidate calculation rule (PRD lines 197-207)
- */
 function computeCandidateBadge(candidate) {
   const recs = candidate.recommendations || [];
   if (recs.length === 0) return 0;
-
-  // Rule 4: Blacklist 91 always overrides
   if (recs.some(r => r.statusCode === 91)) return 91;
 
-  // Rule 2: Active recommendations -> highest progress code
   const activeRecs = recs.filter(r => r.isActive !== false);
   if (activeRecs.length > 0) {
     const codes = activeRecs.map(r => r.statusCode);
     return Math.max(...codes);
   }
-
-  // Rule 3: All finished -> last changed recommendation code
   return recs[0].statusCode;
 }
 
-/**
- * Resolves which tab a candidate belongs to based on their computed badge code
- */
 function getStageTabForCode(statusCode) {
   const statusMeta = STATUS_CODES[statusCode];
   return statusMeta ? statusMeta.tab : "new";
@@ -766,6 +931,38 @@ function saveVisibleColumns(cols) {
   } catch (e) {}
 }
 
+function getStoredActiveUser() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.ACTIVE_USER);
+    if (!raw) return USERS[0];
+    return JSON.parse(raw);
+  } catch (e) {
+    return USERS[0];
+  }
+}
+
+function saveActiveUser(user) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_USER, JSON.stringify(user));
+  } catch (e) {}
+}
+
+function getStoredNotifications() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+    if (!raw) return INITIAL_NOTIFICATIONS;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_NOTIFICATIONS;
+  }
+}
+
+function saveNotifications(notifs) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.NOTIFICATIONS, JSON.stringify(notifs));
+  } catch (e) {}
+}
+
 function getStoredAuditLogs() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS);
@@ -777,15 +974,48 @@ function getStoredAuditLogs() {
 
 function addAuditLog(action, entity, details) {
   const logs = getStoredAuditLogs();
+  const activeUser = getStoredActiveUser();
   logs.unshift({
     id: `LOG-${Date.now()}`,
     action,
     entity,
     details,
-    user: "Rina Wijaya (Consultant)",
+    user: `${activeUser.name} (${activeUser.role})`,
     timestamp: new Date().toISOString().replace("T", " ").slice(0, 19)
   });
   try {
-    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs.slice(0, 100)));
+    localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(logs.slice(0, 200)));
+  } catch (e) {}
+}
+
+function getStoredMasterCompanies() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.MASTER_COMPANIES);
+    if (!raw) return INITIAL_COMPANIES;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_COMPANIES;
+  }
+}
+
+function saveMasterCompanies(list) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MASTER_COMPANIES, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function getStoredMasterPositions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.MASTER_POSITIONS);
+    if (!raw) return INITIAL_POSITIONS;
+    return JSON.parse(raw);
+  } catch (e) {
+    return INITIAL_POSITIONS;
+  }
+}
+
+function saveMasterPositions(list) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.MASTER_POSITIONS, JSON.stringify(list));
   } catch (e) {}
 }

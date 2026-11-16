@@ -4,18 +4,41 @@ Dokumen ini mendefinisikan struktur data inti, status tahapan pipeline rekrutmen
 
 ---
 
-## 1. Definisi Status Pipeline Seleksi
+## 1. Definisi Kamus Kode Status Dua Digit (Status Code Dictionary)
 
-Setiap kandidat di dalam pustaka resume (`Resume Lib`) memiliki status tahapan utama (`stage`) serta penghitung frekuensi rekomendasi (`statusCount`):
+Sesuai spesifikasi PRD ATS, badge status pada tabel data menampilkan kode angka dua digit terstandardisasi:
 
-| Kode Status | Label (English) | Label (Indonesia) | Deskripsi Operasional |
-| :--- | :--- | :--- | :--- |
-| `new` | `New` | `Baru` | Kandidat baru terdaftar di pustaka resume dan siap dikurasi. |
-| `pending` | `Pending` | `Menunggu` | Resume sedang ditinjau oleh konsultan atau menunggu respons klien. |
-| `pass` | `Original resume pass` | `Lolos Seleksi CV` | Resume asli telah disetujui klien untuk lanjut ke tahap tes/wawancara. |
-| `interview` | `Interview` | `Wawancara` | Kandidat sedang menjalani rangkaian wawancara (HR, User, atau Direksi). |
-| `failed` | `Failed` | `Tidak Lolos` | Kandidat belum lolos pada salah satu tahapan seleksi (memiliki indikator titik merah). |
-| `entry` | `Entry` | `Diterima / Masuk` | Kandidat telah menandatangani penawaran kerja dan masuk bekerja (*Onboarded*). |
+| Kode | Stage Tab | Nama (EN) | Nama (ID) | Nama (ZH) | Keterangan & Aturan |
+| :---: | :---: | :--- | :--- | :--- | :--- |
+| **0** | `new` | New Candidate | Kandidat Baru | 新录入 | Baru diinput, belum diajukan ke klien mana pun. |
+| **10** | `pending` | Recommended to Client | Direkomendasikan ke Klien | 推荐给客户 | CV telah dikirim ke PIC klien. |
+| **11** | `pending` | Client Reviewing | Klien Meninjau CV | 客户初审中 | Klien sedang meninjau kelayakan resume. |
+| **12** | `pass` | Original Resume Pass | Lolos Seleksi CV Klien | 原简历通过 | Klien menyetujui CV dan meminta jadwal interview. |
+| **19** | `failed` | Resume Rejected | CV Ditolak Klien | 简历不通过 | Wajib mengisi alasan penolakan (DK-05). |
+| **20** | `interview` | Interview Scheduled | Wawancara Dijadwalkan | 面试已安排 | Tanggal dan waktu wawancara telah disepakati. |
+| **21** | `interview` | Passed Initial Interview | Lolos Wawancara Awal | 初试通过 | Lolos babak awal (User/HR), lanjut tahap berikutnya. |
+| **22** | `interview` | Final Interview | Wawancara Akhir | 终试阶段 | Tahap wawancara direksi/komisaris. |
+| **29** | `failed` | Interview Failed | Tidak Lolos Wawancara | 面试未通过 | Wajib mengisi catatan kegagalan wawancara. |
+| **30** | `offer` | Offer Issued | Penawaran Diberikan | 发放Offer | Klien menerbitkan offering letter resmi. |
+| **31** | `offer` | Offer Accepted | Penawaran Diterima | 接受Offer | Kandidat menandatangani offering letter. |
+| **39** | `failed` | Offer Rejected | Penawaran Ditolak | 拒绝Offer | Kandidat menolak penawaran kerja (wajib alasan). |
+| **40** | `entry` | Onboarded / Entry | Masuk Kerja (Entry) | 已入职 | Kandidat resmi mulai bekerja di perusahaan klien. |
+| **41** | `entry` | Passed Probation | Lolos Masa Percobaan | 试用期通过 | Garansi agency selesai dan invoice terkonfirmasi. |
+| **49** | `failed` | Resigned / Failed Probation | Resign / Gagal Percobaan | 离职/未过试用 | Keluar sebelum masa probation usai (wajib alasan). |
+| **90** | `failed` | Candidate Withdrew | Mengundurkan Diri | 候选人主动放弃 | Kandidat mundur atas kemauan sendiri. |
+| **91** | `failed` | Blacklisted | Masuk Daftar Hitam | 加入黑名单 | Hanya dapat dilakukan oleh Manajer / Super Admin. |
+
+---
+
+## 2. Aturan Validasi Rekomendasi Ulang (Recommended Repeat RL-11)
+
+Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
+1. **Rule 1 (Duplicate Active)**: Jika ada status aktif (`10-31`) di perusahaan yang sama dalam 6 bulan terakhir, sistem **memblokir pengajuan**.
+2. **Rule 2 (Recent Entry)**: Jika status `40` (Entry) tercapai dalam 6 bulan terakhir di perusahaan mana pun, sistem **memblokir pengajuan**.
+3. **Rule 3 (Re-apply after Failure)**: Jika berstatus gagal (`19`, `29`, `39`) pada perusahaan yang sama dalam 6 bulan, wajib menyertakan **alasan justifikasi** perubahan kompetensi/pengalaman.
+4. **Rule 4 (Cross-Consultant Conflict)**: Jika kandidat direkomendasikan oleh konsultan lain dalam kurun waktu 30 hari, wajib mendapatkan **persetujuan Manajer**.
+5. **Rule 5 (Passed 6 Months)**: Pengajuan ke perusahaan yang sama setelah lebih dari 6 bulan diperbolehkan sebagai siklus rekrutmen baru.
+6. **Rule 6 (Different Company)**: Pengajuan ke perusahaan yang berbeda diperbolehkan paralel tanpa batasan siklus.
 
 ---
 

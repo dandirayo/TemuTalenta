@@ -1,12 +1,9 @@
 /**
- * TemuTalenta Enterprise ATS & Resume Library Controller
- * Mengimplementasikan seluruh spesifikasi PRD.md (Nov 16, 2026):
- * - Tri-lingual I18N (Chinese / English / Indonesian)
- * - 8 Tab Status (All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry)
- * - Badge kode status 2 digit otomatis (0, 10, 11, 12, 19, 20, 21, 22, 29, 30, 31, 39, 40, 41, 49, 90, 91)
- * - Validasi 6 Aturan Rekomendasi Ganda (Recommended Repeat)
- * - Paginasi 10/20/50 baris per halaman
- * - Audit Trail / Log Aktivitas
+ * TemuTalenta - Enterprise ATS Controller (Comprehensive & Multi-Phase Implementation)
+ * Menjalankan seluruh spesifikasi PRD.md:
+ * - Fase 1 (P0): URL query param sync, profil kandidat multi-tab (DK-01 s.d DK-06), validasi transisi kode gagal.
+ * - Fase 2 (P1): Role switcher (Super Admin, Manajer, Konsultan), Ekspor & Impor massal CSV, Notifikasi interaktif, Consultant Business.
+ * - Fase 3 (P2): Visual funnel chart, Master data settings.
  */
 
 let candidates = [];
@@ -18,6 +15,10 @@ let sortState = { columnId: "entryTime", direction: "descending" };
 let currentPage = 1;
 let pageSize = 10;
 let navigationHistory = ["resumeLib"];
+let activeUser = USERS[0];
+let notifications = [];
+let masterCompanies = [];
+let masterPositions = [];
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
@@ -26,15 +27,21 @@ document.addEventListener("DOMContentLoaded", () => {
   currentLang = getStoredLang();
   candidates = getStoredCandidates();
   visibleColumns = getStoredVisibleColumns();
+  activeUser = getStoredActiveUser();
+  notifications = getStoredNotifications();
+  masterCompanies = getStoredMasterCompanies();
+  masterPositions = getStoredMasterPositions();
 
   bindGlobalEvents();
   setupDialogLightDismiss();
+  restoreFiltersFromUrl();
   applyTranslations();
+  applyRolePermissions();
   renderAllViews();
 });
 
 /**
- * 1. THEME MANAGEMENT (Light / Dark Mode per modern-web-guidance)
+ * 1. THEME MANAGEMENT
  */
 function initThemeState() {
   const meta = document.querySelector('meta[name="color-scheme"]');
@@ -46,9 +53,7 @@ function initThemeState() {
   const sysDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const resolved = stored === "dark" || stored === "light" ? stored : (sysDark ? "dark" : "light");
 
-  if (meta) {
-    meta.content = stored ?? "light dark";
-  }
+  if (meta) meta.content = stored ?? "light dark";
   document.documentElement.setAttribute("data-theme", resolved);
   syncThemeToggleUI(resolved);
 }
@@ -75,17 +80,15 @@ function toggleThemeScheme() {
 
 function syncThemeToggleUI(theme) {
   const btn = document.getElementById("themeSwitchBtn");
-  if (btn) {
-    btn.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
-  }
+  if (btn) btn.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
 }
 
 /**
- * 2. TRI-LINGUAL I18N (English, Chinese, Indonesian)
+ * 2. TRI-LINGUAL I18N
  */
 function t(key) {
-  const langDict = I18N[currentLang] || I18N.en;
-  return langDict[key] || I18N.en[key] || key;
+  const dict = I18N[currentLang] || I18N.en;
+  return dict[key] || I18N.en[key] || key;
 }
 
 function getStatusName(statusCode) {
@@ -107,32 +110,26 @@ function setLanguage(lang) {
 function applyTranslations() {
   document.documentElement.lang = currentLang;
 
-  // Translate text nodes
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key);
   });
 
-  // Translate input placeholders
   document.querySelectorAll("[data-i18n-ph]").forEach(el => {
     const key = el.getAttribute("data-i18n-ph");
     el.placeholder = t(key);
   });
 
-  // Header language switch buttons
   const switchBtn = document.getElementById("langSwitchBtn");
   const lblZh = document.getElementById("langLabelZh");
   const lblEn = document.getElementById("langLabelEn");
   const selLang = document.getElementById("langSelectorDropdown");
 
-  if (switchBtn) {
-    switchBtn.setAttribute("aria-checked", currentLang === "en" ? "true" : "false");
-  }
+  if (switchBtn) switchBtn.setAttribute("aria-checked", currentLang === "en" ? "true" : "false");
   if (lblZh) lblZh.classList.toggle("active", currentLang === "zh");
   if (lblEn) lblEn.classList.toggle("active", currentLang === "en");
   if (selLang) selLang.value = currentLang;
 
-  // Advanced search button label
   const advBox = document.getElementById("advSearchBox");
   const advBtn = document.getElementById("btnToggleAdvSearch");
   if (advBtn && advBox) {
@@ -141,22 +138,98 @@ function applyTranslations() {
 }
 
 /**
- * 3. GLOBAL EVENT LISTENERS
+ * 3. ROLE SWITCHER & PERMISSION ENFORCEMENT
+ */
+function switchActiveUser(userId) {
+  const target = USERS.find(u => u.id === userId);
+  if (!target) return;
+  activeUser = target;
+  saveActiveUser(activeUser);
+  applyRolePermissions();
+  renderAllViews();
+  showToast(`${t("msgRoleChanged")} ${activeUser.name} (${activeUser.roleName})`);
+}
+
+function applyRolePermissions() {
+  const userSelect = document.getElementById("roleSelect");
+  const userAvatar = document.getElementById("userAvatarIndicator");
+  const btnExport = document.getElementById("btnExportCsv");
+  const settingsMenuItem = document.getElementById("menuItemSettings");
+
+  if (userSelect) userSelect.value = activeUser.id;
+  if (userAvatar) {
+    userAvatar.textContent = activeUser.avatar;
+    userAvatar.title = `${activeUser.name} - ${activeUser.roleName}`;
+  }
+
+  // RL-23: Export to Excel/CSV only for Manager and Super Admin
+  if (btnExport) {
+    const canExport = activeUser.role === "manager" || activeUser.role === "superadmin";
+    btnExport.style.display = canExport ? "inline-flex" : "none";
+  }
+
+  // PG-01: Settings menu only for Super Admin
+  if (settingsMenuItem) {
+    settingsMenuItem.style.display = activeUser.role === "superadmin" ? "block" : "none";
+  }
+}
+
+/**
+ * 4. URL QUERY PARAMETER SYNC (PRD RL-07)
+ */
+function syncFiltersToUrl() {
+  try {
+    const params = new URLSearchParams();
+    const nameVal = document.getElementById("searchCandidateName")?.value.trim();
+    const kwVal = document.getElementById("searchKeyword")?.value.trim();
+
+    if (nameVal) params.set("name", nameVal);
+    if (kwVal) params.set("kw", kwVal);
+    if (currentStageFilter !== "all") params.set("stage", currentStageFilter);
+
+    const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+    window.history.replaceState({}, "", newUrl);
+  } catch (e) {}
+}
+
+function restoreFiltersFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get("name");
+    const kwParam = params.get("kw");
+    const stageParam = params.get("stage");
+
+    if (nameParam) {
+      const el = document.getElementById("searchCandidateName");
+      if (el) el.value = nameParam;
+    }
+    if (kwParam) {
+      const el = document.getElementById("searchKeyword");
+      if (el) el.value = kwParam;
+    }
+    if (stageParam && ["all","new","pending","pass","interview","offer","failed","entry"].includes(stageParam)) {
+      currentStageFilter = stageParam;
+      const stateSelect = document.getElementById("searchStateSelect");
+      if (stateSelect) stateSelect.value = stageParam;
+      syncStageTabsUI();
+    }
+  } catch (e) {}
+}
+
+/**
+ * 5. GLOBAL EVENTS BINDING
  */
 function bindGlobalEvents() {
-  // Sidebar Toggle
   document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
     document.getElementById("appSidebar")?.classList.toggle("collapsed");
   });
 
-  // Sidebar Submenus
   document.querySelectorAll(".menu-group-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       btn.closest(".menu-group")?.classList.toggle("open");
     });
   });
 
-  // Sidebar View Navigation
   document.querySelectorAll(".submenu-item-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const view = btn.getAttribute("data-view");
@@ -164,7 +237,10 @@ function bindGlobalEvents() {
     });
   });
 
-  // Header Language Switcher (Chinese <-> English toggle)
+  document.getElementById("roleSelect")?.addEventListener("change", (e) => {
+    switchActiveUser(e.target.value);
+  });
+
   document.getElementById("langSwitchBtn")?.addEventListener("click", () => {
     setLanguage(currentLang === "zh" ? "en" : "zh");
   });
@@ -174,10 +250,9 @@ function bindGlobalEvents() {
     setLanguage(e.target.value);
   });
 
-  // Header Theme Switcher
   document.getElementById("themeSwitchBtn")?.addEventListener("click", toggleThemeScheme);
 
-  // Subnav Navigation (<, Refresh, Home)
+  // Subnav (<, Refresh, Home)
   document.getElementById("subNavBack")?.addEventListener("click", () => {
     if (navigationHistory.length > 1) {
       navigationHistory.pop();
@@ -195,9 +270,10 @@ function bindGlobalEvents() {
     switchWorkspaceView("resumeLib");
   });
 
-  // Search & Filter Inputs
+  // Search & Filter
   document.getElementById("btnSearch")?.addEventListener("click", () => {
     currentPage = 1;
+    syncFiltersToUrl();
     renderResumeTable();
   });
   document.getElementById("btnSearchAll")?.addEventListener("click", resetSearchFilters);
@@ -205,12 +281,14 @@ function bindGlobalEvents() {
   document.getElementById("searchCandidateName")?.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       currentPage = 1;
+      syncFiltersToUrl();
       renderResumeTable();
     }
   });
   document.getElementById("searchKeyword")?.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       currentPage = 1;
+      syncFiltersToUrl();
       renderResumeTable();
     }
   });
@@ -218,10 +296,10 @@ function bindGlobalEvents() {
     currentStageFilter = e.target.value;
     currentPage = 1;
     syncStageTabsUI();
+    syncFiltersToUrl();
     renderResumeTable();
   });
 
-  // Advanced Search Toggle & Inputs
   document.getElementById("btnToggleAdvSearch")?.addEventListener("click", () => {
     const box = document.getElementById("advSearchBox");
     if (box) {
@@ -237,7 +315,6 @@ function bindGlobalEvents() {
     });
   });
 
-  // Reset Default Data
   document.getElementById("btnResetDatabase")?.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEYS.CANDIDATES);
     candidates = getStoredCandidates();
@@ -246,12 +323,36 @@ function bindGlobalEvents() {
     showToast(t("msgResetDone"));
   });
 
-  // Open Add Candidate Modal
+  // Add Candidate
   document.getElementById("btnOpenAddModal")?.addEventListener("click", () => {
+    populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
     document.getElementById("addCandidateModal")?.showModal();
   });
 
-  // 8 Stage Tabs (All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry)
+  // Export & Import CSV (RL-22, RL-23)
+  document.getElementById("btnExportCsv")?.addEventListener("click", exportFilteredCandidatesToCsv);
+  document.getElementById("btnOpenImportModal")?.addEventListener("click", () => {
+    document.getElementById("importCsvModal")?.showModal();
+  });
+  document.getElementById("btnDownloadSampleCsv")?.addEventListener("click", downloadSampleCsvTemplate);
+  document.getElementById("formImportCsv")?.addEventListener("submit", handleCsvImportSubmit);
+
+  // Notifications Bell Popover
+  const notifBtn = document.getElementById("notifBellBtn");
+  const notifDropdown = document.getElementById("notifDropdown");
+  if (notifBtn && notifDropdown) {
+    notifBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      notifDropdown.classList.toggle("open");
+    });
+    document.addEventListener("click", (e) => {
+      if (!notifDropdown.contains(e.target) && !notifBtn.contains(e.target)) {
+        notifDropdown.classList.remove("open");
+      }
+    });
+  }
+
+  // 8 Stage Tabs
   document.querySelectorAll(".stage-tab").forEach(tab => {
     tab.addEventListener("click", () => {
       currentStageFilter = tab.getAttribute("data-stage") || "all";
@@ -259,11 +360,12 @@ function bindGlobalEvents() {
       const stateSelect = document.getElementById("searchStateSelect");
       if (stateSelect) stateSelect.value = currentStageFilter;
       syncStageTabsUI();
+      syncFiltersToUrl();
       renderResumeTable();
     });
   });
 
-  // Columns Dropdown
+  // Columns Selector
   const colTrigger = document.getElementById("colSelectorTrigger");
   const colMenu = document.getElementById("colDropdownMenu");
   if (colTrigger && colMenu) {
@@ -278,20 +380,18 @@ function bindGlobalEvents() {
     });
   }
 
-  // Page Size Selector & Pagination
+  // Pagination
   document.getElementById("pageSizeSelect")?.addEventListener("change", e => {
     pageSize = parseInt(e.target.value, 10) || 10;
     currentPage = 1;
     renderResumeTable();
   });
-
   document.getElementById("btnPrevPage")?.addEventListener("click", () => {
     if (currentPage > 1) {
       currentPage--;
       renderResumeTable();
     }
   });
-
   document.getElementById("btnNextPage")?.addEventListener("click", () => {
     const totalFiltered = getFilteredCandidates().length;
     const maxPages = Math.ceil(totalFiltered / pageSize) || 1;
@@ -304,10 +404,13 @@ function bindGlobalEvents() {
   // Forms
   document.getElementById("formRecRepeat")?.addEventListener("submit", handleRecRepeatSubmit);
   document.getElementById("formAddCandidate")?.addEventListener("submit", handleAddCandidateSubmit);
+  document.getElementById("formAddMasterCompany")?.addEventListener("submit", handleAddMasterCompany);
+  document.getElementById("formAddMasterPosition")?.addEventListener("submit", handleAddMasterPosition);
 }
 
 function switchWorkspaceView(viewId, pushHistory = true) {
   if (viewId === "addCandidateModalTrigger") {
+    populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
     document.getElementById("addCandidateModal")?.showModal();
     return;
   }
@@ -352,11 +455,12 @@ function resetSearchFilters() {
   currentStageFilter = "all";
   currentPage = 1;
   syncStageTabsUI();
+  syncFiltersToUrl();
   renderResumeTable();
 }
 
 /**
- * 4. COLUMN SELECTOR & TABLE RENDERING
+ * 6. COLUMN SELECTOR & TABLE RENDERING
  */
 function renderColumnSelector() {
   const menu = document.getElementById("colDropdownMenu");
@@ -414,7 +518,8 @@ function getFilteredCandidates() {
       c.recommendedCompany.toLowerCase().includes(kwQ) ||
       c.language.toLowerCase().includes(kwQ) ||
       c.education.toLowerCase().includes(kwQ) ||
-      (c.skills && c.skills.some(s => s.toLowerCase().includes(kwQ)));
+      (c.skills && c.skills.some(s => s.toLowerCase().includes(kwQ))) ||
+      (c.summary && c.summary.toLowerCase().includes(kwQ));
 
     const matchStage = currentStageFilter === "all" || candidateStageTab === currentStageFilter;
     const matchNat = !natQ || c.nationality.toLowerCase().includes(natQ);
@@ -438,7 +543,6 @@ function renderResumeTable() {
 
   const activeCols = ALL_COLUMNS.filter(c => visibleColumns.includes(c.id));
 
-  // Render Table Headers
   const sortableCols = {
     candidate: "string",
     nationality: "string",
@@ -479,7 +583,6 @@ function renderResumeTable() {
 
   const filtered = getFilteredCandidates();
 
-  // Sort
   const factor = sortState.direction === "ascending" ? 1 : -1;
   const sortType = sortableCols[sortState.columnId] || "string";
   filtered.sort((a, b) => {
@@ -488,7 +591,6 @@ function renderResumeTable() {
     return factor * (sortType === "number" ? valA - valB : collator.compare(String(valA), String(valB)));
   });
 
-  // Pagination calculation
   const totalRecords = filtered.length;
   const totalPages = Math.ceil(totalRecords / pageSize) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
@@ -541,6 +643,7 @@ function buildCandidateRowHtml(c, activeCols) {
           <th scope="row" data-value="${escapeHtml(c.name)}">
             <button type="button" class="candidate-link" data-action="profile" data-id="${c.id}">
               ${escapeHtml(c.name).replace(" ", "<br>")}
+              ${c.isUnviewed ? `<span style="display:inline-block; width:6px; height:6px; background-color:var(--danger-dot); border-radius:50%; margin-left:3px;" title="Unviewed"></span>` : ""}
             </button>
           </th>
         `;
@@ -587,9 +690,6 @@ function buildCandidateRowHtml(c, activeCols) {
   return `<tr data-candidate-id="${c.id}">${cells.join("")}</tr>`;
 }
 
-/**
- * Reorder rows on sort (Compliant with sortable-table guidance)
- */
 function handleColumnSort(colId, buttonEl) {
   const th = buttonEl.closest("th");
   const table = document.getElementById("resumeDataTable");
@@ -613,7 +713,7 @@ function handleColumnSort(colId, buttonEl) {
 }
 
 /**
- * 5. ROW OPERATIONS (Profile Modal, Download Resume, Recommended Repeat, Recommended List)
+ * 7. ROW OPERATIONS & FULL PROFILE MODAL (DK-01 s.d DK-06)
  */
 function bindTableRowActions(container) {
   container.querySelectorAll("[data-action]").forEach(btn => {
@@ -632,66 +732,106 @@ function openCandidateProfileModal(candidateId) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
 
+  c.isUnviewed = false;
+  saveCandidates(candidates);
+
   const dialog = document.getElementById("profileModal");
   const body = document.getElementById("profileModalBody");
   if (!dialog || !body) return;
 
   const currentBadge = computeCandidateBadge(c);
+  const calculatedAge = calculateAge(c.birthDate);
 
   body.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
+    <!-- Candidate Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
       <div>
         <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">${escapeHtml(c.name)}</h3>
         <p style="color: var(--text-secondary); margin-top: 2px;">
           ${escapeHtml(c.recommendedPosition || "-")} — <strong>${escapeHtml(c.recommendedCompany || "-")}</strong>
         </p>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-          ID: ${c.id} | ${escapeHtml(c.email || "-")} | ${escapeHtml(c.phone || "-")}
+        <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+          ID: ${c.id} | ${escapeHtml(c.email || "-")} | ${escapeHtml(c.phone || "-")} | ${c.domicile || "Indonesia"}
         </p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-        <span class="status-count-badge" style="font-size: 14px; padding: 3px 10px;">
+        <span class="status-count-badge" style="font-size: 13px; padding: 3px 9px;">
           ${currentBadge} - ${getStatusName(currentBadge)}
         </span>
       </div>
     </div>
 
-    <div class="form-grid" style="margin-bottom: 16px;">
-      <div class="form-field">
-        <label>${t("fldNationality")}</label>
-        <div>${escapeHtml(c.nationality || "-")}</div>
+    <!-- Sub-tabs navigation -->
+    <div class="profile-subtabs">
+      <button type="button" class="profile-tab-btn active" data-ptab="overview">${t("tabOverview")}</button>
+      <button type="button" class="profile-tab-btn" data-ptab="workEdu">${t("tabWorkEdu")}</button>
+      <button type="button" class="profile-tab-btn" data-ptab="cvViewer">${t("tabCvViewer")}</button>
+      <button type="button" class="profile-tab-btn" data-ptab="timeline">${t("tabTimeline")}</button>
+    </div>
+
+    <!-- PANE 1: Overview & Contacts (DK-01) -->
+    <div id="pane-overview" class="profile-tab-pane active">
+      <div class="form-grid" style="margin-bottom: 14px;">
+        <div class="form-field">
+          <label>${t("fldNationality")}</label>
+          <div>${escapeHtml(c.nationality || "-")}</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldGender")} / ${t("fldAge")}</label>
+          <div>${escapeHtml(c.gender)} (${calculatedAge} Years, b. ${c.birthDate || "-"})</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldEducation")}</label>
+          <div>${escapeHtml(c.education || "-")}</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldYearsService")}</label>
+          <div>${c.yearsOfService} Years</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldSalaryExpectation")}</label>
+          <div style="font-weight: 600; color: var(--success-color);">${escapeHtml(c.salaryExpectation || "Negotiable")}</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldCurrentSalary")}</label>
+          <div>${escapeHtml(c.currentSalary || "-")}</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldAvailability")}</label>
+          <div>${escapeHtml(c.availability || "Immediate")}</div>
+        </div>
+        <div class="form-field">
+          <label>${t("fldWhatsApp")}</label>
+          <div>${escapeHtml(c.whatsapp || c.phone || "-")}</div>
+        </div>
+        <div class="form-field full">
+          <label>${t("colLanguage")}</label>
+          <div>${escapeHtml(c.language || "-")}</div>
+        </div>
+        <div class="form-field full">
+          <label>${t("fldSummary")}</label>
+          <p style="color: var(--text-secondary); line-height: 1.55;">${escapeHtml(c.summary || "-")}</p>
+        </div>
+        <div class="form-field full">
+          <label>${t("fldTags")} (DK-06)</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 3px;">
+            ${(c.tags || ["Siap Relokasi", "Verified"]).map(tg => `<span class="col-tag">${escapeHtml(tg)}</span>`).join("")}
+          </div>
+        </div>
       </div>
-      <div class="form-field">
-        <label>${t("fldGender")} / ${t("fldAge")}</label>
-        <div>${escapeHtml(c.gender)} (${calculateAge(c.birthDate)})</div>
-      </div>
-      <div class="form-field">
-        <label>${t("fldEducation")}</label>
-        <div>${escapeHtml(c.education || "-")}</div>
-      </div>
-      <div class="form-field">
-        <label>${t("fldYearsService")}</label>
-        <div>${c.yearsOfService} Years</div>
-      </div>
-      <div class="form-field full">
-        <label>${t("colLanguage")}</label>
-        <div>${escapeHtml(c.language || "-")}</div>
-      </div>
-      <div class="form-field full">
-        <label>${t("fldSummary")}</label>
-        <p style="color: var(--text-secondary); line-height: 1.55;">${escapeHtml(c.summary || "-")}</p>
-      </div>
-      <div class="form-field full">
-        <label>Active Recommendations (${(c.recommendations || []).length})</label>
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+
+      <!-- Recommendation Management with Valid Transitions (DK-04) -->
+      <div style="margin-top: 14px;">
+        <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">Manage Recommendations & Pipeline Status (DK-04)</label>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
           ${(c.recommendations || []).map(r => `
-            <div style="padding: 8px 12px; border: 1px solid var(--border-base); border-radius: 3px; background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+            <div style="padding: 10px 12px; border: 1px solid var(--border-base); border-radius: 3px; background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div>
-                <strong>${escapeHtml(r.company)}</strong> - ${escapeHtml(r.position)}<br>
+                <strong>${escapeHtml(r.company)}</strong> — ${escapeHtml(r.position)}<br>
                 <small style="color: var(--text-muted);">${r.timestamp} • Consultant: ${escapeHtml(r.consultantName || "Rina")}</small>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <select class="ctrl-select rec-stage-changer" data-candidate-id="${c.id}" data-rec-id="${r.id}" style="height: 28px;">
+                <select class="ctrl-select rec-stage-changer" data-candidate-id="${c.id}" data-rec-id="${r.id}" style="height: 28px; font-size: 12px;">
                   ${Object.values(STATUS_CODES).map(st => `
                     <option value="${st.code}" ${r.statusCode === st.code ? "selected" : ""}>
                       ${st.code} - ${getStatusName(st.code)}
@@ -704,23 +844,136 @@ function openCandidateProfileModal(candidateId) {
         </div>
       </div>
     </div>
+
+    <!-- PANE 2: Experience & Education (DK-02) -->
+    <div id="pane-workEdu" class="profile-tab-pane">
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Employment History</h4>
+      <div class="table-wrapper" style="margin-bottom: 16px;">
+        <table class="data-table" style="min-inline-size: 500px;">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Company</th>
+              <th>Period</th>
+              <th>Responsibilities</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(c.workHistory || [
+              { role: c.recommendedPosition || "Professional", company: "Previous Tech Firm", period: "2020 - 2026", desc: "Handled key project deliverables." }
+            ]).map(w => `
+              <tr>
+                <td><strong>${escapeHtml(w.role)}</strong></td>
+                <td>${escapeHtml(w.company)}</td>
+                <td>${escapeHtml(w.period)}</td>
+                <td style="text-align: left; font-size: 11.5px;">${escapeHtml(w.desc)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Education & Degrees</h4>
+      <div class="table-wrapper">
+        <table class="data-table" style="min-inline-size: 500px;">
+          <thead>
+            <tr>
+              <th>Degree / Level</th>
+              <th>Institution</th>
+              <th>Graduation Year</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(c.educationHistory || [
+              { degree: c.education || "Bachelor", institution: "Reputable University", year: "2019" }
+            ]).map(e => `
+              <tr>
+                <td><strong>${escapeHtml(e.degree)}</strong></td>
+                <td>${escapeHtml(e.institution)}</td>
+                <td>${escapeHtml(e.year)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANE 3: CV Document Viewer (DK-03) -->
+    <div id="pane-cvViewer" class="profile-tab-pane">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 12px; color: var(--text-muted);">Standard Candidate CV Document (Pre-formatted Preview)</span>
+        <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}')" style="height: 28px; padding: 0 10px; font-size: 12px;">
+          Download Resume File
+        </button>
+      </div>
+      <div class="cv-preview-paper">${escapeHtml(generateResumeText(c))}</div>
+    </div>
+
+    <!-- PANE 4: Activity Timeline (DK-05) -->
+    <div id="pane-timeline" class="profile-tab-pane">
+      <div class="timeline-track">
+        <div class="timeline-item">
+          <div class="timeline-time">${c.entryTime}</div>
+          <div class="timeline-title">Candidate Profile Created</div>
+          <div class="timeline-desc">Initial registration into TemuTalenta Resume Lib by ${escapeHtml(c.ownerName || "Rina Wijaya")}.</div>
+        </div>
+        ${(c.recommendations || []).map(r => `
+          <div class="timeline-item">
+            <div class="timeline-time">${r.timestamp}</div>
+            <div class="timeline-title">Recommended to ${escapeHtml(r.company)} (${escapeHtml(r.position)})</div>
+            <div class="timeline-desc">Status: Code ${r.statusCode} (${getStatusName(r.statusCode)}) • PIC: ${escapeHtml(r.consultantName || "Rina Wijaya")}. ${r.reason ? `[Reason: ${escapeHtml(r.reason)}]` : ""} Note: ${escapeHtml(r.notes || "-")}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
   `;
 
-  // Bind inline status code changer
+  // Bind sub-tabs inside profile modal
+  body.querySelectorAll(".profile-tab-btn").forEach(tBtn => {
+    tBtn.addEventListener("click", () => {
+      body.querySelectorAll(".profile-tab-btn").forEach(b => b.classList.remove("active"));
+      body.querySelectorAll(".profile-tab-pane").forEach(p => p.classList.remove("active"));
+
+      tBtn.classList.add("active");
+      const targetPane = body.querySelector(`#pane-${tBtn.getAttribute("data-ptab")}`);
+      if (targetPane) targetPane.classList.add("active");
+    });
+  });
+
+  // Bind status transitions with reason requirement on failure (DK-04)
   body.querySelectorAll(".rec-stage-changer").forEach(sel => {
     sel.addEventListener("change", e => {
       const candId = sel.getAttribute("data-candidate-id");
       const recId = sel.getAttribute("data-rec-id");
       const newCode = parseInt(e.target.value, 10);
 
-      const targetCand = candidates.find(item => item.id === candId);
-      const targetRec = targetCand?.recommendations?.find(r => r.id === recId);
+      // Check Blacklist permission: only Manager/SuperAdmin can set 91
+      if (newCode === 91 && activeUser.role !== "manager" && activeUser.role !== "superadmin") {
+        alert("Permission denied: Only Team Managers or Super Admins can set status to 91 (Blacklist).");
+        sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
+        return;
+      }
+
+      // Check mandatory reason for failure codes (19, 29, 39, 49, 90)
+      const failedCodes = [19, 29, 39, 49, 90, 91];
+      let reasonInput = "";
+      if (failedCodes.includes(newCode)) {
+        reasonInput = prompt(`Reason is mandatory for setting status code ${newCode} (${getStatusName(newCode)}):`);
+        if (!reasonInput || !reasonInput.trim()) {
+          alert("Action cancelled: Reason is mandatory.");
+          sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
+          return;
+        }
+      }
+
+      const targetRec = c.recommendations?.find(r => r.id === recId);
       if (targetRec) {
         const oldCode = targetRec.statusCode;
         targetRec.statusCode = newCode;
+        if (reasonInput) targetRec.reason = reasonInput.trim();
+
         if (newCode === 31) {
-          // Rule 5: Offer accepted -> ask to close other running recommendations with code 90
-          targetCand.recommendations.forEach(otherR => {
+          c.recommendations.forEach(otherR => {
             if (otherR.id !== recId && otherR.isActive) {
               otherR.statusCode = 90;
               otherR.isActive = false;
@@ -728,10 +981,11 @@ function openCandidateProfileModal(candidateId) {
             }
           });
         }
-        addAuditLog("STATUS_CHANGE", `Candidate ${targetCand.name}`, `Changed code from ${oldCode} to ${newCode}`);
+
+        addAuditLog("STATUS_CHANGE", `Candidate ${c.name}`, `Changed code from ${oldCode} to ${newCode}. ${reasonInput ? `Reason: ${reasonInput}` : ""}`);
         saveCandidates(candidates);
         renderAllViews();
-        showToast(`${t("msgStatusChanged")} ${targetCand.name} -> Code ${newCode}`);
+        showToast(`${t("msgStatusChanged")} ${c.name} -> Code ${newCode}`);
       }
     });
   });
@@ -739,41 +993,49 @@ function openCandidateProfileModal(candidateId) {
   dialog.showModal();
 }
 
-function downloadCandidateResume(candidateId) {
-  const c = candidates.find(item => item.id === candidateId);
-  if (!c) return;
-
+function generateResumeText(c) {
   const currentBadge = computeCandidateBadge(c);
-  const resumeContent = [
+  return [
     "======================================================================",
     `                    CURRICULUM VITAE / RESUME                         `,
     "======================================================================",
     `Candidate ID         : ${c.id}`,
     `Full Name            : ${c.name}`,
-    `Nationality          : ${c.nationality}`,
-    `Gender / Age         : ${c.gender} / ${calculateAge(c.birthDate)}`,
+    `Nationality          : ${c.nationality || "-"}`,
+    `Gender / Age         : ${c.gender} / ${calculateAge(c.birthDate)} (b. ${c.birthDate || "-"})`,
+    `Domicile             : ${c.domicile || "Indonesia"}`,
     `Education            : ${c.education || "-"}`,
-    `Languages            : ${c.language}`,
+    `Languages            : ${c.language || "-"}`,
     `Years of Service     : ${c.yearsOfService} Years`,
-    `Email                : ${c.email || "-"}`,
-    `Phone                : ${c.phone || "-"}`,
+    `Expected Salary      : ${c.salaryExpectation || "Negotiable"} (Current: ${c.currentSalary || "-"})`,
+    `Availability         : ${c.availability || "Immediate"}`,
+    `Email / WhatsApp     : ${c.email || "-"} / ${c.whatsapp || c.phone || "-"}`,
     "----------------------------------------------------------------------",
     `LATEST STATUS & RECOMMENDATION`,
     `Current Status Badge : ${currentBadge} (${getStatusName(currentBadge)})`,
-    `Position             : ${c.recommendedPosition}`,
-    `Target Company       : ${c.recommendedCompany}`,
+    `Position             : ${c.recommendedPosition || "-"}`,
+    `Target Company       : ${c.recommendedCompany || "-"}`,
     `Entry Timestamp      : ${c.entryTime}`,
     "----------------------------------------------------------------------",
     `PROFESSIONAL SUMMARY`,
     `${c.summary || "-"}`,
     "----------------------------------------------------------------------",
+    `EMPLOYMENT HISTORY`,
+    ...(c.workHistory || []).map((w, i) => `${i+1}. ${w.role} @ ${w.company} (${w.period})\n   ${w.desc}`),
+    "----------------------------------------------------------------------",
     `RECOMMENDATION HISTORY (${(c.recommendations || []).length} records)`,
     ...(c.recommendations || []).map(
-      (r, idx) => `${idx + 1}. [${r.timestamp}] ${r.position} @ ${r.company} (Status Code: ${r.statusCode} - ${getStatusName(r.statusCode)})\n   Consultant: ${r.consultantName || "Rina Wijaya"} | Note: ${r.notes || "-"}`
+      (r, idx) => `${idx + 1}. [${r.timestamp}] ${r.position} @ ${r.company} (Status: ${r.statusCode} - ${getStatusName(r.statusCode)})\n   Consultant: ${r.consultantName || "Rina"} | Note: ${r.notes || "-"} ${r.reason ? `| Reason: ${r.reason}` : ""}`
     ),
     "======================================================================"
   ].join("\n");
+}
 
+function downloadCandidateResume(candidateId) {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return;
+
+  const resumeContent = generateResumeText(c);
   const blob = new Blob([resumeContent], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -789,21 +1051,20 @@ function downloadCandidateResume(candidateId) {
 }
 
 /**
- * Recommended Repeat: Evaluates 6 Rules from PRD.md lines 209-222
+ * 8. RECOMMENDED REPEAT (6 Rules)
  */
-function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, currentConsultant = "Rina Wijaya") {
+function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, currentConsultant = activeUser.name) {
   const currentBadge = computeCandidateBadge(candidate);
 
-  // Condition 1: Candidate is Code 91 Blacklist -> Blocked for all companies
+  // Condition 1: Blacklist 91
   if (currentBadge === 91) {
-    return { blocked: true, message: t("warnBlacklist"), requiresReason: false, requiresManager: false };
+    return { blocked: true, message: "Action blocked: Candidate is Blacklisted (Code 91) and cannot be recommended.", requiresReason: false, requiresManager: false };
   }
 
   const recs = candidate.recommendations || [];
-  const now = new Date("2026-11-16");
   const sixMonthsAgo = new Date("2026-05-16");
 
-  // Condition 2: Same company + same position, previous recommendation still active -> Blocked
+  // Condition 2: Same company + same position, previous recommendation still active
   const activeSame = recs.find(r => 
     r.isActive !== false &&
     r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim() &&
@@ -812,13 +1073,13 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
   if (activeSame) {
     return {
       blocked: true,
-      message: `${t("warnActiveSame")} (${activeSame.company} - ${activeSame.position}, Status: ${activeSame.statusCode})`,
+      message: `Action blocked: Candidate already has an ongoing recommendation for this company and position (${activeSame.company} - ${activeSame.position}, Status: ${activeSame.statusCode}).`,
       requiresReason: false,
       requiresManager: false
     };
   }
 
-  // Condition 3: Same company, by another consultant, in last 6 months -> Warning, Manager approval + reason
+  // Condition 3: Same company, by another consultant, in last 6 months
   const diffConsultantWithin6Mo = recs.find(r => {
     const rDate = new Date(r.timestamp.split(" ")[0]);
     const isWithin = rDate >= sixMonthsAgo;
@@ -829,13 +1090,13 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
   if (diffConsultantWithin6Mo) {
     return {
       blocked: false,
-      message: `${t("warnDiffConsultant6Mo")} (Previous Consultant: ${diffConsultantWithin6Mo.consultantName})`,
+      message: `Warning: Recommended to this company by another consultant (${diffConsultantWithin6Mo.consultantName}) in the last 6 months. Manager approval and justification required.`,
       requiresReason: true,
       requiresManager: true
     };
   }
 
-  // Condition 4: Same company (any position) in last 6 months -> Warning, reason mandatory
+  // Condition 4: Same company in last 6 months
   const sameCompWithin6Mo = recs.find(r => {
     const rDate = new Date(r.timestamp.split(" ")[0]);
     return rDate >= sixMonthsAgo && r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
@@ -843,23 +1104,23 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
   if (sameCompWithin6Mo) {
     return {
       blocked: false,
-      message: t("warnSameCompany6Mo"),
+      message: "Notice: Candidate was recommended to this company within the last 6 months. Reason is mandatory.",
       requiresReason: true,
       requiresManager: false
     };
   }
 
-  // Condition 5: Candidate currently in code 31 or 40 -> Warning + reason mandatory
+  // Condition 5: Candidate currently in code 31 or 40
   if (currentBadge === 31 || currentBadge === 40) {
     return {
       blocked: false,
-      message: t("warnAlreadyHired"),
+      message: "Notice: Candidate already accepted an offer (31) or started work (40). Reason is required.",
       requiresReason: true,
       requiresManager: false
     };
   }
 
-  // Condition 6: Otherwise -> Allowed freely
+  // Condition 6: Otherwise -> Allowed
   return { blocked: false, message: "", requiresReason: false, requiresManager: false };
 }
 
@@ -870,10 +1131,10 @@ function openRecRepeatModal(candidateId) {
   const dialog = document.getElementById("recRepeatModal");
   if (!dialog) return;
 
+  populateCompanyAndPositionSelects("recRepeatCompanySelect", "recRepeatPositionSelect");
+
   document.getElementById("recRepeatCandidateId").value = c.id;
   document.getElementById("recRepeatCandidateName").value = c.name;
-  document.getElementById("recRepeatPosition").value = c.recommendedPosition || "";
-  document.getElementById("recRepeatCompany").value = "";
   document.getElementById("recRepeatReason").value = "";
   document.getElementById("recRepeatNotes").value = "";
 
@@ -887,13 +1148,12 @@ function openRecRepeatModal(candidateId) {
   if (mgrBox) mgrBox.style.display = "none";
   if (submitBtn) submitBtn.disabled = false;
 
-  // Real-time verification on typing company or position
   const verifyRulesLive = () => {
-    const comp = document.getElementById("recRepeatCompany")?.value.trim();
-    const pos = document.getElementById("recRepeatPosition")?.value.trim();
+    const comp = document.getElementById("recRepeatCompanySelect")?.value.trim();
+    const pos = document.getElementById("recRepeatPositionSelect")?.value.trim();
     if (!comp) return;
 
-    const evalResult = evaluateRecRepeatRules(c, comp, pos);
+    const evalResult = evaluateRecRepeatRules(c, comp, pos, activeUser.name);
     if (evalResult.blocked) {
       if (warnBanner) {
         warnBanner.style.display = "block";
@@ -928,8 +1188,8 @@ function openRecRepeatModal(candidateId) {
     }
   };
 
-  document.getElementById("recRepeatCompany").oninput = verifyRulesLive;
-  document.getElementById("recRepeatPosition").oninput = verifyRulesLive;
+  document.getElementById("recRepeatCompanySelect").onchange = verifyRulesLive;
+  document.getElementById("recRepeatPositionSelect").onchange = verifyRulesLive;
 
   dialog.showModal();
 }
@@ -937,10 +1197,10 @@ function openRecRepeatModal(candidateId) {
 function handleRecRepeatSubmit(e) {
   e.preventDefault();
   const id = document.getElementById("recRepeatCandidateId")?.value;
-  const pos = document.getElementById("recRepeatPosition")?.value.trim();
-  const comp = document.getElementById("recRepeatCompany")?.value.trim();
+  const pos = document.getElementById("recRepeatPositionSelect")?.value.trim();
+  const comp = document.getElementById("recRepeatCompanySelect")?.value.trim();
   const statusCode = parseInt(document.getElementById("recRepeatStatusCode")?.value || "10", 10);
-  const consultant = document.getElementById("recRepeatConsultant")?.value.trim() || "Rina Wijaya";
+  const consultant = activeUser.name;
   const reason = document.getElementById("recRepeatReason")?.value.trim() || "";
   const notes = document.getElementById("recRepeatNotes")?.value.trim() || "Recommended via Resume Lib.";
 
@@ -1054,6 +1314,9 @@ function openRecListModal(candidateId) {
   dialog.showModal();
 }
 
+/**
+ * 9. ADD CANDIDATE WITH DUPLICATE CHECK (RL-20, RL-21)
+ */
 function handleAddCandidateSubmit(e) {
   e.preventDefault();
   const name = document.getElementById("addName")?.value.trim();
@@ -1063,15 +1326,14 @@ function handleAddCandidateSubmit(e) {
   const education = document.getElementById("addEducation")?.value || "undergraduate";
   const language = document.getElementById("addLanguage")?.value.trim() || "Indonesian, English";
   const yearsOfService = parseFloat(document.getElementById("addYears")?.value || "3");
-  const position = document.getElementById("addPosition")?.value.trim();
-  const company = document.getElementById("addCompany")?.value.trim();
+  const position = document.getElementById("addPositionSelect")?.value.trim();
+  const company = document.getElementById("addCompanySelect")?.value.trim();
   const email = document.getElementById("addEmail")?.value.trim() || "";
   const phone = document.getElementById("addPhone")?.value.trim() || "";
   const summary = document.getElementById("addSummary")?.value.trim() || "";
 
   if (!name) return;
 
-  // Duplicate check (PRD RL-21: name + birthDate or email or phone)
   const isDuplicate = candidates.find(item => 
     (item.name.toLowerCase() === name.toLowerCase() && item.birthDate === birthDate) ||
     (email && item.email && item.email.toLowerCase() === email.toLowerCase()) ||
@@ -1079,7 +1341,7 @@ function handleAddCandidateSubmit(e) {
   );
 
   if (isDuplicate) {
-    if (!confirm(`Warning: Candidate "${isDuplicate.name}" with matching birth date or contact already exists in database. Save anyway?`)) {
+    if (!confirm(`Warning (Duplicate Check RL-21): Candidate "${isDuplicate.name}" with matching birth date or contact already exists in database. Save anyway?`)) {
       return;
     }
   }
@@ -1092,7 +1354,7 @@ function handleAddCandidateSubmit(e) {
       company,
       position,
       statusCode: 10,
-      consultantName: "Rina Wijaya",
+      consultantName: activeUser.name,
       timestamp: nowStr,
       notes: "Initial entry recommendation.",
       isActive: true
@@ -1113,8 +1375,17 @@ function handleAddCandidateSubmit(e) {
     entryTime: nowStr,
     email,
     phone,
+    whatsapp: phone,
+    domicile: "Indonesia",
+    salaryExpectation: "Negotiable",
+    currentSalary: "-",
+    availability: "Immediate",
+    ownerId: activeUser.id,
+    ownerName: activeUser.name,
     skills: position ? [position] : [],
+    tags: ["New Entry"],
     summary,
+    isUnviewed: true,
     recommendations: newRecs
   };
 
@@ -1129,10 +1400,221 @@ function handleAddCandidateSubmit(e) {
 }
 
 /**
- * 6. SECONDARY WORKSPACE VIEWS
+ * 10. BULK CSV IMPORT & EXPORT (RL-22, RL-23)
+ */
+function exportFilteredCandidatesToCsv() {
+  if (activeUser.role !== "manager" && activeUser.role !== "superadmin") {
+    alert("Permission denied: Only Managers and Super Admins can export candidate data.");
+    return;
+  }
+
+  const filtered = getFilteredCandidates();
+  if (filtered.length === 0) {
+    alert("No candidates to export.");
+    return;
+  }
+
+  const headers = ["ID", "Candidate Name", "Nationality", "Status Code", "Gender", "Birth Date", "Age", "Education", "Language", "Years of Service", "Recommended Position", "Recommended Company", "Entry Time", "Email", "Phone"];
+  const rows = filtered.map(c => [
+    `"${c.id}"`,
+    `"${c.name}"`,
+    `"${c.nationality || ""}"`,
+    `"${computeCandidateBadge(c)}"`,
+    `"${c.gender || ""}"`,
+    `"${c.birthDate || ""}"`,
+    `"${calculateAge(c.birthDate)}"`,
+    `"${c.education || ""}"`,
+    `"${(c.language || "").replace(/"/g, '""')}"`,
+    `"${c.yearsOfService || 0}"`,
+    `"${(c.recommendedPosition || "").replace(/"/g, '""')}"`,
+    `"${(c.recommendedCompany || "").replace(/"/g, '""')}"`,
+    `"${c.entryTime || ""}"`,
+    `"${c.email || ""}"`,
+    `"${c.phone || ""}"`
+  ]);
+
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Candidates_Export_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  addAuditLog("EXPORT_CSV", "Resume Lib", `Exported ${filtered.length} candidates to CSV`);
+  showToast(`${t("msgExportSuccess")} (${filtered.length} records)`);
+}
+
+function downloadSampleCsvTemplate() {
+  const sample = [
+    "Candidate Name,Nationality,Gender,Birth Date,Education,Language,Years of Service,Recommended Position,Recommended Company,Email,Phone,Summary",
+    "Bagus Setiawan,Indonesia,Male,1998-05-12,undergraduate,\"Indonesian, English\",5,Fullstack Engineer,Shopee Indonesia,bagus.s@example.id,+6281299887766,Experienced web developer in Node.js and React",
+    "Dewi Lestari,Indonesia,Female,1999-10-04,master,\"Indonesian, English, Chinese\",4,Product Manager,ByteDance ID,dewi.l@example.id,+6281311223344,Bilingual PM in social entertainment"
+  ].join("\n");
+
+  const blob = new Blob([sample], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "candidates_sample_template.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function handleCsvImportSubmit(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById("csvFileInput");
+  const textInput = document.getElementById("csvPasteInput")?.value.trim();
+
+  if (fileInput?.files?.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      processCsvData(evt.target.result);
+    };
+    reader.readAsText(file);
+  } else if (textInput) {
+    processCsvData(textInput);
+  } else {
+    alert("Please choose a CSV file or paste CSV text.");
+  }
+}
+
+function processCsvData(csvText) {
+  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+  if (lines.length <= 1) {
+    alert("CSV is empty or contains only header.");
+    return;
+  }
+
+  let importedCount = 0;
+  const failedRows = [];
+  const nowStr = formatTimestamp(new Date());
+
+  // Simple CSV line parser
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const name = cols[0];
+    const nationality = cols[1] || "Indonesia";
+    const gender = cols[2] || "Male";
+    const birthDate = cols[3] || "1998-01-01";
+    const education = cols[4] || "undergraduate";
+    const language = cols[5] || "Indonesian, English";
+    const yearsOfService = parseFloat(cols[6]) || 3;
+    const position = cols[7] || "";
+    const company = cols[8] || "";
+    const email = cols[9] || "";
+    const phone = cols[10] || "";
+    const summary = cols[11] || "";
+
+    if (!name) {
+      failedRows.push(`Line ${i + 1}: Name is empty`);
+      continue;
+    }
+
+    const newRecord = {
+      id: `CND-${1000 + candidates.length + 1}`,
+      name,
+      nationality,
+      gender,
+      birthDate,
+      education,
+      language,
+      yearsOfService,
+      recommendedPosition: position,
+      recommendedCompany: company,
+      entryTime: nowStr,
+      email,
+      phone,
+      whatsapp: phone,
+      domicile: "Indonesia",
+      salaryExpectation: "Negotiable",
+      currentSalary: "-",
+      availability: "Immediate",
+      ownerId: activeUser.id,
+      ownerName: activeUser.name,
+      skills: position ? [position] : [],
+      tags: ["Imported CSV"],
+      summary,
+      isUnviewed: true,
+      recommendations: company && position ? [{
+        id: `REC-${Date.now().toString().slice(-4)}`,
+        company,
+        position,
+        statusCode: 10,
+        consultantName: activeUser.name,
+        timestamp: nowStr,
+        notes: "Imported via CSV.",
+        isActive: true
+      }] : []
+    };
+
+    candidates.unshift(newRecord);
+    importedCount++;
+  }
+
+  saveCandidates(candidates);
+  addAuditLog("IMPORT_CSV", "Resume Lib", `Imported ${importedCount} candidates. Failed rows: ${failedRows.length}`);
+  document.getElementById("importCsvModal")?.close();
+  renderAllViews();
+
+  if (failedRows.length > 0) {
+    alert(`Import finished: ${importedCount} succeeded. Errors in ${failedRows.length} rows:\n${failedRows.slice(0, 5).join("\n")}`);
+  } else {
+    showToast(`${t("msgImportSuccess")} ${importedCount} candidates.`);
+  }
+}
+
+/**
+ * 11. NOTIFICATIONS POPOVER (NT-01, NT-02)
+ */
+function renderNotifications() {
+  const notifList = document.getElementById("notifListContainer");
+  const badgeEl = document.getElementById("notifUnreadBadge");
+  if (!notifList || !badgeEl) return;
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+  badgeEl.textContent = unreadCount;
+  badgeEl.style.display = unreadCount > 0 ? "flex" : "none";
+
+  notifList.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.read ? '' : 'unread'}" data-notif-id="${n.id}">
+      <div class="notif-item-title">${escapeHtml(n.title)}</div>
+      <div class="notif-item-desc">${escapeHtml(n.message)}</div>
+      <div class="notif-item-time">${escapeHtml(n.time)}</div>
+    </div>
+  `).join("");
+
+  notifList.querySelectorAll(".notif-item").forEach(item => {
+    item.addEventListener("click", () => {
+      const nid = item.getAttribute("data-notif-id");
+      const targetNotif = notifications.find(n => n.id === nid);
+      if (targetNotif) {
+        targetNotif.read = true;
+        saveNotifications(notifications);
+        renderNotifications();
+        document.getElementById("notifDropdown")?.classList.remove("open");
+        if (targetNotif.candidateId) {
+          openCandidateProfileModal(targetNotif.candidateId);
+        }
+      }
+    });
+  });
+}
+
+/**
+ * 12. SECONDARY WORKSPACE VIEWS
  */
 function renderSecondaryViews() {
-  // Global Recommendations Table
+  renderNotifications();
+
+  // Global Recommendations
   const recTbody = document.getElementById("globalRecTableBody");
   if (recTbody) {
     const allRecs = [];
@@ -1162,7 +1644,7 @@ function renderSecondaryViews() {
     `).join("");
   }
 
-  // Client Companies Table
+  // Client Companies
   const clientTbody = document.getElementById("clientCompaniesTableBody");
   if (clientTbody) {
     const companyMap = {};
@@ -1186,28 +1668,49 @@ function renderSecondaryViews() {
     `).join("");
   }
 
-  // Pipeline KPIs (New -> Pending -> Original resume pass -> Interview -> Offer -> Entry, Failed)
+  // Visual Funnel & Data Analysis (DA-01 s.d DA-05)
+  const funnelContainer = document.getElementById("funnelVisualContainer");
   const kpiContainer = document.getElementById("analyticsKpiContainer");
+
+  const total = candidates.length || 1;
+  const countNew = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length;
+  const countPending = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length;
+  const countPass = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length;
+  const countInterview = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length;
+  const countOffer = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length;
+  const countEntry = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length;
+  const countFailed = candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length;
+
+  if (funnelContainer) {
+    const funnelSteps = [
+      { name: "1. New (0)", count: countNew, color: "var(--brand-primary)" },
+      { name: "2. Pending (10, 11)", count: countPending, color: "#4f46e5" },
+      { name: "3. Resume Pass (12)", count: countPass, color: "#06b6d4" },
+      { name: "4. Interview (20-22)", count: countInterview, color: "#0ea5e9" },
+      { name: "5. Offer (30, 31)", count: countOffer, color: "#8b5cf6" },
+      { name: "6. Entry / Hired (40, 41)", count: countEntry, color: "var(--success-color)" }
+    ];
+
+    funnelContainer.innerHTML = funnelSteps.map(step => {
+      const pct = Math.round((step.count / total) * 100);
+      return `
+        <div class="funnel-row">
+          <span><strong>${step.name}</strong></span>
+          <div class="funnel-bar-track">
+            <div class="funnel-bar-fill" style="width: ${Math.max(5, pct)}%; background-color: ${step.color};"></div>
+          </div>
+          <span>${step.count} (${pct}%)</span>
+        </div>
+      `;
+    }).join("");
+  }
+
   if (kpiContainer) {
-    const counts = {
-      all: candidates.length,
-      new: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length,
-      pending: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length,
-      pass: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length,
-      interview: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length,
-      offer: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length,
-      entry: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length,
-      failed: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length
-    };
     kpiContainer.innerHTML = `
-      <div class="kpi-card"><div>${t("stageAll")}</div><div class="kpi-num">${counts.all}</div></div>
-      <div class="kpi-card"><div>${t("stageNew")} (0)</div><div class="kpi-num">${counts.new}</div></div>
-      <div class="kpi-card"><div>${t("stagePending")} (10, 11)</div><div class="kpi-num">${counts.pending}</div></div>
-      <div class="kpi-card"><div>${t("stagePass")} (12)</div><div class="kpi-num">${counts.pass}</div></div>
-      <div class="kpi-card"><div>${t("stageInterview")} (20, 21, 22)</div><div class="kpi-num">${counts.interview}</div></div>
-      <div class="kpi-card"><div>${t("stageOffer")} (30, 31)</div><div class="kpi-num" style="color: var(--brand-primary);">${counts.offer}</div></div>
-      <div class="kpi-card"><div>${t("stageEntry")} (40, 41)</div><div class="kpi-num" style="color: var(--success-color);">${counts.entry}</div></div>
-      <div class="kpi-card"><div>${t("stageFailed")} (19, 29, 39, 49, 90, 91)</div><div class="kpi-num" style="color: var(--danger-dot);">${counts.failed}</div></div>
+      <div class="kpi-card"><div>Total Candidates</div><div class="kpi-num">${candidates.length}</div></div>
+      <div class="kpi-card"><div>In Pipeline</div><div class="kpi-num">${countPending + countPass + countInterview + countOffer}</div></div>
+      <div class="kpi-card"><div>Hired (Entry)</div><div class="kpi-num" style="color: var(--success-color);">${countEntry}</div></div>
+      <div class="kpi-card"><div>Failed / Resigned</div><div class="kpi-num" style="color: var(--danger-dot);">${countFailed}</div></div>
     `;
   }
 
@@ -1226,10 +1729,92 @@ function renderSecondaryViews() {
       </tr>
     `).join("");
   }
+
+  // Settings Panel (Master Data PG-01, PG-02)
+  renderMasterDataLists();
+}
+
+function renderMasterDataLists() {
+  const compList = document.getElementById("settingsCompanyList");
+  const posList = document.getElementById("settingsPositionList");
+
+  if (compList) {
+    compList.innerHTML = masterCompanies.map((c, i) => `
+      <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border-table);">
+        <span>${escapeHtml(c)}</span>
+        <button type="button" class="btn-outlined" onclick="deleteMasterCompany(${i})" style="padding: 2px 6px; font-size: 11px;">✕</button>
+      </li>
+    `).join("");
+  }
+
+  if (posList) {
+    posList.innerHTML = masterPositions.map((p, i) => `
+      <li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border-table);">
+        <span>${escapeHtml(p)}</span>
+        <button type="button" class="btn-outlined" onclick="deleteMasterPosition(${i})" style="padding: 2px 6px; font-size: 11px;">✕</button>
+      </li>
+    `).join("");
+  }
+}
+
+function populateCompanyAndPositionSelects(compId, posId) {
+  const compSelect = document.getElementById(compId);
+  const posSelect = document.getElementById(posId);
+
+  if (compSelect) {
+    compSelect.innerHTML = masterCompanies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  }
+  if (posSelect) {
+    posSelect.innerHTML = masterPositions.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+  }
+}
+
+function handleAddMasterCompany(e) {
+  e.preventDefault();
+  const input = document.getElementById("newMasterCompanyName");
+  const val = input?.value.trim();
+  if (!val) return;
+  if (!masterCompanies.includes(val)) {
+    masterCompanies.push(val);
+    saveMasterCompanies(masterCompanies);
+    input.value = "";
+    renderMasterDataLists();
+    showToast(`Added client company: ${val}`);
+  }
+}
+
+function deleteMasterCompany(index) {
+  if (confirm(`Delete client company "${masterCompanies[index]}"?`)) {
+    masterCompanies.splice(index, 1);
+    saveMasterCompanies(masterCompanies);
+    renderMasterDataLists();
+  }
+}
+
+function handleAddMasterPosition(e) {
+  e.preventDefault();
+  const input = document.getElementById("newMasterPositionName");
+  const val = input?.value.trim();
+  if (!val) return;
+  if (!masterPositions.includes(val)) {
+    masterPositions.push(val);
+    saveMasterPositions(masterPositions);
+    input.value = "";
+    renderMasterDataLists();
+    showToast(`Added position: ${val}`);
+  }
+}
+
+function deleteMasterPosition(index) {
+  if (confirm(`Delete position "${masterPositions[index]}"?`)) {
+    masterPositions.splice(index, 1);
+    saveMasterPositions(masterPositions);
+    renderMasterDataLists();
+  }
 }
 
 /**
- * 7. DIALOG LIGHT-DISMISS FALLBACK & HELPERS
+ * 13. DIALOG LIGHT-DISMISS FALLBACK & HELPERS
  */
 function setupDialogLightDismiss() {
   if (!("closedBy" in HTMLDialogElement.prototype)) {

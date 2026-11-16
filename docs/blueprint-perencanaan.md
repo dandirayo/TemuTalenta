@@ -61,11 +61,12 @@ Dokumen ini memuat cetak biru arsitektur, alur operasional konsultan rekrutmen, 
 
 ---
 
-## 4. Peta Jalan Pengembangan (Roadmap)
+## 4. Peta Jalan Pengembangan & Hasil Audit (Audit & Roadmap)
 
-| Fase | Fokus Pengembangan | Status |
+Implementasi fitur telah diaudit menyeluruh dan diselaraskan dengan spesifikasi **PRD.md** ke dalam 3 fase prioritas terstruktur:
+
+| Fase | Fokus Pengembangan & Fitur yang Diimplementasikan | Status Audit |
 | :--- | :--- | :---: |
-| **Fase 1** | Core UI `Resume Lib`, Filter Pipeline 7 Tahap, Sortable Table, Bilingual (ID/EN), Light/Dark Theme, Operasi Baris (`Download Resume`, `Recommended Repeat`, `Recommended List`). | **Selesai (Aktif)** |
-| **Fase 2** | Modul `Consultant Business` (Manajemen Klien & Rekap Rekomendasi) dan Modul `Data Analysis` (Statistik Konversi Pipeline). | **Selesai (Aktif)** |
-| **Fase 3** | Ekspor/Impor Massal CSV/Excel dan Parser Dokumen PDF/Word Otomatis. | **Terencana** |
-| **Fase 4** | Sinkronisasi Backend Terpusat (PostgreSQL + REST API) & Role-Based Access Control (RBAC) antar Tim Konsultan. | **Terencana** |
+| **Fase 1 (P0 - Core ATS & Data Integrity)** | • **Resume Lib Enterprise Table**: Pencarian sebagian nama, kata kunci, filter umur, pendidikan, masa kerja.<br>• **8 Pipeline Tabs**: All, New (0), Pending (10, 11), Resume Pass (12), Interview (20-22), Offer (30, 31), Failed (x9, 90, 91), Entry (40, 41).<br>• **Badge Dua Digit**: 0 s.d 91 sesuai kamus ATS.<br>• **Detail Profil Kandidat Lengkap (DK-01 s.d DK-06)**: 4 Sub-tab (Ringkasan & Kontak, Pengalaman & Pendidikan, Penampil Dokumen CV, Riwayat Aktivitas).<br>• **Transisi Status dengan Validasi Wajib**: Prompt alasan wajib untuk kode gagal (19, 29, 39, 49, 90) dan validasi hak akses manajer untuk Blacklist (91).<br>• **6 Aturan Validasi Rekomendasi Ulang**: Cek riwayat per perusahaan dalam 6 bulan, deteksi duplikasi aktif, dan perlindungan izin manajer.<br>• **URL Query Sync (RL-07)**: Sinkronisasi parameter filter ke query URL peramban. | **SELESAI (Verified)** |
+| **Fase 2 (P1 - Agency Operations & Governance)** | • **Role-Based Access Control (RBAC)**: Role Switcher di header dengan 3 persona (Super Admin, Team Manager, Consultant) beserta penegakan hak akses.<br>• **Ekspor CSV Terproteksi (RL-23)**: Hanya dapat diunduh oleh Manager dan Super Admin.<br>• **Impor Massal CSV & Unduh Template (RL-22)**: Unggah file CSV atau salin-tempel baris data dengan deteksi duplikat otomatis.<br>• **Pusat Notifikasi Interaktif (NT-01, NT-02)**: Lonceng notifikasi dengan counter belum dibaca (*unread badge*) dan panel popover interaktif.<br>• **Konsultan Business & Klien**: Rekapitulasi rekomendasi kandidat lintas klien dan matrix posisi aktif. | **SELESAI (Verified)** |
+| **Fase 3 (P2 - Visual Analytics & Master Data)** | • **Recruitment Funnel Chart (DA-01 s.d DA-05)**: Visualisasi horizontal bar persentase konversi kandidat dari New hingga Entry.<br>• **Master Data Settings (PG-01, PG-02)**: Manajemen kamus perusahaan klien dan daftar posisi pekerjaan terstandarisasi untuk Super Admin.<br>• **Tri-lingual Localization**: Dukungan penuh English, 中文 (Chinese), dan Bahasa Indonesia dengan tombol toggle cepat dan dropdown. | **SELESAI (Verified)** |

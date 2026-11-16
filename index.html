@@ -152,6 +152,15 @@
               <span data-i18n="navAuditLogs">Audit Logs</span>
             </button>
           </li>
+          <li id="menuItemSettings" style="display: none;">
+            <button type="button" class="submenu-item-btn" data-view="settings">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <span data-i18n="navSettings">Settings (Master Data)</span>
+            </button>
+          </li>
           <li>
             <button type="button" class="submenu-item-btn" data-view="prdDocs">
               <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -184,6 +193,15 @@
       </div>
 
       <div class="header-right">
+        <!-- Role Switcher (Super Admin, Manager, Consultant) -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <select id="roleSelect" class="ctrl-select" style="min-width: 140px; height: 26px; font-size: 11.5px;" aria-label="Switch User Role">
+            <option value="USR-001">Rina (Consultant)</option>
+            <option value="USR-002">Budi Hartono (Manager)</option>
+            <option value="USR-003">Super Admin (Admin)</option>
+          </select>
+        </div>
+
         <!-- Bilingual Switcher: Chinese [Switch] English + ID dropdown -->
         <div class="lang-switch-group">
           <span id="langLabelZh" class="lang-label" data-i18n="langChinese">Chinese</span>
@@ -199,13 +217,23 @@
           </select>
         </div>
 
-        <!-- Notification Bell -->
-        <button type="button" class="header-icon-btn" aria-label="Notifications" onclick="switchWorkspaceView('auditLogs')">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-        </button>
+        <!-- Interactive Notification Bell & Popover -->
+        <div class="notif-container">
+          <button type="button" id="notifBellBtn" class="header-icon-btn" aria-label="Notifications">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span id="notifUnreadBadge" class="notif-badge" style="display: none;">0</span>
+          </button>
+          <div id="notifDropdown" class="notif-dropdown">
+            <div class="notif-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <strong data-i18n="lblNotifications">Notifications</strong>
+              <button type="button" class="btn-outlined" style="font-size: 10.5px; padding: 2px 6px;" onclick="notifications.forEach(n => n.read=true); saveNotifications(notifications); renderNotifications();" data-i18n="btnMarkAllRead">Mark all read</button>
+            </div>
+            <div id="notifListContainer" class="notif-list"></div>
+          </div>
+        </div>
 
         <!-- Light / Dark Theme Switch -->
         <button type="button" id="themeSwitchBtn" class="theme-switch-btn" role="switch" aria-checked="false" aria-label="Toggle Light or Dark Theme">
@@ -220,13 +248,8 @@
           <span class="theme-switch-thumb"></span>
         </button>
 
-        <!-- User Avatar -->
-        <div class="user-avatar" title="Rina Wijaya (Recruitment Consultant)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-        </div>
+        <!-- User Avatar Indicator -->
+        <div id="userAvatarIndicator" class="user-avatar" title="Rina Wijaya (Recruitment Consultant)">RW</div>
       </div>
     </header>
 
@@ -280,7 +303,11 @@
           <button type="button" id="btnSearch" class="btn-solid" data-i18n="btnSearch">Search</button>
           <button type="button" id="btnSearchAll" class="btn-solid" data-i18n="btnSearchAll">Search All</button>
           <button type="button" id="btnToggleAdvSearch" class="btn-outlined" data-i18n="btnAdvSearch">Advanced Search</button>
-          <button type="button" id="btnOpenAddModal" class="btn-outlined" style="margin-left: auto;" data-i18n="btnNewCandidate">+ New Candidate</button>
+          <div style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px;">
+            <button type="button" id="btnExportCsv" class="btn-outlined" style="display: none;" data-i18n="btnExportCsv">Export CSV</button>
+            <button type="button" id="btnOpenImportModal" class="btn-outlined" data-i18n="btnImportCsv">Import CSV</button>
+            <button type="button" id="btnOpenAddModal" class="btn-solid" data-i18n="btnNewCandidate">+ New Candidate</button>
+          </div>
         </div>
 
         <!-- Expandable Advanced Search Drawer -->
@@ -441,6 +468,11 @@
       <section id="panel-pipelineReport" class="workspace-panel">
         <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;" data-i18n="navPipelineReport">Pipeline Report</h2>
         <div id="analyticsKpiContainer" class="kpi-grid"></div>
+
+        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px;" data-i18n="lblRecruitmentFunnel">Recruitment Pipeline Funnel</h3>
+          <div id="funnelVisualContainer" class="funnel-container"></div>
+        </div>
       </section>
 
       <!-- ====================================================================
@@ -462,6 +494,38 @@
             </thead>
             <tbody id="auditLogsTableBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 6: SETTINGS & MASTER DATA (PG-01, PG-02)
+           ==================================================================== -->
+      <section id="panel-settings" class="workspace-panel">
+        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <h2 style="font-size: 15px; font-weight: 600;" data-i18n="lblMasterData">Master Data Management</h2>
+          <span style="font-size: 11px; color: var(--text-muted);">Super Admin Access</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
+          <!-- Master Companies -->
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblClientCompanies">Client Companies</h3>
+            <form id="formAddMasterCompany" style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newMasterCompanyName" class="ctrl-input" placeholder="New Client Company..." required style="flex: 1;">
+              <button type="submit" class="btn-solid" data-i18n="btnAddCompany">+ Add Client</button>
+            </form>
+            <ul id="settingsCompanyList" style="list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
+
+          <!-- Master Positions -->
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblPositions">Job Positions</h3>
+            <form id="formAddMasterPosition" style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="newMasterPositionName" class="ctrl-input" placeholder="New Position..." required style="flex: 1;">
+              <button type="submit" class="btn-solid" data-i18n="btnAddPosition">+ Add Position</button>
+            </form>
+            <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+          </div>
         </div>
       </section>
 
@@ -642,12 +706,12 @@
             <input type="text" id="addLanguage" value="Indonesian, English">
           </div>
           <div class="form-field">
-            <label for="addPosition" data-i18n="fldRecPosition">Recommended Position</label>
-            <input type="text" id="addPosition" placeholder="e.g. Indonesia Pre sales">
+            <label for="addPositionSelect" data-i18n="fldRecPosition">Recommended Position</label>
+            <select id="addPositionSelect" class="ctrl-select"></select>
           </div>
           <div class="form-field">
-            <label for="addCompany" data-i18n="fldRecCompany">Recommended Company</label>
-            <input type="text" id="addCompany" placeholder="e.g. alauda">
+            <label for="addCompanySelect" data-i18n="fldRecCompany">Recommended Company</label>
+            <select id="addCompanySelect" class="ctrl-select"></select>
           </div>
           <div class="form-field">
             <label for="addEmail" data-i18n="fldEmail">Email Address</label>
@@ -665,6 +729,40 @@
         <div class="modal-footer">
           <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
           <button type="submit" class="btn-solid" data-i18n="btnSave">Save</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 5: Import Candidates from CSV / Excel (RL-22) -->
+  <dialog id="importCsvModal" aria-labelledby="importCsvModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="importCsvModalTitle" data-i18n="modalImportTitle">Import Candidates from CSV / Excel</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formImportCsv">
+        <div class="modal-body form-grid">
+          <div class="form-field full">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+              Upload a CSV file or paste tabular data directly. Required columns: <code>Candidate Name, Nationality, Gender, Birth Date, Education, Language, Years of Service, Recommended Position, Recommended Company, Email, Phone, Summary</code>.
+            </p>
+            <button type="button" id="btnDownloadSampleCsv" class="btn-outlined" style="margin-bottom: 12px;" data-i18n="btnDownloadTemplate">Download CSV Template</button>
+          </div>
+
+          <div class="form-field full">
+            <label for="csvFileInput">Choose CSV File</label>
+            <input type="file" id="csvFileInput" accept=".csv, text/csv">
+          </div>
+
+          <div class="form-field full">
+            <label for="csvPasteInput">Or Paste CSV Text Directly</label>
+            <textarea id="csvPasteInput" rows="5" placeholder="Candidate Name,Nationality,Gender,Birth Date,Education,Language,Years of Service..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+          <button type="submit" class="btn-solid" data-i18n="btnUploadCsv">Upload & Import</button>
         </div>
       </form>
     </div>
