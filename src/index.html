@@ -144,12 +144,21 @@
             </button>
           </li>
           <li>
+            <button type="button" class="submenu-item-btn" data-view="auditLogs">
+              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span data-i18n="navAuditLogs">Audit Logs</span>
+            </button>
+          </li>
+          <li>
             <button type="button" class="submenu-item-btn" data-view="prdDocs">
               <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
               </svg>
-              <span data-i18n="navPrdDocs">PRD & Blueprint</span>
+              <span data-i18n="navPrdDocs">PRD & Specs</span>
             </button>
           </li>
         </ul>
@@ -175,17 +184,23 @@
       </div>
 
       <div class="header-right">
-        <!-- Bilingual Switcher: Indonesia [Switch] English -->
+        <!-- Bilingual Switcher: Chinese [Switch] English + ID dropdown -->
         <div class="lang-switch-group">
-          <span id="langLabelId" class="lang-label" data-i18n="langId">Indonesia</span>
-          <button type="button" id="langSwitchBtn" class="pill-switch" role="switch" aria-checked="true" aria-label="Switch Language Indonesia or English">
+          <span id="langLabelZh" class="lang-label" data-i18n="langChinese">Chinese</span>
+          <button type="button" id="langSwitchBtn" class="pill-switch" role="switch" aria-checked="true" aria-label="Switch Language Chinese or English">
             <span class="pill-switch-thumb"></span>
           </button>
-          <span id="langLabelEn" class="lang-label active" data-i18n="langEn">English</span>
+          <span id="langLabelEn" class="lang-label active" data-i18n="langEnglish">English</span>
+
+          <select id="langSelectorDropdown" class="ctrl-select" style="min-width: 95px; height: 26px; font-size: 11.5px; margin-left: 6px;" aria-label="Select Language">
+            <option value="en">English</option>
+            <option value="zh">ä¸­æ–‡ (ZH)</option>
+            <option value="id">Bahasa (ID)</option>
+          </select>
         </div>
 
-        <!-- Notification Bell Icon -->
-        <button type="button" class="header-icon-btn" aria-label="Notifications" onclick="switchWorkspaceView('recList')">
+        <!-- Notification Bell -->
+        <button type="button" class="header-icon-btn" aria-label="Notifications" onclick="switchWorkspaceView('auditLogs')">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -206,7 +221,7 @@
         </button>
 
         <!-- User Avatar -->
-        <div class="user-avatar" title="Recruitment Consultant">
+        <div class="user-avatar" title="Rina Wijaya (Recruitment Consultant)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
             <circle cx="12" cy="7" r="4"/>
@@ -242,7 +257,7 @@
     <main class="workspace-body">
 
       <!-- ====================================================================
-           PANEL 1: RESUME LIB (Matches Screenshot)
+           PANEL 1: RESUME LIB (Matches Screenshot & PRD.md)
            ==================================================================== -->
       <section id="panel-resumeLib" class="workspace-panel active">
 
@@ -257,6 +272,7 @@
             <option value="pending" data-i18n="stagePending">Pending</option>
             <option value="pass" data-i18n="stagePass">Original resume pass</option>
             <option value="interview" data-i18n="stageInterview">Interview</option>
+            <option value="offer" data-i18n="stageOffer">Offer</option>
             <option value="failed" data-i18n="stageFailed">Failed</option>
             <option value="entry" data-i18n="stageEntry">Entry</option>
           </select>
@@ -267,8 +283,12 @@
           <button type="button" id="btnOpenAddModal" class="btn-outlined" style="margin-left: auto;" data-i18n="btnNewCandidate">+ New Candidate</button>
         </div>
 
-        <!-- Expandable Advanced Search Row -->
+        <!-- Expandable Advanced Search Drawer -->
         <div id="advSearchBox" class="adv-search-box">
+          <div class="adv-field">
+            <label for="advNationality" data-i18n="lblNationality">Nationality</label>
+            <input type="text" id="advNationality" class="ctrl-input" placeholder="e.g. Indonesia">
+          </div>
           <div class="adv-field">
             <label for="advGender" data-i18n="lblGender">Gender</label>
             <select id="advGender" class="ctrl-select">
@@ -301,7 +321,7 @@
           <button type="button" id="btnResetDatabase" class="btn-outlined" style="height: 30px; margin-left: auto;" data-i18n="btnResetData">Reset Default Data</button>
         </div>
 
-        <!-- Filter Row 2: Pipeline Status Tabs & Column Selector -->
+        <!-- Filter Row 2: 8 Stage Tabs (Including Offer) & Column Selector -->
         <div class="pipeline-bar">
           <div class="stage-tabs" role="tablist" aria-label="Pipeline Stage Filters">
             <button type="button" class="stage-tab active" data-stage="all" data-i18n="stageAll">All</button>
@@ -309,6 +329,7 @@
             <button type="button" class="stage-tab" data-stage="pending" data-i18n="stagePending">Pending</button>
             <button type="button" class="stage-tab" data-stage="pass" data-i18n="stagePass">Original resume pass</button>
             <button type="button" class="stage-tab" data-stage="interview" data-i18n="stageInterview">Interview</button>
+            <button type="button" class="stage-tab" data-stage="offer" data-i18n="stageOffer">Offer</button>
             <button type="button" class="stage-tab" data-stage="failed">
               <span data-i18n="stageFailed">Failed</span>
               <span class="dot-danger" aria-hidden="true"></span>
@@ -343,9 +364,26 @@
           </table>
         </div>
 
+        <!-- Table Footer with Pagination Controls -->
         <div class="table-footer">
           <span id="tableFooterCount">Showing candidates</span>
-          <span>TemuTalenta Enterprise ATS v2.0 (Offline-First)</span>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span data-i18n="lblRowsPerPage">Rows per page:</span>
+              <select id="pageSizeSelect" class="ctrl-select" style="min-width: 65px; height: 26px;">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button type="button" id="btnPrevPage" class="btn-outlined" style="height: 26px; padding: 0 8px;">&lt;</button>
+              <span id="tablePageIndicator" style="font-weight: 500;">1 / 1</span>
+              <button type="button" id="btnNextPage" class="btn-outlined" style="height: 26px; padding: 0 8px;">&gt;</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -364,10 +402,10 @@
                 <th data-i18n="colCandidate">Candidate</th>
                 <th data-i18n="colRecPosition">Recommended Position</th>
                 <th data-i18n="colRecCompany">Recommended Company</th>
-                <th data-i18n="fldStage">Pipeline Stage</th>
+                <th data-i18n="fldStage">Status Code</th>
                 <th data-i18n="fldConsultant">Consultant</th>
                 <th data-i18n="fldDate">Submission Time</th>
-                <th data-i18n="fldNotes">Evaluation Notes</th>
+                <th data-i18n="fldNotes">Evaluation Notes / Reason</th>
               </tr>
             </thead>
             <tbody id="globalRecTableBody"></tbody>
@@ -387,7 +425,7 @@
             <thead>
               <tr>
                 <th data-i18n="colRecCompany">Recommended Company</th>
-                <th data-i18n="colStatus">Total Candidates</th>
+                <th data-i18n="colStatus">Active Candidates</th>
                 <th data-i18n="colRecPosition">Recommended Positions</th>
                 <th data-i18n="colEntryTime">Latest Activity</th>
               </tr>
@@ -406,30 +444,52 @@
       </section>
 
       <!-- ====================================================================
-           PANEL 5: PRD & BLUEPRINT DOCUMENTATION VIEWER
+           PANEL 5: DATA ANALYSIS - AUDIT LOGS
+           ==================================================================== -->
+      <section id="panel-auditLogs" class="workspace-panel">
+        <h2 style="font-size: 15px; font-weight: 600; margin-bottom: 14px;" data-i18n="navAuditLogs">Audit Logs</h2>
+        <div tabindex="0" role="region" aria-label="Audit Logs" class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>Details</th>
+                <th>User</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           PANEL 6: PRD & BLUEPRINT DOCUMENTATION VIEWER
            ==================================================================== -->
       <section id="panel-prdDocs" class="workspace-panel" style="overflow-y: auto;">
-        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">Product Requirements Document (PRD v2.0) & Blueprint</h2>
+        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">PRD â€” Website ATS (Applicant Tracking System)</h2>
         <p style="color: var(--text-secondary); margin-bottom: 14px;">
-          Dokumen spesifikasi lengkap tersedia di direktori repositori: <code>docs/PRD.md</code>, <code>docs/blueprint-perencanaan.md</code>, dan <code>docs/core.md</code>.
+          Dokumen PRD resmi tersinkronisasi langsung dari <code>docs/PRD.md</code>.
         </p>
         <div class="kpi-grid">
           <div class="kpi-card">
-            <strong>1. Modul Utama (Resume Lib)</strong>
-            <p style="margin-top: 6px; color: var(--text-secondary);">
-              Tabel kandidat standar konsultan dengan 12 kolom terstruktur, filter 7 tahapan pipeline (All, New, Pending, Original resume pass, Interview, Failed, Entry), dan sortir waktu masuk.
+            <strong>1. Resume Lib MVP</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary); font-size: 12px;">
+              Bank resume kandidat dengan pencarian sebagian nama, kata kunci, filter tab 8 status (All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry).
             </p>
           </div>
           <div class="kpi-card">
-            <strong>2. Operasi Kandidat Fungsional</strong>
-            <p style="margin-top: 6px; color: var(--text-secondary);">
-              Mendukung <em>Download Resume</em> instan, <em>Recommended Repeat</em> (pengajuan kandidat ke perusahaan baru), serta <em>Recommended List</em> (pelacakan riwayat pengajuan).
+            <strong>2. Kode Status Dua Digit</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary); font-size: 12px;">
+              Badge otomatis: 0 (New), 10-12 (Pending/Pass), 20-22 (Interview), 30-31 (Offer), 40-41 (Entry), x9/90/91 (Failed/Blacklist dengan warna merah).
             </p>
           </div>
           <div class="kpi-card">
-            <strong>3. Bilingual & Dual Theme</strong>
-            <p style="margin-top: 6px; color: var(--text-secondary);">
-              Dilengkapi sakelar bahasa <strong>Indonesia / English</strong> dan tema <strong>Light / Dark Mode</strong> di bilah atas tanpa ikon berbasis emoji.
+            <strong>3. Aturan Recommended Repeat</strong>
+            <p style="margin-top: 6px; color: var(--text-secondary); font-size: 12px;">
+              Cek riwayat per perusahaan dalam 6 bulan; memblokir duplikasi aktif, meminta alasan dan izin Manajer untuk pengajuan ganda.
             </p>
           </div>
         </div>
@@ -446,7 +506,7 @@
   <dialog id="profileModal" aria-labelledby="profileModalTitle" closedby="any">
     <div class="modal-shell">
       <div class="modal-header">
-        <h2 id="profileModalTitle" data-i18n="modalProfileTitle">Candidate Resume Profile</h2>
+        <h2 id="profileModalTitle" data-i18n="modalProfileTitle">Candidate Profile & Recommendations</h2>
         <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
       </div>
       <div id="profileModalBody" class="modal-body"></div>
@@ -456,49 +516,68 @@
     </div>
   </dialog>
 
-  <!-- Modal 2: Recommended Repeat -->
+  <!-- Modal 2: Recommended Repeat (with 6 Validation Rules) -->
   <dialog id="recRepeatModal" aria-labelledby="recRepeatModalTitle" closedby="any">
     <div class="modal-shell">
       <div class="modal-header">
-        <h2 id="recRepeatModalTitle" data-i18n="modalRecRepeatTitle">Recommended Repeat - Submit to Client</h2>
+        <h2 id="recRepeatModalTitle" data-i18n="modalRecRepeatTitle">Recommended Repeat (Client Submission)</h2>
         <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
       </div>
       <form id="formRecRepeat">
         <div class="modal-body form-grid">
           <input type="hidden" id="recRepeatCandidateId">
+
+          <!-- Dynamic Warning / Block Banner -->
+          <div id="recRepeatWarningBanner" class="form-field full" style="display: none; padding: 10px; border-radius: 3px; font-weight: 500; font-size: 12px; background-color: var(--bg-subtle); border-left: 3px solid var(--warning-color);"></div>
+
           <div class="form-field full">
             <label for="recRepeatCandidateName" data-i18n="fldFullName">Candidate Name</label>
             <input type="text" id="recRepeatCandidateName" readonly style="background-color: var(--bg-subtle);">
           </div>
           <div class="form-field">
             <label for="recRepeatPosition" data-i18n="fldRecPosition">Recommended Position *</label>
-            <input type="text" id="recRepeatPosition" required placeholder="e.g. Country Sales Lead">
+            <input type="text" id="recRepeatPosition" required placeholder="e.g. Indonesia Pre sales">
           </div>
           <div class="form-field">
             <label for="recRepeatCompany" data-i18n="fldRecCompany">Recommended Company *</label>
             <input type="text" id="recRepeatCompany" required placeholder="e.g. alauda / Midea / Mico World">
           </div>
           <div class="form-field">
-            <label for="recRepeatStage" data-i18n="fldStage">Pipeline Stage</label>
-            <select id="recRepeatStage">
-              <option value="pending" data-i18n="stagePending">Pending</option>
-              <option value="pass" data-i18n="stagePass">Original resume pass</option>
-              <option value="interview" data-i18n="stageInterview">Interview</option>
-              <option value="entry" data-i18n="stageEntry">Entry</option>
+            <label for="recRepeatStatusCode" data-i18n="fldStage">Initial Status Code</label>
+            <select id="recRepeatStatusCode">
+              <option value="10">10 - Recommended to Client</option>
+              <option value="11">11 - Client Reviewing</option>
+              <option value="12">12 - Original Resume Pass</option>
+              <option value="20">20 - Interview Scheduled</option>
             </select>
           </div>
           <div class="form-field">
             <label for="recRepeatConsultant" data-i18n="fldConsultant">Consultant</label>
             <input type="text" id="recRepeatConsultant" value="Rina Wijaya">
           </div>
+
+          <!-- Mandatory Reason Input when 6-mo rule triggers -->
+          <div id="recRepeatReasonGroup" class="form-field full" style="display: none;">
+            <label for="recRepeatReason" data-i18n="fldReason" style="color: var(--danger-dot);">Reason / Justification *</label>
+            <textarea id="recRepeatReason" rows="2" placeholder="Required: Explain justification for submitting to this company within 6 months..."></textarea>
+          </div>
+
+          <!-- Manager Approval Checkbox when different consultant triggers -->
+          <div id="recRepeatManagerApprovalGroup" class="form-field full" style="display: none;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="recRepeatManagerCheck">
+              <span data-i18n="fldManagerApproval" style="color: var(--brand-primary); font-weight: 600;">Manager Approval Granted *</span>
+            </label>
+          </div>
+
           <div class="form-field full">
             <label for="recRepeatNotes" data-i18n="fldNotes">Consultant Evaluation Notes</label>
-            <textarea id="recRepeatNotes" rows="3" placeholder="Enter client submission notes..."></textarea>
+            <textarea id="recRepeatNotes" rows="2" placeholder="Enter client evaluation notes..."></textarea>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
-          <button type="submit" class="btn-solid" data-i18n="btnSubmitRec">Submit Recommendation</button>
+          <button type="submit" id="btnSubmitRecRepeat" class="btn-solid" data-i18n="btnSubmitRec">Submit Recommendation</button>
         </div>
       </form>
     </div>
@@ -522,7 +601,7 @@
   <dialog id="addCandidateModal" aria-labelledby="addCandidateModalTitle" closedby="any">
     <div class="modal-shell">
       <div class="modal-header">
-        <h2 id="addCandidateModalTitle" data-i18n="modalAddTitle">Add New Candidate to Resume Library</h2>
+        <h2 id="addCandidateModalTitle" data-i18n="modalAddTitle">Add New Candidate</h2>
         <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
       </div>
       <form id="formAddCandidate">
@@ -543,8 +622,8 @@
             </select>
           </div>
           <div class="form-field">
-            <label for="addAge" data-i18n="fldAge">Age</label>
-            <input type="number" id="addAge" min="18" max="65" value="27">
+            <label for="addBirthDate" data-i18n="fldBirthDate">Date of Birth</label>
+            <input type="date" id="addBirthDate" value="1999-01-01">
           </div>
           <div class="form-field">
             <label for="addEducation" data-i18n="fldEducation">Education</label>
@@ -556,37 +635,31 @@
           </div>
           <div class="form-field">
             <label for="addYears" data-i18n="fldYearsService">Year of Service</label>
-            <input type="number" id="addYears" min="0" max="40" value="5">
+            <input type="number" id="addYears" min="0" max="40" value="4">
           </div>
           <div class="form-field full">
             <label for="addLanguage" data-i18n="fldLanguages">Languages (comma separated)</label>
             <input type="text" id="addLanguage" value="Indonesian, English">
           </div>
           <div class="form-field">
-            <label for="addPosition" data-i18n="fldRecPosition">Recommended Position *</label>
-            <input type="text" id="addPosition" required placeholder="e.g. Indonesia Pre sales">
+            <label for="addPosition" data-i18n="fldRecPosition">Recommended Position</label>
+            <input type="text" id="addPosition" placeholder="e.g. Indonesia Pre sales">
           </div>
           <div class="form-field">
-            <label for="addCompany" data-i18n="fldRecCompany">Recommended Company *</label>
-            <input type="text" id="addCompany" required placeholder="e.g. alauda">
-          </div>
-          <div class="form-field">
-            <label for="addStage" data-i18n="fldStage">Pipeline Stage</label>
-            <select id="addStage">
-              <option value="new">New</option>
-              <option value="pending">Pending</option>
-              <option value="pass">Original resume pass</option>
-              <option value="interview">Interview</option>
-              <option value="entry">Entry</option>
-            </select>
+            <label for="addCompany" data-i18n="fldRecCompany">Recommended Company</label>
+            <input type="text" id="addCompany" placeholder="e.g. alauda">
           </div>
           <div class="form-field">
             <label for="addEmail" data-i18n="fldEmail">Email Address</label>
             <input type="email" id="addEmail" placeholder="candidate@example.id">
           </div>
+          <div class="form-field">
+            <label for="addPhone" data-i18n="fldPhone">Phone</label>
+            <input type="text" id="addPhone" placeholder="+62 812-xxxx-xxxx">
+          </div>
           <div class="form-field full">
             <label for="addSummary" data-i18n="fldSummary">Professional Summary</label>
-            <textarea id="addSummary" rows="2" placeholder="Brief summary of experience and industry domain..."></textarea>
+            <textarea id="addSummary" rows="2" placeholder="Brief summary of skills and experience..."></textarea>
           </div>
         </div>
         <div class="modal-footer">

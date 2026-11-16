@@ -1,7 +1,12 @@
 /**
- * TemuTalenta - Enterprise Recruitment & Resume Library Controller
- * Mendukung dwibahasa (ID/EN), tema (Light/Dark), filter pipeline, sort tabel,
- * visibilitas kolom, serta aksi Download Resume, Recommended Repeat, & Recommended List.
+ * TemuTalenta Enterprise ATS & Resume Library Controller
+ * Mengimplementasikan seluruh spesifikasi PRD.md (Nov 16, 2026):
+ * - Tri-lingual I18N (Chinese / English / Indonesian)
+ * - 8 Tab Status (All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry)
+ * - Badge kode status 2 digit otomatis (0, 10, 11, 12, 19, 20, 21, 22, 29, 30, 31, 39, 40, 41, 49, 90, 91)
+ * - Validasi 6 Aturan Rekomendasi Ganda (Recommended Repeat)
+ * - Paginasi 10/20/50 baris per halaman
+ * - Audit Trail / Log Aktivitas
  */
 
 let candidates = [];
@@ -10,6 +15,8 @@ let currentStageFilter = "all";
 let currentView = "resumeLib";
 let visibleColumns = [];
 let sortState = { columnId: "entryTime", direction: "descending" };
+let currentPage = 1;
+let pageSize = 10;
 let navigationHistory = ["resumeLib"];
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
@@ -27,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * 1. THEME MANAGEMENT (Light / Dark Mode compliant with modern-web-guidance)
+ * 1. THEME MANAGEMENT (Light / Dark Mode per modern-web-guidance)
  */
 function initThemeState() {
   const meta = document.querySelector('meta[name="color-scheme"]');
@@ -74,51 +81,58 @@ function syncThemeToggleUI(theme) {
 }
 
 /**
- * 2. BILINGUAL I18N ENGINE (Indonesia <-> English)
+ * 2. TRI-LINGUAL I18N (English, Chinese, Indonesian)
  */
 function t(key) {
-  return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+  const langDict = I18N[currentLang] || I18N.en;
+  return langDict[key] || I18N.en[key] || key;
+}
+
+function getStatusName(statusCode) {
+  const meta = STATUS_CODES[statusCode];
+  if (!meta) return `Status ${statusCode}`;
+  if (currentLang === "zh") return meta.nameZh;
+  if (currentLang === "id") return meta.nameId;
+  return meta.nameEn;
 }
 
 function setLanguage(lang) {
-  if (lang !== "id" && lang !== "en") return;
+  if (!I18N[lang]) return;
   currentLang = lang;
   saveLang(lang);
   applyTranslations();
   renderAllViews();
 }
 
-function toggleLanguage() {
-  setLanguage(currentLang === "en" ? "id" : "en");
-}
-
 function applyTranslations() {
   document.documentElement.lang = currentLang;
 
-  // Update text elements
+  // Translate text nodes
   document.querySelectorAll("[data-i18n]").forEach(el => {
     const key = el.getAttribute("data-i18n");
     el.textContent = t(key);
   });
 
-  // Update input placeholders
+  // Translate input placeholders
   document.querySelectorAll("[data-i18n-ph]").forEach(el => {
     const key = el.getAttribute("data-i18n-ph");
     el.placeholder = t(key);
   });
 
-  // Update Language Switcher UI state
+  // Header language switch buttons
   const switchBtn = document.getElementById("langSwitchBtn");
-  const lblId = document.getElementById("langLabelId");
+  const lblZh = document.getElementById("langLabelZh");
   const lblEn = document.getElementById("langLabelEn");
+  const selLang = document.getElementById("langSelectorDropdown");
 
   if (switchBtn) {
     switchBtn.setAttribute("aria-checked", currentLang === "en" ? "true" : "false");
   }
-  if (lblId) lblId.classList.toggle("active", currentLang === "id");
+  if (lblZh) lblZh.classList.toggle("active", currentLang === "zh");
   if (lblEn) lblEn.classList.toggle("active", currentLang === "en");
+  if (selLang) selLang.value = currentLang;
 
-  // Update Advanced Search button text
+  // Advanced search button label
   const advBox = document.getElementById("advSearchBox");
   const advBtn = document.getElementById("btnToggleAdvSearch");
   if (advBtn && advBox) {
@@ -127,19 +141,18 @@ function applyTranslations() {
 }
 
 /**
- * 3. EVENT LISTENERS & NAVIGATION
+ * 3. GLOBAL EVENT LISTENERS
  */
 function bindGlobalEvents() {
-  // Sidebar Hamburger Collapse
+  // Sidebar Toggle
   document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
     document.getElementById("appSidebar")?.classList.toggle("collapsed");
   });
 
-  // Sidebar Menu Group Accordions
+  // Sidebar Submenus
   document.querySelectorAll(".menu-group-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const group = btn.closest(".menu-group");
-      if (group) group.classList.toggle("open");
+      btn.closest(".menu-group")?.classList.toggle("open");
     });
   });
 
@@ -151,15 +164,20 @@ function bindGlobalEvents() {
     });
   });
 
-  // Language Switcher
-  document.getElementById("langSwitchBtn")?.addEventListener("click", toggleLanguage);
-  document.getElementById("langLabelId")?.addEventListener("click", () => setLanguage("id"));
+  // Header Language Switcher (Chinese <-> English toggle)
+  document.getElementById("langSwitchBtn")?.addEventListener("click", () => {
+    setLanguage(currentLang === "zh" ? "en" : "zh");
+  });
+  document.getElementById("langLabelZh")?.addEventListener("click", () => setLanguage("zh"));
   document.getElementById("langLabelEn")?.addEventListener("click", () => setLanguage("en"));
+  document.getElementById("langSelectorDropdown")?.addEventListener("change", (e) => {
+    setLanguage(e.target.value);
+  });
 
-  // Theme Switcher
+  // Header Theme Switcher
   document.getElementById("themeSwitchBtn")?.addEventListener("click", toggleThemeScheme);
 
-  // Sub-header Navigation (<, Refresh, Home)
+  // Subnav Navigation (<, Refresh, Home)
   document.getElementById("subNavBack")?.addEventListener("click", () => {
     if (navigationHistory.length > 1) {
       navigationHistory.pop();
@@ -177,23 +195,33 @@ function bindGlobalEvents() {
     switchWorkspaceView("resumeLib");
   });
 
-  // Search & Filter Controls
-  document.getElementById("btnSearch")?.addEventListener("click", () => renderResumeTable());
+  // Search & Filter Inputs
+  document.getElementById("btnSearch")?.addEventListener("click", () => {
+    currentPage = 1;
+    renderResumeTable();
+  });
   document.getElementById("btnSearchAll")?.addEventListener("click", resetSearchFilters);
 
   document.getElementById("searchCandidateName")?.addEventListener("keydown", e => {
-    if (e.key === "Enter") renderResumeTable();
+    if (e.key === "Enter") {
+      currentPage = 1;
+      renderResumeTable();
+    }
   });
   document.getElementById("searchKeyword")?.addEventListener("keydown", e => {
-    if (e.key === "Enter") renderResumeTable();
+    if (e.key === "Enter") {
+      currentPage = 1;
+      renderResumeTable();
+    }
   });
   document.getElementById("searchStateSelect")?.addEventListener("change", e => {
     currentStageFilter = e.target.value;
+    currentPage = 1;
     syncStageTabsUI();
     renderResumeTable();
   });
 
-  // Advanced Search Drawer Toggle
+  // Advanced Search Toggle & Inputs
   document.getElementById("btnToggleAdvSearch")?.addEventListener("click", () => {
     const box = document.getElementById("advSearchBox");
     if (box) {
@@ -202,29 +230,32 @@ function bindGlobalEvents() {
     }
   });
 
-  // Advanced Filter Live Change
-  ["advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", () => renderResumeTable());
+  ["advNationality", "advGender", "advMinAge", "advMaxAge", "advEducation", "advMinService"].forEach(id => {
+    document.getElementById(id)?.addEventListener("input", () => {
+      currentPage = 1;
+      renderResumeTable();
+    });
   });
 
   // Reset Default Data
   document.getElementById("btnResetDatabase")?.addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEYS.CANDIDATES);
     candidates = getStoredCandidates();
+    currentPage = 1;
     renderAllViews();
     showToast(t("msgResetDone"));
   });
 
   // Open Add Candidate Modal
   document.getElementById("btnOpenAddModal")?.addEventListener("click", () => {
-    const dialog = document.getElementById("addCandidateModal");
-    if (dialog) dialog.showModal();
+    document.getElementById("addCandidateModal")?.showModal();
   });
 
-  // Stage Tabs Click
+  // 8 Stage Tabs (All, New, Pending, Original resume pass, Interview, Offer, Failed, Entry)
   document.querySelectorAll(".stage-tab").forEach(tab => {
     tab.addEventListener("click", () => {
       currentStageFilter = tab.getAttribute("data-stage") || "all";
+      currentPage = 1;
       const stateSelect = document.getElementById("searchStateSelect");
       if (stateSelect) stateSelect.value = currentStageFilter;
       syncStageTabsUI();
@@ -232,7 +263,7 @@ function bindGlobalEvents() {
     });
   });
 
-  // Column Visibility Dropdown Toggle
+  // Columns Dropdown
   const colTrigger = document.getElementById("colSelectorTrigger");
   const colMenu = document.getElementById("colDropdownMenu");
   if (colTrigger && colMenu) {
@@ -247,7 +278,30 @@ function bindGlobalEvents() {
     });
   }
 
-  // Forms Submission
+  // Page Size Selector & Pagination
+  document.getElementById("pageSizeSelect")?.addEventListener("change", e => {
+    pageSize = parseInt(e.target.value, 10) || 10;
+    currentPage = 1;
+    renderResumeTable();
+  });
+
+  document.getElementById("btnPrevPage")?.addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderResumeTable();
+    }
+  });
+
+  document.getElementById("btnNextPage")?.addEventListener("click", () => {
+    const totalFiltered = getFilteredCandidates().length;
+    const maxPages = Math.ceil(totalFiltered / pageSize) || 1;
+    if (currentPage < maxPages) {
+      currentPage++;
+      renderResumeTable();
+    }
+  });
+
+  // Forms
   document.getElementById("formRecRepeat")?.addEventListener("submit", handleRecRepeatSubmit);
   document.getElementById("formAddCandidate")?.addEventListener("submit", handleAddCandidateSubmit);
 }
@@ -281,25 +335,22 @@ function syncStageTabsUI() {
 }
 
 function resetSearchFilters() {
-  const nameInput = document.getElementById("searchCandidateName");
-  const kwInput = document.getElementById("searchKeyword");
+  const ids = ["searchCandidateName", "searchKeyword", "advMinAge", "advMaxAge", "advMinService", "advNationality"];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
   const stateSelect = document.getElementById("searchStateSelect");
   const advGender = document.getElementById("advGender");
-  const advMinAge = document.getElementById("advMinAge");
-  const advMaxAge = document.getElementById("advMaxAge");
   const advEdu = document.getElementById("advEducation");
-  const advMinService = document.getElementById("advMinService");
 
-  if (nameInput) nameInput.value = "";
-  if (kwInput) kwInput.value = "";
   if (stateSelect) stateSelect.value = "all";
   if (advGender) advGender.value = "all";
-  if (advMinAge) advMinAge.value = "";
-  if (advMaxAge) advMaxAge.value = "";
   if (advEdu) advEdu.value = "all";
-  if (advMinService) advMinService.value = "";
 
   currentStageFilter = "all";
+  currentPage = 1;
   syncStageTabsUI();
   renderResumeTable();
 }
@@ -344,6 +395,7 @@ function renderColumnSelector() {
 function getFilteredCandidates() {
   const nameQ = (document.getElementById("searchCandidateName")?.value || "").toLowerCase().trim();
   const kwQ = (document.getElementById("searchKeyword")?.value || "").toLowerCase().trim();
+  const natQ = (document.getElementById("advNationality")?.value || "").toLowerCase().trim();
   const genderQ = document.getElementById("advGender")?.value || "all";
   const minAge = parseInt(document.getElementById("advMinAge")?.value || "0", 10);
   const maxAge = parseInt(document.getElementById("advMaxAge")?.value || "999", 10);
@@ -351,6 +403,10 @@ function getFilteredCandidates() {
   const minService = parseFloat(document.getElementById("advMinService")?.value || "0");
 
   return candidates.filter(c => {
+    const badgeCode = computeCandidateBadge(c);
+    const candidateStageTab = getStageTabForCode(badgeCode);
+    const calculatedAge = calculateAge(c.birthDate);
+
     const matchName = !nameQ || c.name.toLowerCase().includes(nameQ);
     const matchKw =
       !kwQ ||
@@ -360,13 +416,14 @@ function getFilteredCandidates() {
       c.education.toLowerCase().includes(kwQ) ||
       (c.skills && c.skills.some(s => s.toLowerCase().includes(kwQ)));
 
-    const matchStage = currentStageFilter === "all" || c.stage === currentStageFilter;
+    const matchStage = currentStageFilter === "all" || candidateStageTab === currentStageFilter;
+    const matchNat = !natQ || c.nationality.toLowerCase().includes(natQ);
     const matchGender = genderQ === "all" || c.gender === genderQ;
-    const matchAge = c.age >= (isNaN(minAge) ? 0 : minAge) && c.age <= (isNaN(maxAge) ? 999 : maxAge);
+    const matchAge = calculatedAge >= (isNaN(minAge) ? 0 : minAge) && calculatedAge <= (isNaN(maxAge) ? 999 : maxAge);
     const matchEdu = eduQ === "all" || c.education === eduQ;
     const matchService = c.yearsOfService >= (isNaN(minService) ? 0 : minService);
 
-    return matchName && matchKw && matchStage && matchGender && matchAge && matchEdu && matchService;
+    return matchName && matchKw && matchStage && matchNat && matchGender && matchAge && matchEdu && matchService;
   });
 }
 
@@ -374,14 +431,20 @@ function renderResumeTable() {
   const theadRow = document.getElementById("resumeTableHeadRow");
   const tbody = document.getElementById("resumeTableBody");
   const footerCount = document.getElementById("tableFooterCount");
+  const pageIndicator = document.getElementById("tablePageIndicator");
+  const prevBtn = document.getElementById("btnPrevPage");
+  const nextBtn = document.getElementById("btnNextPage");
   if (!theadRow || !tbody) return;
 
   const activeCols = ALL_COLUMNS.filter(c => visibleColumns.includes(c.id));
 
-  // Render Table Headers (with Sortable Button on Entry Time, Status, Age, Year of service)
+  // Render Table Headers
   const sortableCols = {
+    candidate: "string",
+    nationality: "string",
     status: "number",
     age: "number",
+    education: "string",
     yearsOfService: "number",
     entryTime: "string"
   };
@@ -407,7 +470,6 @@ function renderResumeTable() {
     return `<th scope="col" data-col-id="${col.id}">${t(col.key)}</th>`;
   }).join("");
 
-  // Bind sort header clicks
   theadRow.querySelectorAll(".sort-header-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const colId = btn.getAttribute("data-sort-col");
@@ -417,7 +479,7 @@ function renderResumeTable() {
 
   const filtered = getFilteredCandidates();
 
-  // Initial sort order
+  // Sort
   const factor = sortState.direction === "ascending" ? 1 : -1;
   const sortType = sortableCols[sortState.columnId] || "string";
   filtered.sort((a, b) => {
@@ -426,11 +488,24 @@ function renderResumeTable() {
     return factor * (sortType === "number" ? valA - valB : collator.compare(String(valA), String(valB)));
   });
 
-  if (footerCount) {
-    footerCount.textContent = `${t("lblShowing")} ${filtered.length} ${t("lblOf")} ${candidates.length} ${t("lblRecords")}`;
-  }
+  // Pagination calculation
+  const totalRecords = filtered.length;
+  const totalPages = Math.ceil(totalRecords / pageSize) || 1;
+  if (currentPage > totalPages) currentPage = totalPages;
 
-  if (filtered.length === 0) {
+  const startIndex = (currentPage - 1) * pageSize;
+  const pagedRecords = filtered.slice(startIndex, startIndex + pageSize);
+
+  if (footerCount) {
+    footerCount.textContent = `${t("lblShowing")} ${pagedRecords.length > 0 ? startIndex + 1 : 0} - ${startIndex + pagedRecords.length} ${t("lblOf")} ${totalRecords} ${t("lblRecords")}`;
+  }
+  if (pageIndicator) {
+    pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+  }
+  if (prevBtn) prevBtn.disabled = currentPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+
+  if (pagedRecords.length === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="${activeCols.length}" style="padding: 36px; color: var(--text-muted);">
@@ -441,19 +516,24 @@ function renderResumeTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(c => buildCandidateRowHtml(c, activeCols)).join("");
+  tbody.innerHTML = pagedRecords.map(c => buildCandidateRowHtml(c, activeCols)).join("");
   bindTableRowActions(tbody);
 }
 
 function getRawSortValue(candidate, colId) {
-  if (colId === "status") return candidate.statusCount;
-  if (colId === "age") return candidate.age;
+  if (colId === "status") return computeCandidateBadge(candidate);
+  if (colId === "age") return calculateAge(candidate.birthDate);
   if (colId === "yearsOfService") return candidate.yearsOfService;
   if (colId === "entryTime") return candidate.entryTime;
   return candidate[colId] || "";
 }
 
 function buildCandidateRowHtml(c, activeCols) {
+  const badgeCode = computeCandidateBadge(c);
+  const statusMeta = STATUS_CODES[badgeCode] || { isFailed: false };
+  const calculatedAge = calculateAge(c.birthDate);
+  const badgeBg = statusMeta.isFailed ? "background-color: var(--danger-dot);" : "background-color: var(--brand-primary);";
+
   const cells = activeCols.map(col => {
     switch (col.id) {
       case "candidate":
@@ -465,30 +545,30 @@ function buildCandidateRowHtml(c, activeCols) {
           </th>
         `;
       case "nationality":
-        return `<td>${escapeHtml(c.nationality)}</td>`;
+        return `<td>${escapeHtml(c.nationality || "")}</td>`;
       case "status":
         return `
-          <td data-value="${c.statusCount}">
-            <span class="status-count-badge" title="Stage: ${c.stage.toUpperCase()}">${c.statusCount}</span>
+          <td data-value="${badgeCode}">
+            <span class="status-count-badge" style="${badgeBg}" title="${getStatusName(badgeCode)}">${badgeCode}</span>
           </td>
         `;
       case "gender":
-        return `<td>${escapeHtml(c.gender)}</td>`;
+        return `<td>${escapeHtml(c.gender || "")}</td>`;
       case "age":
-        return `<td data-value="${c.age}">${c.age}</td>`;
+        return `<td data-value="${calculatedAge}">${calculatedAge}</td>`;
       case "education":
-        return `<td style="max-width: 95px; word-break: break-word;">${escapeHtml(c.education || "-")}</td>`;
+        return `<td style="max-width: 95px; word-break: break-word;">${escapeHtml(c.education || "")}</td>`;
       case "language":
-        return `<td style="max-width: 115px;">${escapeHtml(c.language)}</td>`;
+        return `<td style="max-width: 115px;">${escapeHtml(c.language || "")}</td>`;
       case "yearsOfService":
         return `<td data-value="${c.yearsOfService}">${c.yearsOfService}</td>`;
       case "recommendedPosition":
-        return `<td style="max-width: 130px;">${escapeHtml(c.recommendedPosition)}</td>`;
+        return `<td style="max-width: 130px;">${escapeHtml(c.recommendedPosition || "")}</td>`;
       case "recommendedCompany":
-        return `<td style="max-width: 110px;">${escapeHtml(c.recommendedCompany)}</td>`;
+        return `<td style="max-width: 110px;">${escapeHtml(c.recommendedCompany || "")}</td>`;
       case "entryTime":
-        const parts = c.entryTime.split(" ");
-        return `<td data-value="${escapeHtml(c.entryTime)}">${parts[0]}<br>${parts[1] || ""}</td>`;
+        const parts = (c.entryTime || "").split(" ");
+        return `<td data-value="${escapeHtml(c.entryTime)}">${parts[0] || ""}<br>${parts[1] || ""}</td>`;
       case "operation":
         return `
           <td>
@@ -500,7 +580,7 @@ function buildCandidateRowHtml(c, activeCols) {
           </td>
         `;
       default:
-        return `<td>-</td>`;
+        return `<td></td>`;
     }
   });
 
@@ -508,7 +588,7 @@ function buildCandidateRowHtml(c, activeCols) {
 }
 
 /**
- * Reorder existing DOM rows on sort (Compliant with sortable-table guidance)
+ * Reorder rows on sort (Compliant with sortable-table guidance)
  */
 function handleColumnSort(colId, buttonEl) {
   const th = buttonEl.closest("th");
@@ -525,31 +605,10 @@ function handleColumnSort(colId, buttonEl) {
   }
   th.setAttribute("aria-sort", nextDir);
 
-  const cellIndex = th.cellIndex;
-  const type = th.dataset.type || "string";
-  const rows = [...tbody.rows];
-  if (rows.length <= 1 && !rows[0]?.hasAttribute("data-candidate-id")) return;
-
-  const factor = nextDir === "ascending" ? 1 : -1;
-  const readVal = row => row.cells[cellIndex]?.dataset.value ?? row.cells[cellIndex]?.textContent.trim() ?? "";
-
-  rows.sort((a, b) => {
-    const va = readVal(a);
-    const vb = readVal(b);
-    return factor * (type === "number" ? Number(va) - Number(vb) : collator.compare(va, vb));
-  });
-
-  // Move existing <tr> nodes without innerHTML rebuild to preserve focus & identity
-  for (const row of rows) {
-    if (typeof tbody.moveBefore === "function") {
-      tbody.moveBefore(row, null);
-    } else {
-      tbody.appendChild(row);
-    }
-  }
+  renderResumeTable();
 
   if (statusEl) {
-    statusEl.textContent = `Sorted by ${buttonEl.textContent.trim()}, ${nextDir}, ${rows.length} rows`;
+    statusEl.textContent = `Sorted by ${buttonEl.textContent.trim()}, ${nextDir}`;
   }
 }
 
@@ -577,42 +636,34 @@ function openCandidateProfileModal(candidateId) {
   const body = document.getElementById("profileModalBody");
   if (!dialog || !body) return;
 
-  const stageOptions = [
-    { val: "new", label: t("stageNew") },
-    { val: "pending", label: t("stagePending") },
-    { val: "pass", label: t("stagePass") },
-    { val: "interview", label: t("stageInterview") },
-    { val: "failed", label: t("stageFailed") },
-    { val: "entry", label: t("stageEntry") }
-  ];
+  const currentBadge = computeCandidateBadge(c);
 
   body.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
       <div>
         <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">${escapeHtml(c.name)}</h3>
         <p style="color: var(--text-secondary); margin-top: 2px;">
-          ${escapeHtml(c.recommendedPosition)} — <strong>${escapeHtml(c.recommendedCompany)}</strong>
+          ${escapeHtml(c.recommendedPosition || "-")} — <strong>${escapeHtml(c.recommendedCompany || "-")}</strong>
         </p>
         <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
           ID: ${c.id} | ${escapeHtml(c.email || "-")} | ${escapeHtml(c.phone || "-")}
         </p>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-        <label style="font-size: 11px; color: var(--text-muted);">${t("fldStage")}:</label>
-        <select id="profileStageSelect" class="ctrl-select" style="min-width: 165px; height: 28px;" data-id="${c.id}">
-          ${stageOptions.map(o => `<option value="${o.val}" ${c.stage === o.val ? "selected" : ""}>${o.label}</option>`).join("")}
-        </select>
+        <span class="status-count-badge" style="font-size: 14px; padding: 3px 10px;">
+          ${currentBadge} - ${getStatusName(currentBadge)}
+        </span>
       </div>
     </div>
 
     <div class="form-grid" style="margin-bottom: 16px;">
       <div class="form-field">
         <label>${t("fldNationality")}</label>
-        <div>${escapeHtml(c.nationality)}</div>
+        <div>${escapeHtml(c.nationality || "-")}</div>
       </div>
       <div class="form-field">
         <label>${t("fldGender")} / ${t("fldAge")}</label>
-        <div>${escapeHtml(c.gender)} (${c.age})</div>
+        <div>${escapeHtml(c.gender)} (${calculateAge(c.birthDate)})</div>
       </div>
       <div class="form-field">
         <label>${t("fldEducation")}</label>
@@ -624,27 +675,65 @@ function openCandidateProfileModal(candidateId) {
       </div>
       <div class="form-field full">
         <label>${t("colLanguage")}</label>
-        <div>${escapeHtml(c.language)}</div>
+        <div>${escapeHtml(c.language || "-")}</div>
       </div>
       <div class="form-field full">
         <label>${t("fldSummary")}</label>
         <p style="color: var(--text-secondary); line-height: 1.55;">${escapeHtml(c.summary || "-")}</p>
       </div>
       <div class="form-field full">
-        <label>${t("fldSkills")}</label>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
-          ${(c.skills || []).map(s => `<span class="col-tag" style="padding: 3px 8px;">${escapeHtml(s)}</span>`).join("")}
+        <label>Active Recommendations (${(c.recommendations || []).length})</label>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+          ${(c.recommendations || []).map(r => `
+            <div style="padding: 8px 12px; border: 1px solid var(--border-base); border-radius: 3px; background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${escapeHtml(r.company)}</strong> - ${escapeHtml(r.position)}<br>
+                <small style="color: var(--text-muted);">${r.timestamp} • Consultant: ${escapeHtml(r.consultantName || "Rina")}</small>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <select class="ctrl-select rec-stage-changer" data-candidate-id="${c.id}" data-rec-id="${r.id}" style="height: 28px;">
+                  ${Object.values(STATUS_CODES).map(st => `
+                    <option value="${st.code}" ${r.statusCode === st.code ? "selected" : ""}>
+                      ${st.code} - ${getStatusName(st.code)}
+                    </option>
+                  `).join("")}
+                </select>
+              </div>
+            </div>
+          `).join("")}
         </div>
       </div>
     </div>
   `;
 
-  body.querySelector("#profileStageSelect")?.addEventListener("change", e => {
-    const newStage = e.target.value;
-    c.stage = newStage;
-    saveCandidates(candidates);
-    renderAllViews();
-    showToast(`${t("msgStageUpdated")}: ${newStage.toUpperCase()}`);
+  // Bind inline status code changer
+  body.querySelectorAll(".rec-stage-changer").forEach(sel => {
+    sel.addEventListener("change", e => {
+      const candId = sel.getAttribute("data-candidate-id");
+      const recId = sel.getAttribute("data-rec-id");
+      const newCode = parseInt(e.target.value, 10);
+
+      const targetCand = candidates.find(item => item.id === candId);
+      const targetRec = targetCand?.recommendations?.find(r => r.id === recId);
+      if (targetRec) {
+        const oldCode = targetRec.statusCode;
+        targetRec.statusCode = newCode;
+        if (newCode === 31) {
+          // Rule 5: Offer accepted -> ask to close other running recommendations with code 90
+          targetCand.recommendations.forEach(otherR => {
+            if (otherR.id !== recId && otherR.isActive) {
+              otherR.statusCode = 90;
+              otherR.isActive = false;
+              otherR.notes += " (Closed automatically as candidate accepted offer elsewhere)";
+            }
+          });
+        }
+        addAuditLog("STATUS_CHANGE", `Candidate ${targetCand.name}`, `Changed code from ${oldCode} to ${newCode}`);
+        saveCandidates(candidates);
+        renderAllViews();
+        showToast(`${t("msgStatusChanged")} ${targetCand.name} -> Code ${newCode}`);
+      }
+    });
   });
 
   dialog.showModal();
@@ -654,6 +743,7 @@ function downloadCandidateResume(candidateId) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
 
+  const currentBadge = computeCandidateBadge(c);
   const resumeContent = [
     "======================================================================",
     `                    CURRICULUM VITAE / RESUME                         `,
@@ -661,28 +751,25 @@ function downloadCandidateResume(candidateId) {
     `Candidate ID         : ${c.id}`,
     `Full Name            : ${c.name}`,
     `Nationality          : ${c.nationality}`,
-    `Gender / Age         : ${c.gender} / ${c.age}`,
+    `Gender / Age         : ${c.gender} / ${calculateAge(c.birthDate)}`,
     `Education            : ${c.education || "-"}`,
     `Languages            : ${c.language}`,
     `Years of Service     : ${c.yearsOfService} Years`,
     `Email                : ${c.email || "-"}`,
     `Phone                : ${c.phone || "-"}`,
     "----------------------------------------------------------------------",
-    `LATEST RECOMMENDATION`,
+    `LATEST STATUS & RECOMMENDATION`,
+    `Current Status Badge : ${currentBadge} (${getStatusName(currentBadge)})`,
     `Position             : ${c.recommendedPosition}`,
     `Target Company       : ${c.recommendedCompany}`,
-    `Current Pipeline     : ${c.stage.toUpperCase()} (Score Count: ${c.statusCount})`,
     `Entry Timestamp      : ${c.entryTime}`,
     "----------------------------------------------------------------------",
     `PROFESSIONAL SUMMARY`,
     `${c.summary || "-"}`,
     "----------------------------------------------------------------------",
-    `CORE COMPETENCIES`,
-    `${(c.skills || []).join(", ")}`,
-    "----------------------------------------------------------------------",
     `RECOMMENDATION HISTORY (${(c.recommendations || []).length} records)`,
     ...(c.recommendations || []).map(
-      (r, idx) => `${idx + 1}. [${r.timestamp}] ${r.position} @ ${r.company} (${r.stage}) - PIC: ${r.consultant}\n   Note: ${r.notes}`
+      (r, idx) => `${idx + 1}. [${r.timestamp}] ${r.position} @ ${r.company} (Status Code: ${r.statusCode} - ${getStatusName(r.statusCode)})\n   Consultant: ${r.consultantName || "Rina Wijaya"} | Note: ${r.notes || "-"}`
     ),
     "======================================================================"
   ].join("\n");
@@ -697,7 +784,83 @@ function downloadCandidateResume(candidateId) {
   a.remove();
   URL.revokeObjectURL(url);
 
+  addAuditLog("DOWNLOAD_RESUME", `Candidate ${c.name}`, `Downloaded CV file`);
   showToast(`${t("msgResumeDownloaded")} ${c.name}`);
+}
+
+/**
+ * Recommended Repeat: Evaluates 6 Rules from PRD.md lines 209-222
+ */
+function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, currentConsultant = "Rina Wijaya") {
+  const currentBadge = computeCandidateBadge(candidate);
+
+  // Condition 1: Candidate is Code 91 Blacklist -> Blocked for all companies
+  if (currentBadge === 91) {
+    return { blocked: true, message: t("warnBlacklist"), requiresReason: false, requiresManager: false };
+  }
+
+  const recs = candidate.recommendations || [];
+  const now = new Date("2026-11-16");
+  const sixMonthsAgo = new Date("2026-05-16");
+
+  // Condition 2: Same company + same position, previous recommendation still active -> Blocked
+  const activeSame = recs.find(r => 
+    r.isActive !== false &&
+    r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim() &&
+    r.position.toLowerCase().trim() === targetPosition.toLowerCase().trim()
+  );
+  if (activeSame) {
+    return {
+      blocked: true,
+      message: `${t("warnActiveSame")} (${activeSame.company} - ${activeSame.position}, Status: ${activeSame.statusCode})`,
+      requiresReason: false,
+      requiresManager: false
+    };
+  }
+
+  // Condition 3: Same company, by another consultant, in last 6 months -> Warning, Manager approval + reason
+  const diffConsultantWithin6Mo = recs.find(r => {
+    const rDate = new Date(r.timestamp.split(" ")[0]);
+    const isWithin = rDate >= sixMonthsAgo;
+    const isSameComp = r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
+    const isDiffCons = (r.consultantName || "").toLowerCase() !== currentConsultant.toLowerCase();
+    return isSameComp && isWithin && isDiffCons;
+  });
+  if (diffConsultantWithin6Mo) {
+    return {
+      blocked: false,
+      message: `${t("warnDiffConsultant6Mo")} (Previous Consultant: ${diffConsultantWithin6Mo.consultantName})`,
+      requiresReason: true,
+      requiresManager: true
+    };
+  }
+
+  // Condition 4: Same company (any position) in last 6 months -> Warning, reason mandatory
+  const sameCompWithin6Mo = recs.find(r => {
+    const rDate = new Date(r.timestamp.split(" ")[0]);
+    return rDate >= sixMonthsAgo && r.company.toLowerCase().trim() === targetCompany.toLowerCase().trim();
+  });
+  if (sameCompWithin6Mo) {
+    return {
+      blocked: false,
+      message: t("warnSameCompany6Mo"),
+      requiresReason: true,
+      requiresManager: false
+    };
+  }
+
+  // Condition 5: Candidate currently in code 31 or 40 -> Warning + reason mandatory
+  if (currentBadge === 31 || currentBadge === 40) {
+    return {
+      blocked: false,
+      message: t("warnAlreadyHired"),
+      requiresReason: true,
+      requiresManager: false
+    };
+  }
+
+  // Condition 6: Otherwise -> Allowed freely
+  return { blocked: false, message: "", requiresReason: false, requiresManager: false };
 }
 
 function openRecRepeatModal(candidateId) {
@@ -709,9 +872,64 @@ function openRecRepeatModal(candidateId) {
 
   document.getElementById("recRepeatCandidateId").value = c.id;
   document.getElementById("recRepeatCandidateName").value = c.name;
-  document.getElementById("recRepeatPosition").value = c.recommendedPosition;
+  document.getElementById("recRepeatPosition").value = c.recommendedPosition || "";
   document.getElementById("recRepeatCompany").value = "";
+  document.getElementById("recRepeatReason").value = "";
   document.getElementById("recRepeatNotes").value = "";
+
+  const warnBanner = document.getElementById("recRepeatWarningBanner");
+  const reasonBox = document.getElementById("recRepeatReasonGroup");
+  const mgrBox = document.getElementById("recRepeatManagerApprovalGroup");
+  const submitBtn = document.getElementById("btnSubmitRecRepeat");
+
+  if (warnBanner) { warnBanner.style.display = "none"; warnBanner.textContent = ""; }
+  if (reasonBox) reasonBox.style.display = "none";
+  if (mgrBox) mgrBox.style.display = "none";
+  if (submitBtn) submitBtn.disabled = false;
+
+  // Real-time verification on typing company or position
+  const verifyRulesLive = () => {
+    const comp = document.getElementById("recRepeatCompany")?.value.trim();
+    const pos = document.getElementById("recRepeatPosition")?.value.trim();
+    if (!comp) return;
+
+    const evalResult = evaluateRecRepeatRules(c, comp, pos);
+    if (evalResult.blocked) {
+      if (warnBanner) {
+        warnBanner.style.display = "block";
+        warnBanner.style.borderColor = "var(--danger-dot)";
+        warnBanner.style.color = "var(--danger-dot)";
+        warnBanner.textContent = evalResult.message;
+      }
+      if (submitBtn) submitBtn.disabled = true;
+    } else if (evalResult.message) {
+      if (warnBanner) {
+        warnBanner.style.display = "block";
+        warnBanner.style.borderColor = "var(--warning-color)";
+        warnBanner.style.color = "var(--warning-color)";
+        warnBanner.textContent = evalResult.message;
+      }
+      if (submitBtn) submitBtn.disabled = false;
+    } else {
+      if (warnBanner) warnBanner.style.display = "none";
+      if (submitBtn) submitBtn.disabled = false;
+    }
+
+    if (reasonBox) {
+      reasonBox.style.display = evalResult.requiresReason ? "flex" : "none";
+      const reasonInput = document.getElementById("recRepeatReason");
+      if (reasonInput) reasonInput.required = evalResult.requiresReason;
+    }
+
+    if (mgrBox) {
+      mgrBox.style.display = evalResult.requiresManager ? "flex" : "none";
+      const mgrCheck = document.getElementById("recRepeatManagerCheck");
+      if (mgrCheck) mgrCheck.required = evalResult.requiresManager;
+    }
+  };
+
+  document.getElementById("recRepeatCompany").oninput = verifyRulesLive;
+  document.getElementById("recRepeatPosition").oninput = verifyRulesLive;
 
   dialog.showModal();
 }
@@ -721,35 +939,54 @@ function handleRecRepeatSubmit(e) {
   const id = document.getElementById("recRepeatCandidateId")?.value;
   const pos = document.getElementById("recRepeatPosition")?.value.trim();
   const comp = document.getElementById("recRepeatCompany")?.value.trim();
-  const stage = document.getElementById("recRepeatStage")?.value || "pending";
+  const statusCode = parseInt(document.getElementById("recRepeatStatusCode")?.value || "10", 10);
   const consultant = document.getElementById("recRepeatConsultant")?.value.trim() || "Rina Wijaya";
+  const reason = document.getElementById("recRepeatReason")?.value.trim() || "";
   const notes = document.getElementById("recRepeatNotes")?.value.trim() || "Recommended via Resume Lib.";
 
   const c = candidates.find(item => item.id === id);
   if (!c || !pos || !comp) return;
 
+  const ruleResult = evaluateRecRepeatRules(c, comp, pos, consultant);
+  if (ruleResult.blocked) {
+    alert(ruleResult.message);
+    return;
+  }
+  if (ruleResult.requiresReason && !reason) {
+    alert("Reason is mandatory for this recommendation.");
+    return;
+  }
+  if (ruleResult.requiresManager) {
+    const mgrCheck = document.getElementById("recRepeatManagerCheck");
+    if (!mgrCheck?.checked) {
+      alert("Manager approval checkbox is required.");
+      return;
+    }
+  }
+
   const nowStr = formatTimestamp(new Date());
-  c.statusCount = (c.statusCount || 1) + 1;
   c.recommendedPosition = pos;
   c.recommendedCompany = comp;
-  c.stage = stage;
   c.entryTime = nowStr;
 
   if (!Array.isArray(c.recommendations)) c.recommendations = [];
   c.recommendations.unshift({
     id: `REC-${Date.now().toString().slice(-4)}`,
-    position: pos,
     company: comp,
-    stage,
-    consultant,
+    position: pos,
+    statusCode,
+    consultantName: consultant,
     timestamp: nowStr,
-    notes
+    reason,
+    notes,
+    isActive: true
   });
 
+  addAuditLog("RECOMMEND_REPEAT", `Candidate ${c.name}`, `Recommended to ${comp} as ${pos} (Code ${statusCode})`);
   saveCandidates(candidates);
   document.getElementById("recRepeatModal")?.close();
   renderAllViews();
-  showToast(`${t("msgRecAdded")} ${c.name} -> ${comp}`);
+  showToast(`${t("msgRecSuccess")} ${c.name} -> ${comp}`);
 }
 
 function openRecListModal(candidateId) {
@@ -761,18 +998,20 @@ function openRecListModal(candidateId) {
   if (!dialog || !body) return;
 
   const recs = c.recommendations || [];
+  const badgeCode = computeCandidateBadge(c);
+
   body.innerHTML = `
     <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
       <div>
         <strong style="font-size: 14px; color: var(--brand-primary);">${escapeHtml(c.name)}</strong>
-        <span style="margin-left: 8px; color: var(--text-muted); font-size: 12px;">(${t("colStatus")}: ${c.statusCount})</span>
+        <span style="margin-left: 8px; color: var(--text-muted); font-size: 12px;">(Status: ${badgeCode} - ${getStatusName(badgeCode)})</span>
       </div>
       <button type="button" class="btn-solid" id="btnQuickRepeatFromList" style="height: 28px; padding: 0 12px; font-size: 12px;">
         + ${t("actRecRepeat")}
       </button>
     </div>
     <div class="table-wrapper" style="max-height: 360px;">
-      <table class="data-table" style="min-inline-size: 560px;">
+      <table class="data-table" style="min-inline-size: 640px;">
         <thead>
           <tr>
             <th>${t("colRecPosition")}</th>
@@ -780,7 +1019,7 @@ function openRecListModal(candidateId) {
             <th>${t("fldStage")}</th>
             <th>${t("fldConsultant")}</th>
             <th>${t("fldDate")}</th>
-            <th>${t("fldNotes")}</th>
+            <th>${t("fldReason")} / ${t("fldNotes")}</th>
           </tr>
         </thead>
         <tbody>
@@ -788,10 +1027,18 @@ function openRecListModal(candidateId) {
             <tr>
               <td><strong>${escapeHtml(r.position)}</strong></td>
               <td>${escapeHtml(r.company)}</td>
-              <td><span class="col-tag">${escapeHtml(r.stage.toUpperCase())}</span></td>
-              <td>${escapeHtml(r.consultant || "-")}</td>
+              <td>
+                <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">
+                  ${r.statusCode}
+                </span>
+                <small style="display:block; font-size: 10.5px; color: var(--text-muted);">${getStatusName(r.statusCode)}</small>
+              </td>
+              <td>${escapeHtml(r.consultantName || "Rina")}</td>
               <td>${escapeHtml(r.timestamp)}</td>
-              <td style="text-align: left; max-width: 200px;">${escapeHtml(r.notes || "-")}</td>
+              <td style="text-align: left; max-width: 220px;">
+                ${r.reason ? `<strong style="color: var(--brand-primary);">[Reason: ${escapeHtml(r.reason)}]</strong><br>` : ""}
+                ${escapeHtml(r.notes || "-")}
+              </td>
             </tr>
           `).join("")}
         </tbody>
@@ -812,64 +1059,80 @@ function handleAddCandidateSubmit(e) {
   const name = document.getElementById("addName")?.value.trim();
   const nationality = document.getElementById("addNationality")?.value.trim() || "Indonesia";
   const gender = document.getElementById("addGender")?.value || "Male";
-  const age = parseInt(document.getElementById("addAge")?.value || "25", 10);
+  const birthDate = document.getElementById("addBirthDate")?.value || "1998-01-01";
   const education = document.getElementById("addEducation")?.value || "undergraduate";
   const language = document.getElementById("addLanguage")?.value.trim() || "Indonesian, English";
   const yearsOfService = parseFloat(document.getElementById("addYears")?.value || "3");
-  const recommendedPosition = document.getElementById("addPosition")?.value.trim();
-  const recommendedCompany = document.getElementById("addCompany")?.value.trim();
-  const stage = document.getElementById("addStage")?.value || "new";
+  const position = document.getElementById("addPosition")?.value.trim();
+  const company = document.getElementById("addCompany")?.value.trim();
   const email = document.getElementById("addEmail")?.value.trim() || "";
   const phone = document.getElementById("addPhone")?.value.trim() || "";
   const summary = document.getElementById("addSummary")?.value.trim() || "";
 
-  if (!name || !recommendedPosition || !recommendedCompany) return;
+  if (!name) return;
+
+  // Duplicate check (PRD RL-21: name + birthDate or email or phone)
+  const isDuplicate = candidates.find(item => 
+    (item.name.toLowerCase() === name.toLowerCase() && item.birthDate === birthDate) ||
+    (email && item.email && item.email.toLowerCase() === email.toLowerCase()) ||
+    (phone && item.phone && item.phone === phone)
+  );
+
+  if (isDuplicate) {
+    if (!confirm(`Warning: Candidate "${isDuplicate.name}" with matching birth date or contact already exists in database. Save anyway?`)) {
+      return;
+    }
+  }
 
   const nowStr = formatTimestamp(new Date());
+  const newRecs = [];
+  if (company && position) {
+    newRecs.push({
+      id: `REC-${Date.now().toString().slice(-4)}`,
+      company,
+      position,
+      statusCode: 10,
+      consultantName: "Rina Wijaya",
+      timestamp: nowStr,
+      notes: "Initial entry recommendation.",
+      isActive: true
+    });
+  }
+
   const newRecord = {
     id: `CND-${1000 + candidates.length + 1}`,
     name,
     nationality,
-    statusCount: 1,
-    stage,
     gender,
-    age,
+    birthDate,
     education,
     language,
     yearsOfService,
-    recommendedPosition,
-    recommendedCompany,
+    recommendedPosition: position || "",
+    recommendedCompany: company || "",
     entryTime: nowStr,
     email,
     phone,
-    skills: [recommendedPosition, language.split(",")[0]],
+    skills: position ? [position] : [],
     summary,
-    recommendations: [
-      {
-        id: `REC-${Date.now().toString().slice(-4)}`,
-        position: recommendedPosition,
-        company: recommendedCompany,
-        stage,
-        consultant: "Rina Wijaya",
-        timestamp: nowStr,
-        notes: "Initial entry into Resume Lib."
-      }
-    ]
+    recommendations: newRecs
   };
 
   candidates.unshift(newRecord);
+  addAuditLog("CREATE_CANDIDATE", `Candidate ${name}`, `Added new candidate profile`);
   saveCandidates(candidates);
   e.target.reset();
   document.getElementById("addCandidateModal")?.close();
+  currentPage = 1;
   renderAllViews();
   showToast(`${t("msgCandidateAdded")} ${name}`);
 }
 
 /**
- * 6. SECONDARY WORKSPACE VIEWS (Consultant Business & Data Analysis)
+ * 6. SECONDARY WORKSPACE VIEWS
  */
 function renderSecondaryViews() {
-  // Consultant Business -> All Recommendations Table
+  // Global Recommendations Table
   const recTbody = document.getElementById("globalRecTableBody");
   if (recTbody) {
     const allRecs = [];
@@ -883,25 +1146,35 @@ function renderSecondaryViews() {
         <td><button type="button" class="candidate-link" onclick="openCandidateProfileModal('${item.candidate.id}')">${escapeHtml(item.candidate.name)}</button></td>
         <td>${escapeHtml(item.rec.position)}</td>
         <td><strong>${escapeHtml(item.rec.company)}</strong></td>
-        <td><span class="status-count-badge">${escapeHtml(item.rec.stage.toUpperCase())}</span></td>
-        <td>${escapeHtml(item.rec.consultant || "-")}</td>
+        <td>
+          <span class="status-count-badge" style="${STATUS_CODES[item.rec.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">
+            ${item.rec.statusCode}
+          </span>
+          <small style="display:block; font-size:10px; color:var(--text-muted);">${getStatusName(item.rec.statusCode)}</small>
+        </td>
+        <td>${escapeHtml(item.rec.consultantName || "Rina")}</td>
         <td>${escapeHtml(item.rec.timestamp)}</td>
-        <td style="text-align: left;">${escapeHtml(item.rec.notes || "-")}</td>
+        <td style="text-align: left;">
+          ${item.rec.reason ? `<em>[${escapeHtml(item.rec.reason)}]</em> ` : ""}
+          ${escapeHtml(item.rec.notes || "-")}
+        </td>
       </tr>
     `).join("");
   }
 
-  // Consultant Business -> Client Companies Summary
+  // Client Companies Table
   const clientTbody = document.getElementById("clientCompaniesTableBody");
   if (clientTbody) {
     const companyMap = {};
     candidates.forEach(c => {
-      const comp = c.recommendedCompany || "Other";
-      if (!companyMap[comp]) {
-        companyMap[comp] = { name: comp, count: 0, roles: new Set(), latest: c.entryTime };
-      }
-      companyMap[comp].count += 1;
-      companyMap[comp].roles.add(c.recommendedPosition);
+      (c.recommendations || []).forEach(r => {
+        const comp = r.company || "Other";
+        if (!companyMap[comp]) {
+          companyMap[comp] = { name: comp, count: 0, roles: new Set(), latest: r.timestamp };
+        }
+        companyMap[comp].count += 1;
+        companyMap[comp].roles.add(r.position);
+      });
     });
     clientTbody.innerHTML = Object.values(companyMap).map(info => `
       <tr>
@@ -913,27 +1186,45 @@ function renderSecondaryViews() {
     `).join("");
   }
 
-  // Data Analysis -> Pipeline KPIs
+  // Pipeline KPIs (New -> Pending -> Original resume pass -> Interview -> Offer -> Entry, Failed)
   const kpiContainer = document.getElementById("analyticsKpiContainer");
   if (kpiContainer) {
     const counts = {
       all: candidates.length,
-      new: candidates.filter(c => c.stage === "new").length,
-      pending: candidates.filter(c => c.stage === "pending").length,
-      pass: candidates.filter(c => c.stage === "pass").length,
-      interview: candidates.filter(c => c.stage === "interview").length,
-      entry: candidates.filter(c => c.stage === "entry").length,
-      failed: candidates.filter(c => c.stage === "failed").length
+      new: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "new").length,
+      pending: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pending").length,
+      pass: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "pass").length,
+      interview: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "interview").length,
+      offer: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "offer").length,
+      entry: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "entry").length,
+      failed: candidates.filter(c => getStageTabForCode(computeCandidateBadge(c)) === "failed").length
     };
     kpiContainer.innerHTML = `
       <div class="kpi-card"><div>${t("stageAll")}</div><div class="kpi-num">${counts.all}</div></div>
-      <div class="kpi-card"><div>${t("stageNew")}</div><div class="kpi-num">${counts.new}</div></div>
-      <div class="kpi-card"><div>${t("stagePending")}</div><div class="kpi-num">${counts.pending}</div></div>
-      <div class="kpi-card"><div>${t("stagePass")}</div><div class="kpi-num">${counts.pass}</div></div>
-      <div class="kpi-card"><div>${t("stageInterview")}</div><div class="kpi-num">${counts.interview}</div></div>
-      <div class="kpi-card"><div>${t("stageEntry")}</div><div class="kpi-num" style="color: var(--success-color);">${counts.entry}</div></div>
-      <div class="kpi-card"><div>${t("stageFailed")}</div><div class="kpi-num" style="color: var(--danger-dot);">${counts.failed}</div></div>
+      <div class="kpi-card"><div>${t("stageNew")} (0)</div><div class="kpi-num">${counts.new}</div></div>
+      <div class="kpi-card"><div>${t("stagePending")} (10, 11)</div><div class="kpi-num">${counts.pending}</div></div>
+      <div class="kpi-card"><div>${t("stagePass")} (12)</div><div class="kpi-num">${counts.pass}</div></div>
+      <div class="kpi-card"><div>${t("stageInterview")} (20, 21, 22)</div><div class="kpi-num">${counts.interview}</div></div>
+      <div class="kpi-card"><div>${t("stageOffer")} (30, 31)</div><div class="kpi-num" style="color: var(--brand-primary);">${counts.offer}</div></div>
+      <div class="kpi-card"><div>${t("stageEntry")} (40, 41)</div><div class="kpi-num" style="color: var(--success-color);">${counts.entry}</div></div>
+      <div class="kpi-card"><div>${t("stageFailed")} (19, 29, 39, 49, 90, 91)</div><div class="kpi-num" style="color: var(--danger-dot);">${counts.failed}</div></div>
     `;
+  }
+
+  // Audit Logs Table
+  const auditTbody = document.getElementById("auditLogsTableBody");
+  if (auditTbody) {
+    const logs = getStoredAuditLogs();
+    auditTbody.innerHTML = logs.map(l => `
+      <tr>
+        <td><code>${escapeHtml(l.id)}</code></td>
+        <td><strong>${escapeHtml(l.action)}</strong></td>
+        <td>${escapeHtml(l.entity)}</td>
+        <td style="text-align: left;">${escapeHtml(l.details)}</td>
+        <td>${escapeHtml(l.user)}</td>
+        <td>${escapeHtml(l.timestamp)}</td>
+      </tr>
+    `).join("");
   }
 }
 
