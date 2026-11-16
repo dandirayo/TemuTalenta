@@ -181,7 +181,7 @@ function applyRolePermissions() {
   if (userSummary) {
     userSummary.innerHTML = `
       <strong style="font-size: 13px;">${escapeHtml(activeUser.name)}</strong>
-      <span style="font-size: 11.5px; color: var(--brand-primary);">${escapeHtml(activeUser.roleName)}</span>
+      <span style="font-size: 11.5px; font-weight: 700; color: var(--text-primary);">${escapeHtml(activeUser.roleName)}</span>
       <span style="font-size: 11px; color: var(--text-muted);">${escapeHtml(activeUser.email || "")} • Asia/Jakarta (UTC+7)</span>
     `;
   }
@@ -918,7 +918,9 @@ function buildCandidateRowHtml(c, activeCols) {
   const badgeCode = computeCandidateBadge(c);
   const statusMeta = STATUS_CODES[badgeCode] || { isFailed: false };
   const calculatedAge = calculateAge(c.birthDate);
-  const badgeBg = statusMeta.isFailed ? "background-color: var(--danger-dot);" : "background-color: var(--brand-primary);";
+  const badgeStyle = statusMeta.isFailed
+    ? "background-color: var(--danger-dot); color: #ffffff;"
+    : "background-color: var(--brand-primary); color: #161922; font-weight: 800;";
 
   const cells = activeCols.map(col => {
     switch (col.id) {
@@ -940,7 +942,7 @@ function buildCandidateRowHtml(c, activeCols) {
       case "status":
         return `
           <td data-value="${badgeCode}">
-            <span class="status-count-badge" style="${badgeBg}" title="${getStatusName(badgeCode)}">${badgeCode}</span>
+            <span class="status-count-badge" style="${badgeStyle}" title="${getStatusName(badgeCode)}">${badgeCode}</span>
           </td>
         `;
       case "gender":
@@ -1072,7 +1074,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     <!-- Candidate Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
       <div>
-        <h3 style="font-size: 17px; font-weight: 700; color: var(--brand-primary);">
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--text-primary);">
           ${escapeHtml(c.name)}
           ${c.isDeleted ? `<span style="font-size: 11px; color: var(--danger-dot); margin-left: 6px;">[ARCHIVED]</span>` : ""}
         </h3>
@@ -1772,7 +1774,7 @@ function openRecListModal(candidateId) {
   body.innerHTML = `
     <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <strong style="font-size: 14px; color: var(--brand-primary);">${escapeHtml(c.name)}</strong>
+        <strong style="font-size: 14px; color: var(--text-primary); font-weight: 800;">${escapeHtml(c.name)}</strong>
         <span style="margin-left: 8px; color: var(--text-muted); font-size: 12px;">(Status: ${badgeCode} - ${getStatusName(badgeCode)})</span>
       </div>
       <button type="button" class="btn-solid" id="btnQuickRepeatFromList" style="height: 28px; padding: 0 12px; font-size: 12px;">
@@ -1797,7 +1799,7 @@ function openRecListModal(candidateId) {
               <th scope="row"><strong>${escapeHtml(r.position)}</strong></th>
               <td>${escapeHtml(r.company)}</td>
               <td>
-                <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">
+                <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot); color: #ffffff;' : 'background-color: var(--brand-primary); color: #161922; font-weight: 800;'}">
                   ${r.statusCode}
                 </span>
                 <small style="display:block; font-size: 10.5px; color: var(--text-muted);">${getStatusName(r.statusCode)}</small>
@@ -1805,7 +1807,7 @@ function openRecListModal(candidateId) {
               <td>${escapeHtml(r.consultantName || "Rina")}</td>
               <td>${escapeHtml(r.timestamp)}</td>
               <td style="text-align: left; max-width: 220px;">
-                ${r.reason ? `<strong style="color: var(--brand-primary);">[Reason: ${escapeHtml(r.reason)}]</strong><br>` : ""}
+                ${r.reason ? `<strong style="color: #b91c1c;">[Reason: ${escapeHtml(r.reason)}]</strong><br>` : ""}
                 ${escapeHtml(r.notes || "-")}
               </td>
             </tr>
@@ -2277,7 +2279,7 @@ function renderConsultantBusinessHub() {
           <td><strong style="color: var(--success-color);">${staffHires}</strong></td>
           <td>${convRate}%</td>
           <td>
-            <span style="font-weight: 600; color: ${targetPercent >= 100 ? 'var(--success-color)' : 'var(--brand-primary)'};">
+            <span style="font-weight: 700; color: ${targetPercent >= 100 ? '#15803d' : 'var(--text-primary)'};">
               ${targetPercent}%
             </span>
           </td>
@@ -2390,8 +2392,8 @@ function renderAdvancedAnalytics() {
     kpiContainer.innerHTML = `
       <div class="kpi-card"><div>Total Talent Bank</div><div class="kpi-num">${s.totalRaw}</div></div>
       <div class="kpi-card"><div>Active in Pipeline</div><div class="kpi-num">${s.countPending + s.countPass + s.countInterview + s.countOffer}</div></div>
-      <div class="kpi-card"><div>Successful Placements</div><div class="kpi-num" style="color: var(--success-color);">${s.countEntry}</div></div>
-      <div class="kpi-card"><div>Rejections / Failed</div><div class="kpi-num" style="color: var(--danger-dot);">${s.countFailed}</div></div>
+      <div class="kpi-card"><div>Successful Placements</div><div class="kpi-num" style="color: #15803d;">${s.countEntry}</div></div>
+      <div class="kpi-card"><div>Rejections / Failed</div><div class="kpi-num" style="color: #b91c1c;">${s.countFailed}</div></div>
     `;
   }
 
@@ -2418,7 +2420,7 @@ function renderAdvancedAnalytics() {
       const shortMonth = m.slice(2);
       return `
         <div class="inflow-bar-col">
-          <span style="font-weight: 700; color: var(--brand-primary);">${cnt}</span>
+          <span style="font-weight: 800; color: var(--text-primary); font-size: 13px;">${cnt}</span>
           <div class="inflow-bar-track" title="${m}: ${cnt} candidates">
             <div class="inflow-bar-fill" style="height: ${heightPct}%; ${cnt === 0 ? "opacity: 0.2;" : ""}"></div>
           </div>
@@ -2596,7 +2598,7 @@ function renderUserManagementList() {
     <tr>
       <th scope="row"><code>${escapeHtml(u.id)}</code></th>
       <td><strong>${escapeHtml(u.name)}</strong></td>
-      <td><span class="status-count-badge" style="background-color: var(--brand-primary);">${escapeHtml(u.roleName)}</span></td>
+      <td><span class="status-count-badge" style="background-color: var(--brand-primary); color: #161922; font-weight: 800;">${escapeHtml(u.roleName)}</span></td>
       <td>${escapeHtml(u.email || "-")} ${u.clientCompany ? `<br><small style="color:var(--text-muted);">(Client: ${escapeHtml(u.clientCompany)})</small>` : ""}</td>
       <td>
         <span style="font-size: 11px; font-weight: 600; color: ${u.active !== false ? 'var(--success-color)' : 'var(--danger-dot)'};">
@@ -3305,7 +3307,7 @@ function openApplyJobModal(jobId) {
   if (idInput) idInput.value = job.id;
   if (banner) {
     banner.innerHTML = `
-      <div style="color: var(--brand-primary); font-size: 13px;">Applying for: <strong>${escapeHtml(job.title)}</strong> at <strong>${escapeHtml(job.company)}</strong></div>
+      <div style="color: var(--text-primary); font-size: 13.5px; font-weight: 700;">Applying for: <strong>${escapeHtml(job.title)}</strong> at <strong>${escapeHtml(job.company)}</strong></div>
       <div style="font-size: 11.5px; color: var(--text-secondary); font-weight: normal; margin-top: 2px;">
         Location: ${escapeHtml(job.location)} | Salary: ${escapeHtml(job.salaryRange)}
       </div>
@@ -3442,7 +3444,7 @@ function renderInterviewCalendar() {
 
         <div style="margin-top: 10px;">
           <h4 style="font-size: 14px; font-weight: 700; color: var(--text-base);">
-            <a href="javascript:void(0)" onclick="openCandidateProfileModal('${item.candidateId}')" style="color: var(--brand-primary); text-decoration: underline;">
+            <a href="javascript:void(0)" onclick="openCandidateProfileModal('${item.candidateId}')" style="color: var(--text-primary); font-weight: 700; text-decoration: underline;">
               ${escapeHtml(item.candidateName)}
             </a>
           </h4>
@@ -3717,14 +3719,14 @@ function openOfferLetterModal(candidateId) {
   paper.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-base); padding-bottom: 14px; margin-bottom: 16px;">
       <div>
-        <h2 style="font-size: 20px; font-weight: 800; color: var(--brand-primary); text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(companyName)}</h2>
+        <h2 style="font-size: 20px; font-weight: 800; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(companyName)}</h2>
         <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">In Partnership with TemuTalenta Executive Talent Search</p>
         <p style="font-size: 11px; color: var(--text-muted);">Equity Tower Level 22, SCBD, Senayan, Jakarta Selatan</p>
       </div>
       <div style="text-align: right; font-size: 11.5px; color: var(--text-secondary);">
         <div><strong>Ref:</strong> TT-OFFER/${new Date().getFullYear()}/${c.id}</div>
         <div style="margin-top: 3px;"><strong>Date:</strong> ${todayStr}</div>
-        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: ${c.digitalSignature ? 'var(--success-color)' : 'var(--brand-primary)'}; color: #fff;">${c.digitalSignature ? 'SIGNED & ACCEPTED' : 'OFFICIAL OFFER'}</span></div>
+        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: ${c.digitalSignature ? '#15803d' : 'var(--brand-primary)'}; color: ${c.digitalSignature ? '#ffffff' : '#161922'}; font-weight: 800;">${c.digitalSignature ? 'SIGNED & ACCEPTED' : 'OFFICIAL OFFER'}</span></div>
       </div>
     </div>
 
@@ -4144,7 +4146,7 @@ function renderKanbanBoard(filteredCandidates) {
       <div class="kanban-column" data-stage-key="${col.stageKey}" data-drop-code="${col.dropCode}">
         <div class="kanban-col-header" style="border-top: 3px solid ${col.color};">
           <span>${col.title}</span>
-          <span class="status-count-badge" style="background-color: ${col.color};">${colItems.length}</span>
+          <span class="status-count-badge" style="background-color: var(--brand-dark); color: #ffffff; font-weight: 800;">${colItems.length}</span>
         </div>
         <div class="kanban-col-body">
           ${colItems.length === 0 ? `<div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 18px 8px;">Drop candidate card here</div>` : colItems.map(c => {
@@ -4155,7 +4157,7 @@ function renderKanbanBoard(filteredCandidates) {
                   <button type="button" class="candidate-link" style="text-align: left; font-weight: 700; font-size: 13px;" onclick="openCandidateProfileModal('${c.id}')">
                     ${escapeHtml(c.name)}
                   </button>
-                  <span class="status-count-badge" style="font-size: 11px; ${STATUS_CODES[code]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">${code}</span>
+                  <span class="status-count-badge" style="font-size: 11px; ${STATUS_CODES[code]?.isFailed ? 'background-color: var(--danger-dot); color: #ffffff;' : 'background-color: var(--brand-primary); color: #161922; font-weight: 800;'}">${code}</span>
                 </div>
                 <div style="font-size: 11.5px; color: var(--text-secondary);">
                   <strong>${escapeHtml(c.recommendedCompany || "-")}</strong> • ${escapeHtml(c.recommendedPosition || "-")}
@@ -4275,7 +4277,7 @@ function renderWarrantyTracker() {
     const formattedFee = "IDR " + estFee.toLocaleString("id-ID");
 
     const invStatus = r.invoiceStatus || (r.statusCode === 41 ? "Paid" : (r.statusCode === 40 ? "Invoiced" : "Draft"));
-    const invColor = invStatus === "Paid" ? "var(--success-color)" : (invStatus === "Invoiced" ? "var(--brand-primary)" : "var(--text-muted)");
+    const invColor = invStatus === "Paid" ? "#15803d" : (invStatus === "Invoiced" ? "#b45309" : "var(--text-muted)");
 
     return `
       <tr>
@@ -4284,7 +4286,7 @@ function renderWarrantyTracker() {
         </th>
         <td><strong>${escapeHtml(r.company)}</strong><br><small style="color:var(--text-muted);">${escapeHtml(r.position)}</small></td>
         <td>
-          <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">${r.statusCode}</span>
+          <span class="status-count-badge" style="${STATUS_CODES[r.statusCode]?.isFailed ? 'background-color: var(--danger-dot); color: #ffffff;' : 'background-color: var(--brand-primary); color: #161922; font-weight: 800;'}">${r.statusCode}</span>
           <small style="display:block; font-size:10px; color:var(--text-muted);">${getStatusName(r.statusCode)}</small>
         </td>
         <td>

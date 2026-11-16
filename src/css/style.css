@@ -19,7 +19,7 @@
   --text-primary: #161922;
   --text-secondary: #5b6271;
   --text-muted: #8c94a6;
-  --text-sidebar: #8c94a6;
+  --text-sidebar: #e2e8f0;
   --text-sidebar-active: #161922;
 
   /* Signature Vibrant Neon Lime & Deep Charcoal */
@@ -78,7 +78,7 @@
     --text-primary: #f3f4f6;
     --text-secondary: #9ca3af;
     --text-muted: #6b7280;
-    --text-sidebar: #8c94a6;
+    --text-sidebar: #e2e8f0;
     --text-sidebar-active: #161922;
 
     --brand-primary: #ccf535;
@@ -119,7 +119,7 @@
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
-  --text-sidebar: #8c94a6;
+  --text-sidebar: #e2e8f0;
   --text-sidebar-active: #161922;
 
   --brand-primary: #ccf535;
@@ -331,20 +331,20 @@ button:active {
   background: transparent;
   border: none;
   border-radius: var(--radius-md);
-  color: var(--text-sidebar);
+  color: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   text-align: left;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
 .menu-group-btn:hover {
-  background-color: var(--bg-sidebar-hover);
+  background-color: rgba(255, 255, 255, 0.1);
   color: #ffffff;
 }
 
@@ -357,17 +357,19 @@ button:active {
 .menu-icon {
   width: 16px;
   height: 16px;
+  stroke: #f1f5f9;
   stroke-width: 1.85;
   flex-shrink: 0;
-  opacity: 0.85;
+  opacity: 1;
   transition: stroke 0.15s, opacity 0.15s;
 }
 
 .chevron-icon {
   width: 13px;
   height: 13px;
+  stroke: #cbd5e1;
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0.6;
+  opacity: 0.95;
 }
 
 .menu-group.open .chevron-icon {
@@ -392,28 +394,38 @@ button:active {
   background: transparent;
   border: none;
   border-radius: var(--radius-md);
-  color: var(--text-sidebar);
+  color: #e2e8f0;
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 600;
   text-align: left;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
+.submenu-item-btn .menu-icon {
+  stroke: #cbd5e1;
+  opacity: 0.95;
+}
+
 .submenu-item-btn:hover {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.submenu-item-btn:hover .menu-icon {
+  stroke: #ffffff;
+  opacity: 1;
 }
 
 .submenu-item-btn.active {
   background-color: var(--brand-primary);
-  color: var(--brand-primary-text);
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(204, 245, 53, 0.35);
+  color: #161922;
+  font-weight: 800;
+  box-shadow: 0 4px 14px rgba(204, 245, 53, 0.4);
 }
 
 .submenu-item-btn.active .menu-icon {
@@ -458,9 +470,10 @@ button:active {
 
 .sidebar-promo-sub {
   font-size: 11px;
-  color: #3f4710;
+  color: #161922;
+  opacity: 0.85;
   margin-top: 3px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .sidebar-promo-circle-btn {
@@ -517,10 +530,10 @@ button:active {
 
 .mobile-header-brand {
   display: none;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--brand-primary);
-  letter-spacing: 0.2px;
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .header-greeting {
@@ -1662,13 +1675,13 @@ dialog::backdrop {
 }
 
 .profile-tab-btn:hover {
-  color: var(--brand-primary);
+  color: var(--text-primary);
 }
 
 .profile-tab-btn.active {
-  color: var(--brand-primary);
-  border-bottom-color: var(--brand-primary);
-  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid #161922;
+  font-weight: 800;
 }
 
 .profile-tab-pane {
@@ -1775,17 +1788,25 @@ dialog::backdrop {
 }
 
 .kpi-card {
-  padding: 14px 16px;
-  background-color: var(--bg-subtle);
+  padding: 16px 20px;
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-base);
-  border-radius: 4px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-card > div:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 .kpi-card .kpi-num {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--brand-primary);
-  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 6px;
+  letter-spacing: -0.5px;
 }
 
 .funnel-container {
@@ -1906,9 +1927,9 @@ dialog::backdrop {
 .demo-badge-rule {
   font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background-color: var(--bg-subtle);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--brand-dark);
   color: var(--brand-primary);
   display: inline-block;
   align-self: flex-start;
@@ -1978,10 +1999,10 @@ dialog::backdrop {
 }
 
 .tab-pill-btn.active {
-  background: var(--bg-surface);
+  background: var(--brand-dark);
   color: var(--brand-primary);
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* ==========================================================================
@@ -2026,9 +2047,9 @@ dialog::backdrop {
   font-size: 11px;
   font-weight: 700;
   color: var(--brand-primary);
-  background: var(--bg-subtle);
-  padding: 3px 8px;
-  border-radius: 4px;
+  background: var(--brand-dark);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
   display: inline-block;
 }
 
@@ -2477,8 +2498,12 @@ dialog::backdrop {
   }
 
   .mobile-nav-item.active {
-    color: var(--brand-primary);
-    font-weight: 700;
+    color: var(--brand-dark);
+    font-weight: 800;
+  }
+  .mobile-nav-item.active svg {
+    stroke: var(--brand-dark);
+    stroke-width: 2.3;
   }
 }
 
@@ -2639,6 +2664,12 @@ dialog::backdrop {
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
+}
+
+.inflow-bar-col > span:first-child {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
 .inflow-bar-track {
