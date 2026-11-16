@@ -29,7 +29,7 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg class="brand-logo-svg" viewBox="0 0 28 28" fill="none" aria-hidden="true">
           <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
-          <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#4c78e8"/>
+          <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#ccf535"/>
         </svg>
         <span>TemuTalenta</span>
       </div>
@@ -196,6 +196,15 @@
         </ul>
       </div>
     </nav>
+    <div class="sidebar-promo-widget">
+      <div class="sidebar-promo-card">
+        <div class="sidebar-promo-title">TemuTalenta</div>
+        <div class="sidebar-promo-sub">Enterprise ATS Suite</div>
+        <button type="button" class="sidebar-promo-circle-btn" onclick="switchWorkspaceView('careerPortal')" aria-label="Explore Jobs" title="Explore Career Portal">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+        </button>
+      </div>
+    </div>
   </aside>
   <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
@@ -215,6 +224,10 @@
           </svg>
         </button>
         <span class="mobile-header-brand">TemuTalenta</span>
+        <div class="header-greeting">
+          <span class="greeting-text">Welcome back</span>
+          <span class="greeting-wave" aria-hidden="true">👋</span>
+        </div>
       </div>
 
       <div class="header-right">

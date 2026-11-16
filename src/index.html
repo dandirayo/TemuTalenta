@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -29,11 +29,11 @@
       <div style="display: flex; align-items: center; gap: 10px;">
         <svg class="brand-logo-svg" viewBox="0 0 28 28" fill="none" aria-hidden="true">
           <path d="M14 3L3 23H9.5L14 13.5L18.5 23H25L14 3Z" fill="#ffffff"/>
-          <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#4c78e8"/>
+          <path d="M10.5 18.5H17.5L19.5 23H8.5L10.5 18.5Z" fill="#ccf535"/>
         </svg>
         <span>TemuTalenta</span>
       </div>
-      <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close Navigation">âœ•</button>
+      <button type="button" id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close Navigation">✕</button>
     </div>
 
     <nav class="sidebar-menu">
@@ -196,6 +196,15 @@
         </ul>
       </div>
     </nav>
+    <div class="sidebar-promo-widget">
+      <div class="sidebar-promo-card">
+        <div class="sidebar-promo-title">TemuTalenta</div>
+        <div class="sidebar-promo-sub">Enterprise ATS Suite</div>
+        <button type="button" class="sidebar-promo-circle-btn" onclick="switchWorkspaceView('careerPortal')" aria-label="Explore Jobs" title="Explore Career Portal">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+        </button>
+      </div>
+    </div>
   </aside>
   <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
@@ -215,6 +224,10 @@
           </svg>
         </button>
         <span class="mobile-header-brand">TemuTalenta</span>
+        <div class="header-greeting">
+          <span class="greeting-text">Welcome back</span>
+          <span class="greeting-wave" aria-hidden="true">👋</span>
+        </div>
       </div>
 
       <div class="header-right">
@@ -238,7 +251,7 @@
 
           <select id="langSelectorDropdown" class="ctrl-select header-lang-select" aria-label="Select Language">
             <option value="en">English</option>
-            <option value="zh">ä¸­æ–‡ (ZH)</option>
+            <option value="zh">中文 (ZH)</option>
             <option value="id">Bahasa (ID)</option>
           </select>
         </div>
@@ -472,7 +485,7 @@
             <span class="col-selector-label" data-i18n="lblDisplayCols">Columns:</span>
             <button type="button" id="colSelectorTrigger" class="col-selector-trigger" aria-label="Select Display Columns">
               <span style="display: inline-flex; align-items: center; gap: 5px;">
-                <span class="col-tag"><span data-i18n="colCandidate">Candidate</span> Ã—</span>
+                <span class="col-tag"><span data-i18n="colCandidate">Candidate</span> ×</span>
                 <span id="colExtraCountTag" class="col-tag">+ 11</span>
               </span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -802,7 +815,7 @@
                 <tr>
                   <th>Code</th>
                   <th>English Label</th>
-                  <th>ä¸­æ–‡åç§°</th>
+                  <th>中文名称</th>
                   <th>Nama (Indonesia)</th>
                   <th>Stage Tab</th>
                   <th>Rule Flag</th>
@@ -910,7 +923,7 @@
            PANEL 6: PRD & BLUEPRINT DOCUMENTATION VIEWER
            ==================================================================== -->
       <section id="panel-prdDocs" class="workspace-panel" style="overflow-y: auto;">
-        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">PRD â€” Website ATS (Applicant Tracking System)</h2>
+        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">PRD — Website ATS (Applicant Tracking System)</h2>
         <p style="color: var(--text-secondary); margin-bottom: 14px;">
           Dokumen PRD resmi tersinkronisasi langsung dari <code>docs/PRD.md</code>.
         </p>
@@ -991,7 +1004,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="profileModalTitle" data-i18n="modalProfileTitle">Candidate Profile & Recommendations</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <div id="profileModalBody" class="modal-body"></div>
       <div class="modal-footer">
@@ -1005,7 +1018,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="recRepeatModalTitle" data-i18n="modalRecRepeatTitle">Recommended Repeat (Client Submission)</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formRecRepeat">
         <div class="modal-body form-grid">
@@ -1072,7 +1085,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="recListModalTitle" data-i18n="modalRecListTitle">Candidate Recommendation History</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <div id="recListModalBody" class="modal-body"></div>
       <div class="modal-footer">
@@ -1086,7 +1099,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="addCandidateModalTitle" data-i18n="modalAddTitle">Add New Candidate</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formAddCandidate">
         <div class="modal-body form-grid">
@@ -1101,7 +1114,7 @@
             </div>
             <textarea id="rawCvParseText" rows="2" style="font-size: 11.5px; margin-bottom: 6px;" placeholder="Paste candidate's CV text here (e.g. Name, Email, Phone, Experience, Skills) to auto-fill form..."></textarea>
             <div id="cvParseExtractedPills" style="display: none;" class="parse-extracted-badge">
-              âœ“ Successfully extracted candidate details from resume text
+              ✓ Successfully extracted candidate details from resume text
             </div>
           </div>
 
@@ -1174,7 +1187,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="importCsvModalTitle" data-i18n="modalImportTitle">Import Candidates from CSV / Excel</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formImportCsv">
         <div class="modal-body form-grid">
@@ -1208,7 +1221,7 @@
     <div class="modal-shell" style="max-inline-size: 800px;">
       <div class="modal-header">
         <h2 id="demoGuideModalTitle" data-i18n="modalDemoTitle">Interactive ATS Feature Tester & Scenarios</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <div class="modal-body" style="padding: 16px;">
         <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px;">
@@ -1409,7 +1422,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="scheduleInterviewModalTitle" data-i18n="btnScheduleInterview">Schedule Interview</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formScheduleInterview">
         <div class="modal-body form-grid">
@@ -1473,7 +1486,7 @@
     <div class="modal-shell" style="max-inline-size: 820px;">
       <div class="modal-header">
         <h2 id="offerLetterModalTitle" data-i18n="lblOfferDocument">Official Employment Offer Letter</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <div class="modal-body">
         <div id="offerLetterPaper" class="offer-letter-paper"></div>
@@ -1508,7 +1521,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="applyJobModalTitle" data-i18n="btnApplyJob">Apply for Position</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formApplyJob">
         <div class="modal-body form-grid">
@@ -1562,7 +1575,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="postJobModalTitle" data-i18n="btnPostJob">+ Post Job Order</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formPostJob">
         <div class="modal-body form-grid">
@@ -1620,7 +1633,7 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="outreachModalTitle" data-i18n="btnContactWa">Contact Candidate (WhatsApp / Email)</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">âœ•</button>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <div class="modal-body form-grid">
         <input type="hidden" id="outreachCandidateId">
@@ -1656,4 +1669,3 @@
   <script src="./js/app.js"></script>
 </body>
 </html>
-
