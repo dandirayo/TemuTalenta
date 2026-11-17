@@ -229,6 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreFiltersFromUrl();
   applyTranslations();
   applyRolePermissions();
+  syncColumnPresetButtons();
   renderAllViews();
 });
 
@@ -755,6 +756,14 @@ window.openAddCandidateModal = openAddCandidateModal;
     });
   }
 
+  // Column Preset Buttons (Ringkas & Lengkap)
+  document.getElementById("btnPresetSimple")?.addEventListener("click", () => {
+    applyColumnPreset("simple");
+  });
+  document.getElementById("btnPresetAll")?.addEventListener("click", () => {
+    applyColumnPreset("full");
+  });
+
   // Pagination
   document.getElementById("pageSizeSelect")?.addEventListener("change", e => {
     pageSize = parseInt(e.target.value, 10) || 10;
@@ -936,8 +945,46 @@ function resetSearchFilters() {
 }
 
 /**
- * 6. COLUMN SELECTOR & TABLE RENDERING
+ * 6. COLUMN SELECTOR & TABLE RENDERING (Simple & Full Presets, Granular Toggle & Direct Dismiss)
  */
+function syncColumnPresetButtons() {
+  const btnSimple = document.getElementById("btnPresetSimple");
+  const btnAll = document.getElementById("btnPresetAll");
+  if (!btnSimple || !btnAll) return;
+  const isSimple = visibleColumns.length === SIMPLE_COLUMNS.length &&
+    SIMPLE_COLUMNS.every(id => visibleColumns.includes(id));
+  const isAll = visibleColumns.length === ALL_COLUMNS.length;
+  btnSimple.classList.toggle("active", isSimple);
+  btnAll.classList.toggle("active", isAll);
+}
+
+function applyColumnPreset(presetName) {
+  if (presetName === "simple") {
+    visibleColumns = [...SIMPLE_COLUMNS];
+    showToast(t("msgPresetSimpleApplied"));
+  } else if (presetName === "full") {
+    visibleColumns = ALL_COLUMNS.map(c => c.id);
+    showToast(t("msgPresetAllApplied"));
+  }
+  saveVisibleColumns(visibleColumns);
+  syncColumnPresetButtons();
+  renderColumnSelector();
+  renderResumeTable();
+}
+
+function hideColumn(colId) {
+  if (colId === "candidate") return; // Locked / mandatory column
+  const colDef = ALL_COLUMNS.find(c => c.id === colId);
+  visibleColumns = visibleColumns.filter(id => id !== colId);
+  saveVisibleColumns(visibleColumns);
+  syncColumnPresetButtons();
+  renderColumnSelector();
+  renderResumeTable();
+  if (colDef) {
+    showToast(t("msgColHidden").replace("{col}", t(colDef.key)));
+  }
+}
+
 function renderColumnSelector() {
   const menu = document.getElementById("colDropdownMenu");
   const countTag = document.getElementById("colExtraCountTag");
@@ -946,16 +993,50 @@ function renderColumnSelector() {
   const extraCount = Math.max(0, visibleColumns.length - 1);
   if (countTag) countTag.textContent = `+ ${extraCount}`;
 
-  menu.innerHTML = ALL_COLUMNS.map(col => {
-    const checked = visibleColumns.includes(col.id) ? "checked" : "";
-    const disabled = col.locked ? "disabled" : "";
-    return `
-      <label class="col-check-item">
-        <input type="checkbox" value="${col.id}" ${checked} ${disabled}>
-        <span>${t(col.key)}</span>
-      </label>
-    `;
-  }).join("");
+  syncColumnPresetButtons();
+
+  menu.innerHTML = `
+    <div class="col-dropdown-header">
+      <div class="col-dropdown-title">${t("lblDisplayCols")}</div>
+      <div class="col-dropdown-actions">
+        <button type="button" class="col-dropdown-action-btn" id="colMenuBtnSimple">⚡ ${t("btnPresetSimple")}</button>
+        <button type="button" class="col-dropdown-action-btn" id="colMenuBtnAll">📋 ${t("btnPresetAll")}</button>
+      </div>
+    </div>
+    <div class="col-dropdown-list">
+      ${ALL_COLUMNS.map(col => {
+        const checked = visibleColumns.includes(col.id) ? "checked" : "";
+        const disabled = col.locked ? "disabled" : "";
+        const lockedClass = col.locked ? "locked" : "";
+        return `
+          <label class="col-check-item ${lockedClass}">
+            <div class="col-check-left">
+              <input type="checkbox" value="${col.id}" ${checked} ${disabled}>
+              <span>${t(col.key)}</span>
+            </div>
+            ${col.locked ? `<span class="col-check-badge">${t("colLocked")}</span>` : ""}
+          </label>
+        `;
+      }).join("")}
+    </div>
+    <div class="col-dropdown-footer">
+      <span><strong>${visibleColumns.length}</strong> / ${ALL_COLUMNS.length} ${t("lblColsActive")}</span>
+      <button type="button" class="col-dropdown-action-btn" id="colMenuBtnClose">✕</button>
+    </div>
+  `;
+
+  menu.querySelector("#colMenuBtnSimple")?.addEventListener("click", e => {
+    e.stopPropagation();
+    applyColumnPreset("simple");
+  });
+  menu.querySelector("#colMenuBtnAll")?.addEventListener("click", e => {
+    e.stopPropagation();
+    applyColumnPreset("full");
+  });
+  menu.querySelector("#colMenuBtnClose")?.addEventListener("click", e => {
+    e.stopPropagation();
+    menu.classList.remove("open");
+  });
 
   menu.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     cb.addEventListener("change", () => {
@@ -966,6 +1047,7 @@ function renderColumnSelector() {
         visibleColumns = visibleColumns.filter(id => id !== colId);
       }
       saveVisibleColumns(visibleColumns);
+      syncColumnPresetButtons();
       renderColumnSelector();
       renderResumeTable();
     });
@@ -1086,24 +1168,42 @@ function renderResumeTable() {
     }
     if (sortType) {
       return `
-        <th scope="col" data-col-id="${col.id}" data-type="${sortType}"${ariaSortAttr}>
-          <button type="button" class="sort-header-btn" data-sort-col="${col.id}">
-            <span>${t(col.key)}</span>
-            <span class="sort-icons" aria-hidden="true">
-              <span class="sort-up">▲</span>
-              <span class="sort-down">▼</span>
-            </span>
-          </button>
+        <th scope="col" data-col-id="${col.id}" data-type="${sortType}"${ariaSortAttr} class="col-th-interactive">
+          <div class="col-th-content">
+            <button type="button" class="sort-header-btn" data-sort-col="${col.id}">
+              <span>${t(col.key)}</span>
+              <span class="sort-icons" aria-hidden="true">
+                <span class="sort-up">▲</span>
+                <span class="sort-down">▼</span>
+              </span>
+            </button>
+            <button type="button" class="btn-hide-col" data-hide-col="${col.id}" title="${t('tipHideCol')}: ${t(col.key)}" aria-label="${t('tipHideCol')}: ${t(col.key)}">✕</button>
+          </div>
         </th>
       `;
     }
-    return `<th scope="col" data-col-id="${col.id}">${t(col.key)}</th>`;
+    return `
+      <th scope="col" data-col-id="${col.id}" class="col-th-interactive">
+        <div class="col-th-content" style="padding: 8px 10px; font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-secondary);">
+          <span>${t(col.key)}</span>
+          <button type="button" class="btn-hide-col" data-hide-col="${col.id}" title="${t('tipHideCol')}: ${t(col.key)}" aria-label="${t('tipHideCol')}: ${t(col.key)}">✕</button>
+        </div>
+      </th>
+    `;
   }).join("");
 
   theadRow.querySelectorAll(".sort-header-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const colId = btn.getAttribute("data-sort-col");
       handleColumnSort(colId, btn);
+    });
+  });
+
+  theadRow.querySelectorAll(".btn-hide-col").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const colId = btn.getAttribute("data-hide-col");
+      if (colId) hideColumn(colId);
     });
   });
 
@@ -5319,6 +5419,8 @@ function copyOutreachDraft() {
 
 window.openOutreachModal = openOutreachModal;
 window.openAddCandidateModal = openAddCandidateModal;
+window.applyColumnPreset = applyColumnPreset;
+window.hideColumn = hideColumn;
 window.deleteMasterCompany = deleteMasterCompany;
 window.deleteMasterPosition = deleteMasterPosition;
 window.deleteMasterLanguage = deleteMasterLanguage;

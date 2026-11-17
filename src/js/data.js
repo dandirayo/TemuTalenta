@@ -115,6 +115,15 @@ const I18N = {
 
     // Columns
     lblDisplayCols: "Columns:",
+    btnPresetSimple: "Compact",
+    btnPresetAll: "Full",
+    btnPresetReset: "Reset",
+    tipHideCol: "Hide this column",
+    lblColsActive: "columns active",
+    colLocked: "(Mandatory)",
+    msgPresetSimpleApplied: "Compact View activated (5 core columns).",
+    msgPresetAllApplied: "Full View activated (all 12 columns).",
+    msgColHidden: 'Column "{col}" hidden.',
     colCandidate: "Candidate",
     colNationality: "Nationality",
     colStatus: "Status",
@@ -294,6 +303,15 @@ const I18N = {
 
     // Columns
     lblDisplayCols: "展示列:",
+    btnPresetSimple: "精简",
+    btnPresetAll: "完整",
+    btnPresetReset: "重置",
+    tipHideCol: "隐藏此列",
+    lblColsActive: "列已激活",
+    colLocked: "(必选)",
+    msgPresetSimpleApplied: "已开启精简模式（展示5个核心列）。",
+    msgPresetAllApplied: "已开启完整模式（展示全部12列）。",
+    msgColHidden: '已隐藏列 "{col}"。',
     colCandidate: "候选人",
     colNationality: "国籍",
     colStatus: "状态",
@@ -473,6 +491,15 @@ const I18N = {
 
     // Columns
     lblDisplayCols: "Kolom Tampil:",
+    btnPresetSimple: "Ringkas",
+    btnPresetAll: "Lengkap",
+    btnPresetReset: "Reset",
+    tipHideCol: "Sembunyikan kolom ini",
+    lblColsActive: "kolom aktif",
+    colLocked: "(Wajib)",
+    msgPresetSimpleApplied: "Mode Ringkas aktif (5 kolom inti).",
+    msgPresetAllApplied: "Mode Lengkap aktif (seluruh 12 kolom).",
+    msgColHidden: 'Kolom "{col}" disembunyikan.',
     colCandidate: "Kandidat",
     colNationality: "Kebangsaan",
     colStatus: "Status",
@@ -1056,6 +1083,14 @@ const ALL_COLUMNS = [
   { id: "recommendedCompany", key: "colRecCompany", locked: false },
   { id: "entryTime", key: "colEntryTime", locked: false },
   { id: "operation", key: "colOperation", locked: false }
+];
+
+const SIMPLE_COLUMNS = [
+  "candidate",
+  "status",
+  "recommendedPosition",
+  "recommendedCompany",
+  "operation"
 ];
 
 function calculateAge(birthDateStr) {

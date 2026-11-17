@@ -184,3 +184,18 @@ Untuk menjaga standar pengalaman pengguna (UX) enterprise dan konsistensi visual
    - **Warning**: Ikon segitiga peringatan kuning amber dengan tombol konfirmasi standar.
    - **Info / Success**: Ikon informatif biru / centang hijau dengan tombol "Mengerti".
 
+---
+
+## 7. Kustomisasi Kolom Tabel & Mode Tampilan Ringkas (Compact vs Full View)
+
+Untuk mengoptimalkan densitas informasi pada layar desktop dan laptop tanpa scroll horizontal yang berlebihan:
+1. **Mode Ringkas (Compact View)**:
+   - Menampilkan 5 kolom inti: `Kandidat` (terkunci), `Status Tahapan`, `Posisi Rekomendasi`, `Perusahaan Tujuan`, dan `Operasi`.
+   - Tabel otomatis pas 100% pada resolusi layar standar tanpa scroll horizontal.
+2. **Mode Lengkap (Full View)**:
+   - Menampilkan seluruh 12 kolom database lengkap (termasuk Kebangsaan, Gender, Usia, Pendidikan, Bahasa, Masa Kerja, dan Waktu Masuk).
+3. **Penyembunyian Langsung dari Header (`✕`)**:
+   - Pengguna dapat mengarahkan kursor ke header kolom yang tidak terkunci dan mengklik tombol `✕` untuk langsung menyembunyikan kolom tersebut secara instan.
+4. **Penyimpanan Preferensi**:
+   - Pilihan kolom tersimpan otomatis di `localStorage` (`STORAGE_KEYS.VISIBLE_COLS`).
+
