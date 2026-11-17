@@ -296,6 +296,80 @@ function syncTableResponsiveLabels() {
   });
 }
 
+
+/**
+ * 2B. RESIZABLE SIDEBAR (DRAGGABLE TO CENTER WITH MIN/MAX BOUNDS)
+ */
+function initSidebarResizer() {
+  const sidebar = document.getElementById("appSidebar");
+  const handle = document.getElementById("sidebarResizeHandle");
+  if (!sidebar || !handle) return;
+
+  const minWidth = 175;
+  const getMaxWidth = () => Math.min(450, Math.floor(window.innerWidth * 0.45));
+
+  // Restore saved width from localStorage
+  try {
+    const saved = localStorage.getItem("temutalenta_sidebar_width");
+    if (saved) {
+      const w = parseInt(saved, 10);
+      if (!isNaN(w) && w >= minWidth && w <= getMaxWidth()) {
+        sidebar.style.width = `${w}px`;
+      }
+    }
+  } catch (e) {}
+
+  let isDragging = false;
+  let startX = 0;
+  let startWidth = 215;
+
+  handle.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startX = e.clientX;
+    startWidth = sidebar.getBoundingClientRect().width;
+    sidebar.classList.add("is-resizing");
+    handle.classList.add("is-dragging");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - startX;
+    let newWidth = startWidth + deltaX;
+
+    const maxWidth = getMaxWidth();
+    if (newWidth < minWidth) newWidth = minWidth;
+    if (newWidth > maxWidth) newWidth = maxWidth;
+
+    sidebar.style.width = `${newWidth}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      sidebar.classList.remove("is-resizing");
+      handle.classList.remove("is-dragging");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      const currentWidth = Math.round(sidebar.getBoundingClientRect().width);
+      try {
+        localStorage.setItem("temutalenta_sidebar_width", currentWidth);
+      } catch (e) {}
+    }
+  });
+
+  // Double-click to reset to default 215px
+  handle.addEventListener("dblclick", () => {
+    sidebar.style.width = "215px";
+    try {
+      localStorage.removeItem("temutalenta_sidebar_width");
+    } catch (e) {}
+    showToast("Lebar menu samping di-reset ke standar (215px).");
+  });
+}
+
 function bindGlobalEvents() {
   document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
     const sidebar = document.getElementById("appSidebar");
@@ -563,6 +637,9 @@ function bindGlobalEvents() {
     document.getElementById("postJobModal")?.showModal();
   });
   document.getElementById("formPostJob")?.addEventListener("submit", handlePostJobSubmit);
+  document.getElementById("formEditJob")?.addEventListener("submit", handleEditJobSubmit);
+  document.getElementById("btnDeleteJob")?.addEventListener("click", handleDeleteJob);
+  initSidebarResizer();
   document.getElementById("btnSaveSystemSettings")?.addEventListener("click", handleSaveSystemSettings);
 
   // Fase 6: Master Dictionaries, Batch Actions & Candidate Outreach Hub
@@ -3300,10 +3377,16 @@ function renderCareerPortal() {
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-base); font-size: 11.5px; color: var(--text-muted);">
-        <span>Posted: ${escapeHtml(job.postedDate || "Recent")} • Exp: ${escapeHtml(job.experienceRequired || "3+ yrs")}</span>
-        <button type="button" class="btn-solid" onclick="openApplyJobModal('${job.id}')" style="height: 26px; font-size: 11.5px; padding: 0 10px;">
-          ${t("btnApplyJob")}
-        </button>
+        <span>Posted: ${escapeHtml(job.postedDate || "Recent")} • Exp: ${escapeHtml(job.experienceReq || job.experienceRequired || "3+ yrs")}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="btn-outlined" onclick="openEditJobModal('${job.id}')" style="height: 26px; font-size: 11px; padding: 0 9px; display: inline-flex; align-items: center; gap: 4px;" title="Edit Lowongan">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit</span>
+          </button>
+          <button type="button" class="btn-solid" onclick="openApplyJobModal('${job.id}')" style="height: 26px; font-size: 11.5px; padding: 0 10px;">
+            ${t("btnApplyJob")}
+          </button>
+        </div>
       </div>
     </div>
   `).join("");
@@ -4420,6 +4503,112 @@ function handleAcceptOfferEsign() {
 /**
  * 15E. LIVE JOB REQUISITION POSTING (Fase 5D)
  */
+
+/**
+ * 15B. EDIT & DELETE OPEN JOB REQUISITIONS
+ */
+function openEditJobModal(jobId) {
+  const job = openJobs.find(j => j.id === jobId);
+  if (!job) {
+    showToast("Lowongan tidak ditemukan.");
+    return;
+  }
+
+  const modal = document.getElementById("editJobModal");
+  if (!modal) return;
+
+  const setValue = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || "";
+  };
+
+  setValue("editJobId", job.id);
+  setValue("editJobTitle", job.title);
+  setValue("editJobCompany", job.company);
+  setValue("editJobDepartment", job.department || "Engineering");
+  setValue("editJobLocation", job.location || "Jakarta");
+  setValue("editJobType", job.type || "Full-time");
+  setValue("editJobSalary", job.salaryRange || "");
+  setValue("editJobExp", job.experienceReq || job.experienceRequired || "3+ yrs");
+  setValue("editJobTags", (job.tags || []).join(", "));
+  setValue("editJobDesc", job.description || "");
+
+  modal.showModal();
+}
+
+function handleEditJobSubmit(e) {
+  e.preventDefault();
+  const jobId = document.getElementById("editJobId")?.value;
+  const title = document.getElementById("editJobTitle")?.value.trim();
+  const company = document.getElementById("editJobCompany")?.value.trim();
+  const department = document.getElementById("editJobDepartment")?.value.trim() || "Engineering";
+  const location = document.getElementById("editJobLocation")?.value.trim() || "Jakarta";
+  const type = document.getElementById("editJobType")?.value || "Full-time";
+  const salaryRange = document.getElementById("editJobSalary")?.value.trim() || "Competitive";
+  const exp = document.getElementById("editJobExp")?.value.trim() || "3+ yrs";
+  const tagsRaw = document.getElementById("editJobTags")?.value.trim() || "";
+  const description = document.getElementById("editJobDesc")?.value.trim();
+
+  if (!jobId || !title || !company || !description) {
+    alert("Mohon lengkapi judul posisi, perusahaan klien, dan deskripsi lowongan.");
+    return;
+  }
+
+  const idx = openJobs.findIndex(j => j.id === jobId);
+  if (idx < 0) {
+    alert("Lowongan tidak ditemukan.");
+    return;
+  }
+
+  openJobs[idx] = {
+    ...openJobs[idx],
+    title,
+    company,
+    department,
+    location,
+    type,
+    salaryRange,
+    experienceReq: exp,
+    experienceRequired: exp,
+    tags: tagsRaw ? tagsRaw.split(",").map(s => s.trim()).filter(Boolean) : [department],
+    description
+  };
+
+  saveOpenJobs(openJobs);
+
+  if (!masterCompanies.includes(company)) {
+    masterCompanies.push(company);
+    saveMasterCompanies(masterCompanies);
+  }
+  if (!masterPositions.includes(title)) {
+    masterPositions.push(title);
+    saveMasterPositions(masterPositions);
+  }
+
+  addAuditLog("UPDATE_JOB_ORDER", `Job ${title}`, `Updated requisition details at ${company}`);
+  document.getElementById("editJobModal")?.close();
+  renderCareerPortal();
+  showToast(`Lowongan "${title}" berhasil diperbarui!`);
+}
+
+function handleDeleteJob() {
+  const jobId = document.getElementById("editJobId")?.value;
+  const job = openJobs.find(j => j.id === jobId);
+  if (!job) return;
+
+  if (!confirm(`Hapus lowongan "${job.title}" di ${job.company}? Tindakan ini tidak dapat dibatalkan.`)) {
+    return;
+  }
+
+  openJobs = openJobs.filter(j => j.id !== jobId);
+  saveOpenJobs(openJobs);
+
+  addAuditLog("DELETE_JOB_ORDER", `Job ${job.title}`, `Removed requisition at ${job.company}`);
+  document.getElementById("editJobModal")?.close();
+  renderCareerPortal();
+  showToast(`Lowongan "${job.title}" telah dihapus.`);
+}
+
 function handlePostJobSubmit(e) {
   e.preventDefault();
   const title = document.getElementById("postJobTitle")?.value.trim();
@@ -4590,6 +4779,7 @@ function importFullDatabaseJson(file) {
 
 // Expose handlers globally for HTML event attributes
 window.openApplyJobModal = openApplyJobModal;
+window.openEditJobModal = openEditJobModal;
 window.openCandidateProfileModal = openCandidateProfileModal;
 window.openScheduleInterviewModal = openScheduleInterviewModal;
 window.downloadIcsCalendar = downloadIcsCalendar;

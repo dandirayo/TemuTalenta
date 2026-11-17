@@ -248,16 +248,60 @@ button:active {
    LEFT SIDEBAR (Eduplex Charcoal & Neon Lime Aesthetic)
    ========================================================================== */
 .app-sidebar {
+  position: relative;
   width: 215px;
+  min-width: 175px;
+  max-width: 450px;
   background-color: var(--bg-sidebar);
   color: var(--text-sidebar);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   overflow-x: hidden;
   user-select: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-sidebar.is-resizing {
+  transition: none !important;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 50;
+  background: transparent;
+  transition: background-color 0.15s, width 0.15s;
+  user-select: none;
+}
+
+.sidebar-resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 1px;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 28px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: background-color 0.15s, height 0.15s;
+}
+
+.sidebar-resizer:hover::after,
+.sidebar-resizer.is-dragging::after {
+  background-color: var(--brand-primary);
+  height: 48px;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer.is-dragging {
+  background-color: rgba(204, 245, 53, 0.25);
+  box-shadow: 0 0 10px rgba(204, 245, 53, 0.5);
 }
 
 .app-sidebar.collapsed {

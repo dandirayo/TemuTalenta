@@ -205,6 +205,7 @@
         </button>
       </div>
     </div>
+      <div id="sidebarResizeHandle" class="sidebar-resizer" title="Tarik untuk mengubah lebar menu samping (Double-click untuk reset)" role="separator" aria-orientation="vertical"></div>
   </aside>
   <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
@@ -1616,6 +1617,69 @@
         <div class="modal-footer">
           <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
           <button type="submit" class="btn-solid">Publish to Career Portal</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Modal 10B: Edit Client Job Requisition -->
+  <dialog id="editJobModal" aria-labelledby="editJobModalTitle" closedby="any">
+    <div class="modal-shell">
+      <div class="modal-header">
+        <h2 id="editJobModalTitle">Edit Lowongan Pekerjaan</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+      </div>
+      <form id="formEditJob">
+        <input type="hidden" id="editJobId">
+        <div class="modal-body form-grid">
+          <div class="form-field">
+            <label for="editJobTitle">Nama Posisi / Job Title *</label>
+            <input type="text" id="editJobTitle" required placeholder="e.g. Senior Pre-sales Specialist">
+          </div>
+          <div class="form-field">
+            <label for="editJobCompany">Perusahaan Klien *</label>
+            <input type="text" id="editJobCompany" required placeholder="e.g. alauda">
+          </div>
+          <div class="form-field">
+            <label for="editJobDepartment">Departemen</label>
+            <input type="text" id="editJobDepartment" placeholder="e.g. Enterprise Cloud Solutions">
+          </div>
+          <div class="form-field">
+            <label for="editJobLocation">Lokasi *</label>
+            <input type="text" id="editJobLocation" required placeholder="e.g. Jakarta (Hybrid)">
+          </div>
+          <div class="form-field">
+            <label for="editJobType">Tipe Pekerjaan</label>
+            <select id="editJobType" class="ctrl-select">
+              <option value="Full-time">Full-time</option>
+              <option value="Contract">Contract (12 Months)</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="editJobSalary">Kisaran Gaji / Budget</label>
+            <input type="text" id="editJobSalary" placeholder="e.g. IDR 20,000,000 - 32,000,000">
+          </div>
+          <div class="form-field">
+            <label for="editJobExp">Minimal Pengalaman</label>
+            <input type="text" id="editJobExp" placeholder="e.g. 3+ yrs">
+          </div>
+          <div class="form-field">
+            <label for="editJobTags">Keahlian Utama (Pisahkan koma)</label>
+            <input type="text" id="editJobTags" placeholder="Kubernetes, DevOps, Bilingual">
+          </div>
+          <div class="form-field full">
+            <label for="editJobDesc">Deskripsi & Kualifikasi Lowongan *</label>
+            <textarea id="editJobDesc" rows="4" required placeholder="Jelaskan ruang lingkup pekerjaan dan kriteria kandidat..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn-outlined" id="btnDeleteJob" style="color: var(--danger-dot); border-color: var(--danger-dot);">Hapus Lowongan</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
+            <button type="submit" class="btn-solid">Simpan Perubahan</button>
+          </div>
         </div>
       </form>
     </div>
