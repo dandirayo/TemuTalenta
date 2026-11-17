@@ -799,9 +799,9 @@ button:active {
 }
 
 .header-icon-btn:hover {
-  background-color: var(--bg-subtle);
+  background-color: var(--bg-hover);
   color: var(--text-primary);
-  border-color: #161922;
+  border-color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -1089,9 +1089,9 @@ button:active {
 }
 
 .btn-outlined:hover {
-  border-color: #161922;
-  color: #161922;
-  background-color: var(--bg-subtle);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
   transform: translateY(-1px);
 }
 
@@ -1198,8 +1198,9 @@ button:active {
 }
 
 .stage-tab:hover {
-  border-color: #161922;
-  color: #161922;
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
 }
 
 .stage-tab.active {
@@ -1498,7 +1499,7 @@ button:active {
 }
 
 .sort-header-btn:hover {
-  color: #161922;
+  color: var(--text-primary);
 }
 
 .sort-header-btn:focus-visible {
@@ -1598,7 +1599,7 @@ th[aria-sort="descending"] .sort-down {
 }
 
 .candidate-link:hover {
-  color: #65a30d;
+  color: var(--brand-soft-text);
   text-decoration: underline;
 }
 
@@ -2634,6 +2635,12 @@ dialog::backdrop {
   border-radius: var(--radius-pill);
 }
 
+.active-view-btn:hover {
+  background-color: var(--brand-dark-hover);
+  border-color: var(--brand-dark-hover);
+  color: var(--brand-primary-hover);
+}
+
 .kanban-board-wrapper {
   display: flex;
   gap: 16px;
@@ -2698,7 +2705,7 @@ dialog::backdrop {
 }
 
 .kanban-card:hover {
-  border-color: #161922;
+  border-color: var(--brand-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
 }
