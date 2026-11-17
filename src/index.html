@@ -193,16 +193,6 @@
               <span data-i18n="navPrdDocs">PRD & Specs</span>
             </button>
           </li>
-          <li>
-            <a href="./tutorial.html" target="_blank" class="submenu-item-btn" style="text-decoration: none;">
-              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                <line x1="8" y1="21" x2="16" y2="21"/>
-                <line x1="12" y1="17" x2="12" y2="21"/>
-              </svg>
-              <span>Client Presentation</span>
-            </a>
-          </li>
         </ul>
       </div>
     </nav>
@@ -345,22 +335,7 @@
         </button>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <a href="./tutorial.html" target="_blank" class="btn-solid" style="height: 26px; padding: 0 10px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; text-decoration: none; border-radius: 9999px; background: #161922; color: #ffffff;" title="Open Client Presentation & Tutorial">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
-          <span>Presentation</span>
-        </a>
-        <button type="button" id="btnOpenDemoGuide" class="btn-solid" style="height: 26px; padding: 0 10px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
-          <span data-i18n="btnInteractiveTester">Interactive Feature Tester</span>
-        </button>
-      </div>
+      <div style="display: flex; align-items: center; gap: 8px;"></div>
     </div>
 
     <!-- MAIN WORKSPACE BODY -->
@@ -1234,8 +1209,8 @@
     </div>
   </dialog>
 
-  <!-- Modal 6: Interactive Feature Tester & Pre-configured Scenarios -->
-  <dialog id="demoGuideModal" aria-labelledby="demoGuideModalTitle" closedby="any">
+  <!-- Modal 6: Interactive Feature Tester & Pre-configured Scenarios (Disabled) -->
+  <dialog id="demoGuideModal" aria-labelledby="demoGuideModalTitle" closedby="any" style="display: none;">
     <div class="modal-shell" style="max-inline-size: 800px;">
       <div class="modal-header">
         <h2 id="demoGuideModalTitle" data-i18n="modalDemoTitle">Interactive ATS Feature Tester & Scenarios</h2>

@@ -871,10 +871,23 @@ function renderResumeTable() {
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 
   if (pagedRecords.length === 0) {
+    const isTotallyEmpty = (candidates || []).filter(c => !c.isDeleted).length === 0;
     tbody.innerHTML = `
       <tr>
-        <td colspan="${activeCols.length}" style="padding: 36px; color: var(--text-muted);">
-          ${t("emptyTable")}
+        <td colspan="${activeCols.length}" style="padding: 56px 20px; text-align: center;">
+          <div style="font-size: 36px; margin-bottom: 12px;">📁</div>
+          <div style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
+            ${isTotallyEmpty ? "Belum ada data kandidat di database" : t("emptyTable")}
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; max-width: 440px; margin-left: auto; margin-right: auto;">
+            ${isTotallyEmpty ? "Database kandidat Anda masih kosong. Silakan mulai input kandidat baru secara manual atau impor berkas data dari Excel / CSV." : ""}
+          </div>
+          ${isTotallyEmpty ? `
+            <div style="display: inline-flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" class="btn-solid" style="height: 34px; padding: 0 18px; font-size: 12px; font-weight: 700;" onclick="openAddCandidateModal()">+ Tambah Kandidat Baru</button>
+              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCandidatesInput')?.click()">Impor Excel / CSV</button>
+            </div>
+          ` : ""}
         </td>
       </tr>
     `;

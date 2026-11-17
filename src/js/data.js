@@ -5,19 +5,19 @@
  */
 
 const STORAGE_KEYS = {
-  CANDIDATES: "temutalenta_ats_candidates_v4",
+  CANDIDATES: "temutalenta_candidates_clean_v1",
   LANG: "temutalenta_lang_v4",
   COLOR_SCHEME: "color-scheme",
   VISIBLE_COLS: "temutalenta_visible_cols_v4",
   AUDIT_LOGS: "temutalenta_audit_logs_v4",
   PAGE_SIZE: "temutalenta_page_size_v4",
   ACTIVE_USER: "temutalenta_active_user_v4",
-  NOTIFICATIONS: "temutalenta_notifications_v4",
+  NOTIFICATIONS: "temutalenta_notifications_clean_v1",
   MASTER_COMPANIES: "temutalenta_master_companies_v4",
   MASTER_POSITIONS: "temutalenta_master_positions_v4",
   USERS: "temutalenta_users_v4",
   OPEN_JOBS: "temutalenta_open_jobs_v4",
-  INTERVIEWS: "temutalenta_interviews_v4",
+  INTERVIEWS: "temutalenta_interviews_clean_v1",
   SETTINGS: "temutalenta_system_settings_v1",
   MASTER_LANGUAGES: "temutalenta_master_languages_v1",
   MASTER_COUNTRIES: "temutalenta_master_countries_v1"
@@ -595,7 +595,7 @@ const I18N = {
   }
 };
 
-const INITIAL_CANDIDATES = [
+const PRESET_DEMO_CANDIDATES = [
   {
     id: "CND-1001",
     name: "Andi Candera",
@@ -915,11 +915,15 @@ const INITIAL_CANDIDATES = [
   }
 ];
 
-const INITIAL_NOTIFICATIONS = [
+// Clean empty start for production data entry
+const INITIAL_CANDIDATES = [];
+
+const PRESET_DEMO_NOTIFICATIONS = [
   { id: "NT-1", title: "New Candidate Assigned", message: "Andi Candera was assigned to your review queue.", candidateId: "CND-1001", read: false, time: "10 mins ago" },
   { id: "NT-2", title: "Offer Stage Update", message: "Kevin Ardianto received formal offer from alauda (Code 30).", candidateId: "CND-1007", read: false, time: "1 hour ago" },
   { id: "NT-3", title: "Candidate Started Work", message: "Clarissa Wijaya successfully onboarded at Midea (Code 40).", candidateId: "CND-1004", read: true, time: "2 days ago" }
 ];
+const INITIAL_NOTIFICATIONS = [];
 
 const INITIAL_COMPANIES = ["alauda", "Midea", "Mico World", "Huawei Cloud", "ByteDance ID", "Shopee Indonesia"];
 const INITIAL_POSITIONS = ["Indonesia Pre sales", "Business Development - Sugo Indonesia", "Customs Documentation Clerk", "Regional HRBP Specialist", "Channel Sales Supervisor", "Senior DevOps Architect", "Product Manager", "Fullstack Engineer"];
@@ -997,7 +1001,7 @@ const INITIAL_OPEN_JOBS = [
   }
 ];
 
-const INITIAL_SCHEDULED_INTERVIEWS = [
+const PRESET_DEMO_SCHEDULED_INTERVIEWS = [
   {
     id: "INT-501",
     candidateId: "CND-1001",
@@ -1041,6 +1045,7 @@ const INITIAL_SCHEDULED_INTERVIEWS = [
     notes: "Live system design challenge: multi-cloud disaster recovery."
   }
 ];
+const INITIAL_SCHEDULED_INTERVIEWS = [];
 
 const ALL_COLUMNS = [
   { id: "candidate", key: "colCandidate", locked: true },
