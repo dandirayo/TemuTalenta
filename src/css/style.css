@@ -248,7 +248,7 @@ button:active {
    LEFT SIDEBAR (Eduplex Charcoal & Neon Lime Aesthetic)
    ========================================================================== */
 .app-sidebar {
-  width: 230px;
+  width: 215px;
   background-color: var(--bg-sidebar);
   color: var(--text-sidebar);
   display: flex;
@@ -266,8 +266,8 @@ button:active {
 }
 
 .sidebar-brand {
-  min-block-size: 60px;
-  padding: 0 20px;
+  min-block-size: 52px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -511,21 +511,24 @@ button:active {
 }
 
 .top-header {
-  min-block-size: 50px;
+  min-block-size: 46px;
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-base);
-  padding: 4px 18px;
+  padding: 4px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  gap: 10px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .mobile-header-brand {
@@ -539,12 +542,14 @@ button:active {
 .header-greeting {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14.5px;
+  gap: 5px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.2px;
-  margin-left: 4px;
+  margin-left: 2px;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .header-greeting .greeting-wave {
@@ -558,16 +563,23 @@ button:active {
 }
 
 .header-role-select {
-  min-width: 150px;
-  min-block-size: 26px;
+  min-width: 140px;
+  max-width: 175px;
+  min-block-size: 28px;
+  height: 28px;
   font-size: 11.5px;
+  padding: 0 8px;
+  white-space: nowrap;
 }
 
 .header-lang-select {
-  min-width: 95px;
-  min-block-size: 26px;
+  min-width: 85px;
+  min-block-size: 28px;
+  height: 28px;
   font-size: 11.5px;
-  margin-left: 6px;
+  margin-left: 4px;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 
 .search-actions-group {
@@ -599,7 +611,9 @@ button:active {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Role Selector Dropdown in Header */
@@ -632,16 +646,19 @@ button:active {
 .lang-switch-group {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12.5px;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-secondary);
   user-select: none;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .lang-label {
   cursor: pointer;
   transition: color 0.15s;
   font-weight: 500;
+  white-space: nowrap !important;
 }
 
 .lang-label.active {
@@ -890,15 +907,15 @@ button:active {
    SUB-HEADER NAVIGATION BAR (< , Refresh , Home)
    ========================================================================== */
 .sub-nav-bar {
-  min-block-size: 46px;
-  padding: 6px 18px;
+  min-block-size: 38px;
+  padding: 4px 14px;
   background-color: var(--bg-app);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .nav-tool-group {
@@ -913,8 +930,8 @@ button:active {
 }
 
 .nav-tool-btn {
-  width: 30px;
-  height: 28px;
+  width: 28px;
+  height: 26px;
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -936,7 +953,7 @@ button:active {
    ========================================================================== */
 .workspace-body {
   flex: 1;
-  padding: 0 18px 18px 18px;
+  padding: 0 14px 14px 14px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -945,8 +962,8 @@ button:active {
 .workspace-panel {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-base);
-  border-radius: var(--radius-xl);
-  padding: 22px;
+  border-radius: var(--radius-lg);
+  padding: 16px;
   box-shadow: var(--shadow-card);
   display: none;
   flex-direction: column;
@@ -962,19 +979,20 @@ button:active {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .ctrl-input, .ctrl-select {
-  min-block-size: 36px;
-  padding: 6px 16px;
+  min-block-size: 32px;
+  height: 32px;
+  padding: 4px 12px;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-primary);
-  min-width: 185px;
+  min-width: 140px;
   max-inline-size: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -990,38 +1008,40 @@ button:active {
 }
 
 .btn-solid {
-  min-block-size: 36px;
-  padding: 6px 20px;
+  min-block-size: 32px;
+  height: 32px;
+  padding: 4px 14px;
   background-color: var(--brand-primary);
   color: var(--brand-primary-text);
   border: none;
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-  box-shadow: 0 2px 10px rgba(204, 245, 53, 0.35);
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(204, 245, 53, 0.3);
 }
 
 .btn-solid:hover {
   background-color: var(--brand-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(204, 245, 53, 0.45);
+  box-shadow: 0 4px 14px rgba(204, 245, 53, 0.4);
 }
 
 .btn-outlined {
-  min-block-size: 36px;
-  padding: 6px 18px;
+  min-block-size: 32px;
+  height: 32px;
+  padding: 4px 12px;
   background-color: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
+  white-space: nowrap !important;
 }
 
 .btn-outlined:hover {
@@ -1070,8 +1090,8 @@ button:active {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .stage-tabs {
@@ -1116,19 +1136,20 @@ button:active {
   position: relative;
   flex: none;
   scroll-snap-align: start;
-  min-block-size: 34px;
-  padding: 6px 16px;
+  min-block-size: 28px;
+  height: 28px;
+  padding: 3px 12px;
   background-color: var(--bg-surface);
   color: var(--text-secondary);
   border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  font-size: 12.5px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  white-space: nowrap;
+  gap: 5px;
+  white-space: nowrap !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1374,7 +1395,7 @@ button:active {
 
 .data-table {
   width: 100%;
-  min-inline-size: 1050px;
+  min-inline-size: 1420px;
   border-collapse: separate;
   border-spacing: 0;
   text-align: center;
@@ -1387,20 +1408,21 @@ button:active {
 .data-table thead {
   position: sticky;
   inset-block-start: 0;
-  z-index: 2;
+  z-index: 3;
 }
 
 .data-table th {
   background-color: var(--bg-subtle);
   color: var(--text-secondary);
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 13px 12px;
+  letter-spacing: 0.3px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-table);
   border-right: 1px solid var(--border-table);
   vertical-align: middle;
+  white-space: nowrap !important;
 }
 
 .data-table th:has(> button) {
@@ -1409,14 +1431,14 @@ button:active {
 
 .sort-header-btn {
   width: 100%;
-  min-height: 44px;
-  padding: 13px 12px;
+  min-height: 38px;
+  padding: 8px 10px;
   background: transparent;
   border: none;
   font-weight: 700;
-  font-size: 11.5px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
@@ -1424,6 +1446,11 @@ button:active {
   gap: 5px;
   cursor: pointer;
   transition: color 0.15s;
+  white-space: nowrap !important;
+}
+
+.sort-header-btn span {
+  white-space: nowrap !important;
 }
 
 .sort-header-btn:hover {
@@ -1439,8 +1466,9 @@ button:active {
   display: inline-flex;
   flex-direction: column;
   line-height: 0.7;
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 th[aria-sort="ascending"] .sort-up {
@@ -1451,15 +1479,48 @@ th[aria-sort="descending"] .sort-down {
 }
 
 .data-table td {
-  padding: 13px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-table);
   border-right: 1px solid var(--border-table);
   color: var(--text-secondary);
   vertical-align: middle;
-  font-size: 12.5px;
+  font-size: 12px;
   background-color: var(--bg-surface);
   transition: background-color 0.15s;
+  white-space: nowrap;
 }
+
+.data-table td.cell-wrap {
+  white-space: normal;
+  max-inline-size: 160px;
+  line-height: 1.35;
+}
+
+/* Explicit Minimum Column Widths & Sticky Left Candidate Column */
+#resumeTableHeadRow th[data-col-id="candidate"],
+.data-table tbody th[scope="row"] {
+  min-width: 175px;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  border-right: 2px solid var(--border-table);
+}
+#resumeTableHeadRow th[data-col-id="candidate"] {
+  z-index: 4;
+  background-color: var(--bg-subtle);
+}
+
+#resumeTableHeadRow th[data-col-id="nationality"] { min-width: 120px; }
+#resumeTableHeadRow th[data-col-id="status"] { min-width: 105px; }
+#resumeTableHeadRow th[data-col-id="gender"] { min-width: 95px; }
+#resumeTableHeadRow th[data-col-id="age"] { min-width: 85px; }
+#resumeTableHeadRow th[data-col-id="education"] { min-width: 125px; }
+#resumeTableHeadRow th[data-col-id="language"] { min-width: 115px; }
+#resumeTableHeadRow th[data-col-id="yearsOfService"] { min-width: 145px; }
+#resumeTableHeadRow th[data-col-id="recommendedPosition"] { min-width: 175px; }
+#resumeTableHeadRow th[data-col-id="recommendedCompany"] { min-width: 175px; }
+#resumeTableHeadRow th[data-col-id="entryTime"] { min-width: 120px; }
+#resumeTableHeadRow th[data-col-id="operation"] { min-width: 125px; }
 
 .data-table tbody tr:hover td {
   background-color: var(--bg-hover);
