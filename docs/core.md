@@ -169,3 +169,18 @@ Platform dikonfigurasi untuk operasional **Single-User Full Control**:
   - Mengatur kamus Master Data (perusahaan, posisi, bahasa, negara) dan manajemen akun pengguna.
   - Melakukan ekspor/impor CSV dan backup/restore JSON database secara mandiri.
 
+---
+
+## 6. Standar Dialog & Pop-up In-App (Glassmorphism & Zero Browser Dialogs)
+
+Untuk menjaga standar pengalaman pengguna (UX) enterprise dan konsistensi visual:
+1. **Zero Browser Native Dialogs**: Seluruh interaksi pengguna tidak lagi memicu `alert()` atau `confirm()` bawaan peramban (`dandirayo.github.io says...`). Seluruh konfirmasi dan pemberitahuan dialihkan ke `<dialog id="customPromptModal">`.
+2. **Backdrop Blur & Top Layer Glassmorphism**:
+   - Seluruh elemen `<dialog::backdrop>` memiliki efek *frosted glass* (`backdrop-filter: blur(8px) saturate(180%)`).
+   - Modal konfirmasi dan peringatan berada di posisi tengah layar (*centered viewport*) dengan sudut melengkung halus (`18px`), bayangan elevasi dalam, dan animasi pop-in `modalPopIn`.
+   - Mendukung penumpukan modal (*stacked modal on modal*, misalnya konfirmasi hapus lowongan di atas modal edit lowongan).
+3. **Semantik Ikon & Aksi**:
+   - **Danger / Deletion**: Ikon tempat sampah merah dengan tombol konfirmasi merah coral `.btn-danger`.
+   - **Warning**: Ikon segitiga peringatan kuning amber dengan tombol konfirmasi standar.
+   - **Info / Success**: Ikon informatif biru / centang hijau dengan tombol "Mengerti".
+

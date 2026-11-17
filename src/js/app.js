@@ -29,6 +29,186 @@ let selectedCandidateIds = new Set();
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
+/**
+ * ====================================================================
+ * IN-APP GLASSMORPHISM PROMPT DIALOGS (Custom Confirm & Alert)
+ * Replaces native browser alert() and confirm() with centered frosted-glass popups.
+ * ====================================================================
+ */
+function getPromptIconSvg(type) {
+  if (type === "danger") {
+    return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+  } else if (type === "warning") {
+    return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  } else if (type === "success") {
+    return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`;
+  } else {
+    // info
+    return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+  }
+}
+
+function showConfirmDialog({
+  title = "Konfirmasi Tindakan",
+  message = "Apakah Anda yakin ingin melanjutkan?",
+  confirmText = "Konfirmasi",
+  cancelText = "Batal",
+  type = "danger"
+} = {}) {
+  return new Promise(resolve => {
+    const dialog = document.getElementById("customPromptModal");
+    if (!dialog) {
+      return resolve(false);
+    }
+    const titleEl = document.getElementById("customPromptTitle");
+    const msgEl = document.getElementById("customPromptMessage");
+    const iconEl = document.getElementById("customPromptIcon");
+    const btnCancel = document.getElementById("btnCustomPromptCancel");
+    const btnConfirm = document.getElementById("btnCustomPromptConfirm");
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (iconEl) {
+      iconEl.className = `custom-prompt-icon ${type}`;
+      iconEl.innerHTML = getPromptIconSvg(type);
+    }
+
+    if (btnCancel) {
+      btnCancel.style.display = "inline-flex";
+      btnCancel.textContent = cancelText;
+    }
+    if (btnConfirm) {
+      btnConfirm.textContent = confirmText;
+      btnConfirm.className = type === "danger" ? "btn-solid btn-danger" : "btn-solid";
+    }
+
+    let settled = false;
+    const cleanup = () => {
+      dialog.removeEventListener("close", onClose);
+      if (btnCancel) btnCancel.onclick = null;
+      if (btnConfirm) btnConfirm.onclick = null;
+    };
+
+    const onClose = () => {
+      cleanup();
+      if (!settled) {
+        settled = true;
+        resolve(false);
+      }
+    };
+
+    if (btnCancel) {
+      btnCancel.onclick = () => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          dialog.close();
+          resolve(false);
+        }
+      };
+    }
+
+    if (btnConfirm) {
+      btnConfirm.onclick = () => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          dialog.close();
+          resolve(true);
+        }
+      };
+    }
+
+    dialog.addEventListener("close", onClose, { once: true });
+    try {
+      dialog.showModal();
+    } catch (e) {
+      dialog.close();
+      dialog.showModal();
+    }
+  });
+}
+
+function showAlertDialog({
+  title = "Pemberitahuan",
+  message = "",
+  okText = "Mengerti",
+  type = "info"
+} = {}) {
+  return new Promise(resolve => {
+    const dialog = document.getElementById("customPromptModal");
+    if (!dialog) {
+      return resolve();
+    }
+    const titleEl = document.getElementById("customPromptTitle");
+    const msgEl = document.getElementById("customPromptMessage");
+    const iconEl = document.getElementById("customPromptIcon");
+    const btnCancel = document.getElementById("btnCustomPromptCancel");
+    const btnConfirm = document.getElementById("btnCustomPromptConfirm");
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (iconEl) {
+      iconEl.className = `custom-prompt-icon ${type}`;
+      iconEl.innerHTML = getPromptIconSvg(type);
+    }
+
+    if (btnCancel) {
+      btnCancel.style.display = "none";
+    }
+    if (btnConfirm) {
+      btnConfirm.textContent = okText;
+      btnConfirm.className = type === "danger" ? "btn-solid btn-danger" : "btn-solid";
+    }
+
+    let settled = false;
+    const cleanup = () => {
+      dialog.removeEventListener("close", onClose);
+      if (btnConfirm) btnConfirm.onclick = null;
+    };
+
+    const onClose = () => {
+      cleanup();
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    };
+
+    if (btnConfirm) {
+      btnConfirm.onclick = () => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          dialog.close();
+          resolve();
+        }
+      };
+    }
+
+    dialog.addEventListener("close", onClose, { once: true });
+    try {
+      dialog.showModal();
+    } catch (e) {
+      dialog.close();
+      dialog.showModal();
+    }
+  });
+}
+
+// Global window.alert override so that all browser alert() calls turn into centered blur modals
+window.alert = function (message) {
+  showAlertDialog({
+    title: "Pemberitahuan",
+    message: String(message || ""),
+    type: "info",
+    okText: "Mengerti"
+  });
+};
+
+window.showConfirmDialog = showConfirmDialog;
+window.showAlertDialog = showAlertDialog;
+
 document.addEventListener("DOMContentLoaded", () => {
   initThemeState();
   currentLang = getStoredLang();
@@ -1572,8 +1752,8 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     dialog.close();
   });
 
-  body.querySelector("#btnHardDeleteCandidate")?.addEventListener("click", () => {
-    if (hardDeleteCandidate(c.id)) {
+  body.querySelector("#btnHardDeleteCandidate")?.addEventListener("click", async () => {
+    if (await hardDeleteCandidate(c.id)) {
       dialog.close();
     }
   });
@@ -1816,17 +1996,29 @@ function handleRecRepeatSubmit(e) {
 
   const ruleResult = evaluateRecRepeatRules(c, comp, pos, consultant);
   if (ruleResult.blocked) {
-    alert(ruleResult.message);
+    showAlertDialog({
+      title: "Rekomendasi Ditolak (Aturan Bisnis)",
+      message: ruleResult.message,
+      type: "danger"
+    });
     return;
   }
   if (ruleResult.requiresReason && !reason) {
-    alert("Reason is mandatory for this recommendation.");
+    showAlertDialog({
+      title: "Alasan Wajib Diisi",
+      message: "Alasan rekomendasi wajib diisi untuk melanjutkan proses ini.",
+      type: "warning"
+    });
     return;
   }
   if (ruleResult.requiresManager) {
     const mgrCheck = document.getElementById("recRepeatManagerCheck");
     if (!mgrCheck?.checked) {
-      alert("Manager approval checkbox is required.");
+      showAlertDialog({
+        title: "Persetujuan Manajer Diperlukan",
+        message: "Centang persetujuan manajer diperlukan untuk melanjutkan rekomendasi berisiko ini.",
+        type: "warning"
+      });
       return;
     }
   }
@@ -1925,7 +2117,7 @@ function openRecListModal(candidateId) {
 /**
  * 9. ADD CANDIDATE WITH DUPLICATE CHECK (RL-20, RL-21)
  */
-function handleAddCandidateSubmit(e) {
+async function handleAddCandidateSubmit(e) {
   e.preventDefault();
   const name = document.getElementById("addName")?.value.trim();
   const nationality = document.getElementById("addNationality")?.value.trim() || "Indonesia";
@@ -1949,7 +2141,14 @@ function handleAddCandidateSubmit(e) {
   );
 
   if (isDuplicate) {
-    if (!confirm(`Warning (Duplicate Check RL-21): Candidate "${isDuplicate.name}" with matching birth date or contact already exists in database. Save anyway?`)) {
+    const proceed = await showConfirmDialog({
+      title: "Peringatan Duplikasi (RL-21)",
+      message: `Kandidat "${isDuplicate.name}" dengan tanggal lahir atau kontak yang sama sudah terdaftar di database. Tetap simpan?`,
+      confirmText: "Tetap Simpan",
+      cancelText: "Batal",
+      type: "warning"
+    });
+    if (!proceed) {
       return;
     }
   }
@@ -2012,13 +2211,21 @@ function handleAddCandidateSubmit(e) {
  */
 function exportFilteredCandidatesToCsv() {
   if (activeUser.role !== "manager" && activeUser.role !== "superadmin") {
-    alert("Permission denied: Only Managers and Super Admins can export candidate data.");
+    showAlertDialog({
+      title: "Akses Ditolak",
+      message: "Hanya Manajer dan Super Admin yang dapat mengekspor data kandidat.",
+      type: "danger"
+    });
     return;
   }
 
   const filtered = getFilteredCandidates();
   if (filtered.length === 0) {
-    alert("No candidates to export.");
+    showAlertDialog({
+      title: "Data Kosong",
+      message: "Tidak ada kandidat pada filter saat ini untuk diekspor ke CSV.",
+      type: "info"
+    });
     return;
   }
 
@@ -2089,14 +2296,22 @@ function handleCsvImportSubmit(e) {
   } else if (textInput) {
     processCsvData(textInput);
   } else {
-    alert("Please choose a CSV file or paste CSV text.");
+    showAlertDialog({
+      title: "Pilih File CSV",
+      message: "Silakan pilih file CSV atau tempel teks data CSV terlebih dahulu.",
+      type: "warning"
+    });
   }
 }
 
 function processCsvData(csvText) {
   const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
   if (lines.length <= 1) {
-    alert("CSV is empty or contains only header.");
+    showAlertDialog({
+      title: "Data CSV Kosong",
+      message: "Data CSV kosong atau hanya berisi baris header.",
+      type: "warning"
+    });
     return;
   }
 
@@ -2173,7 +2388,11 @@ function processCsvData(csvText) {
   renderAllViews();
 
   if (failedRows.length > 0) {
-    alert(`Import finished: ${importedCount} succeeded. Errors in ${failedRows.length} rows:\n${failedRows.slice(0, 5).join("\n")}`);
+    showAlertDialog({
+      title: "Hasil Impor CSV",
+      message: `Impor selesai: ${importedCount} berhasil. Terdapat error pada ${failedRows.length} baris:\n${failedRows.slice(0, 5).join("\n")}`,
+      type: "warning"
+    });
   } else {
     showToast(`${t("msgImportSuccess")} ${importedCount} candidates.`);
   }
@@ -2788,22 +3007,37 @@ function toggleUserStatus(userId) {
   }
 }
 
-function resetUserPassword(userId) {
+async function resetUserPassword(userId) {
   USERS = getStoredUsers();
   const target = USERS.find(u => u.id === userId);
   if (target) {
-    if (confirm(`Reset password for ${target.name} (${target.email})? A secure temporary password link will be issued.`)) {
+    const ok = await showConfirmDialog({
+      title: "Reset Password Pengguna?",
+      message: `Reset password untuk ${target.name} (${target.email})? Tautan password sementara baru yang aman akan diterbitkan.`,
+      confirmText: "Reset Password",
+      cancelText: "Batal",
+      type: "warning"
+    });
+    if (ok) {
       addAuditLog("RESET_PASSWORD", `User ${target.name}`, `Temporary password generated`);
       showToast(`Temporary password reset email sent to ${target.email}`);
     }
   }
 }
 
-function deleteUser(userId) {
+async function deleteUser(userId) {
   USERS = getStoredUsers();
   const index = USERS.findIndex(u => u.id === userId);
   if (index >= 0) {
-    if (confirm(`Delete user account "${USERS[index].name}"?`)) {
+    const userName = USERS[index].name;
+    const ok = await showConfirmDialog({
+      title: "Hapus Akun Pengguna?",
+      message: `Apakah Anda yakin ingin menghapus akun pengguna "${userName}"? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: "Hapus Akun",
+      cancelText: "Batal",
+      type: "danger"
+    });
+    if (ok) {
       const removed = USERS.splice(index, 1)[0];
       saveUsers(USERS);
       addAuditLog("DELETE_USER", `User ${removed.name}`, `Deleted user account`);
@@ -3128,8 +3362,15 @@ function runDemoScenario(index) {
   }
 }
 
-function resetAllDemoData() {
-  if (confirm("Reset database to clean initial sample state?")) {
+async function resetAllDemoData() {
+  const ok = await showConfirmDialog({
+    title: "Reset Database ke Kondisi Awal?",
+    message: "Seluruh data kandidat, konfigurasi, dan riwayat lokal akan dikembalikan ke kondisi awal. Tindakan ini tidak dapat dibatalkan.",
+    confirmText: "Reset Database",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (ok) {
     localStorage.clear();
     candidates = getStoredCandidates();
     notifications = getStoredNotifications();
@@ -3227,9 +3468,17 @@ function addMasterDictionaryItem(e, inputId, list, saveFn, label) {
   }
 }
 
-function deleteMasterDictionaryItem(list, index, saveFn, label) {
+async function deleteMasterDictionaryItem(list, index, saveFn, label) {
   if (index < 0 || index >= list.length) return;
-  if (confirm(`Delete ${label} "${list[index]}"?`)) {
+  const itemVal = list[index];
+  const ok = await showConfirmDialog({
+    title: "Hapus Entri Data Master?",
+    message: `Apakah Anda yakin ingin menghapus ${label} "${itemVal}" dari kamus sistem?`,
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (ok) {
     list.splice(index, 1);
     saveFn(list);
     renderMasterDataLists();
@@ -3989,7 +4238,12 @@ function handleRunCvParser() {
   const pillsBox = document.getElementById("cvParseExtractedPills");
 
   if (!rawText) {
-    alert("Please paste resume/CV text into the parser area first.");
+    showAlertDialog({
+      title: "Input Resume / CV Kosong",
+      message: "Silakan tempel teks resume/CV ke area parser terlebih dahulu sebelum memproses.",
+      type: "warning",
+      okText: "Mengerti"
+    });
     return;
   }
 
@@ -4567,7 +4821,11 @@ function handleEditJobSubmit(e) {
   const description = document.getElementById("editJobDesc")?.value.trim();
 
   if (!jobId || !title || !company || !description) {
-    alert("Mohon lengkapi judul posisi, perusahaan klien, dan deskripsi lowongan.");
+    showAlertDialog({
+      title: "Data Belum Lengkap",
+      message: "Mohon lengkapi judul posisi, perusahaan klien, dan deskripsi lowongan.",
+      type: "warning"
+    });
     return;
   }
 
@@ -4608,12 +4866,20 @@ function handleEditJobSubmit(e) {
   showToast(`Lowongan "${title}" berhasil diperbarui!`);
 }
 
-function handleDeleteJob() {
+async function handleDeleteJob() {
   const jobId = document.getElementById("editJobId")?.value;
   const job = openJobs.find(j => j.id === jobId);
   if (!job) return;
 
-  if (!confirm(`Hapus lowongan "${job.title}" di ${job.company}? Tindakan ini tidak dapat dibatalkan.`)) {
+  const ok = await showConfirmDialog({
+    title: "Hapus Lowongan Kerja?",
+    message: `Hapus lowongan "${job.title}" di ${job.company}? Tindakan ini tidak dapat dibatalkan.`,
+    confirmText: "Hapus Lowongan",
+    cancelText: "Batal",
+    type: "danger"
+  });
+
+  if (!ok) {
     return;
   }
 
@@ -4696,16 +4962,30 @@ function toggleSoftDeleteCandidate(candidateId) {
   showToast(c.isDeleted ? `${c.name} archived (Soft Delete).` : `${c.name} restored to active library.`);
 }
 
-function hardDeleteCandidate(candidateId) {
+async function hardDeleteCandidate(candidateId) {
   if (activeUser.role !== "superadmin") {
-    alert("Permission denied: Permanent deletion is restricted to Super Admin.");
+    showAlertDialog({
+      title: "Akses Ditolak",
+      message: "Penghapusan permanen hanya diizinkan untuk akun Super Admin.",
+      type: "danger"
+    });
     return false;
   }
   const idx = candidates.findIndex(item => item.id === candidateId);
   if (idx < 0) return false;
-  if (!confirm(`Permanently delete ${candidates[idx].name} (${candidates[idx].id})? This cannot be undone.`)) {
+
+  const candidate = candidates[idx];
+  const ok = await showConfirmDialog({
+    title: "Hapus Kandidat Permanen?",
+    message: `Hapus ${candidate.name} (${candidate.id}) secara permanen? Tindakan ini tidak dapat dibatalkan dan seluruh data kandidat akan dihapus.`,
+    confirmText: "Hapus Permanen",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!ok) {
     return false;
   }
+
   const removed = candidates.splice(idx, 1)[0];
   saveCandidates(candidates);
   addAuditLog("HARD_DELETE", `Candidate ${removed.name}`, `Permanently removed record ${removed.id}`);
@@ -4870,9 +5150,17 @@ function handleBatchTag() {
   showToast(`Added tag "${tag}" to ${updatedCount} candidate(s).`);
 }
 
-function handleBatchArchive() {
+async function handleBatchArchive() {
   if (selectedCandidateIds.size === 0) return;
-  if (!confirm(`Archive ${selectedCandidateIds.size} selected candidate(s)? Onboarded records (>= Code 40) are automatically protected.`)) {
+  const count = selectedCandidateIds.size;
+  const ok = await showConfirmDialog({
+    title: "Arsipkan Kandidat Terpilih?",
+    message: `Arsipkan ${count} kandidat yang dipilih? Catatan kandidat yang berstatus Onboarded (>= Code 40) akan otomatis dilindungi.`,
+    confirmText: "Arsipkan Kandidat",
+    cancelText: "Batal",
+    type: "warning"
+  });
+  if (!ok) {
     return;
   }
 

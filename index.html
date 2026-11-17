@@ -1719,6 +1719,23 @@
     </div>
   </dialog>
 
+  <!-- Modal 12: Custom Glassmorphism Prompt Modal (Replaces native alert & confirm) -->
+  <dialog id="customPromptModal" class="custom-prompt-modal" aria-labelledby="customPromptTitle" closedby="any">
+    <div class="custom-prompt-shell">
+      <div class="custom-prompt-header">
+        <div id="customPromptIcon" class="custom-prompt-icon danger" aria-hidden="true"></div>
+        <div class="custom-prompt-content">
+          <h3 id="customPromptTitle" class="custom-prompt-title">Konfirmasi Tindakan</h3>
+          <p id="customPromptMessage" class="custom-prompt-message">Pesan konfirmasi...</p>
+        </div>
+      </div>
+      <div class="custom-prompt-footer">
+        <button type="button" id="btnCustomPromptCancel" class="btn-outlined">Batal</button>
+        <button type="button" id="btnCustomPromptConfirm" class="btn-solid btn-danger">Hapus</button>
+      </div>
+    </div>
+  </dialog>
+
   <script src="./src/js/data.js"></script>
   <script src="./src/js/app.js"></script>
 </body>
