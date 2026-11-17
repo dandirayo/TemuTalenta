@@ -23,14 +23,20 @@ Versi pertama (MVP) adalah website ATS untuk agensi rekrutmen: konsultan menyimp
 
 ## Pengguna dan role
 
-MVP memakai empat role. Hak akses di bawah adalah usulan awal dan perlu dikonfirmasi (lihat Pertanyaan terbuka).
+**Mode Implementasi: Single-User Full Control (Super Admin)**
+Sistem saat ini dikonfigurasikan untuk penggunaan personal/internal tunggal dengan kendali penuh (*Full Control*). Seluruh modul, pengaturan, database kandidat, portal lowongan, kalender wawancara, pelacak garansi/penempatan, analitik, dan log audit dipegang oleh satu akun pengguna:
+- **Nama Akun**: `AUL SuperAdmin`
+- **Role**: `superadmin` (*Super Admin / Full Control*)
+- **Cakupan Akses**: Tidak terbatas (bisa mengakses, menginput, mengedit, menghapus, mengunduh, mengekspor, serta mengonfigurasi seluruh modul tanpa batasan).
 
-| Role | Siapa | Bisa melakukan | Tidak bisa |
-| --- | --- | --- | --- |
-| Super Admin | Pemilik sistem / IT | Kelola akun, role, master data (posisi, perusahaan, bahasa, status), lihat semua data | — |
-| Manajer | Kepala tim konsultan | Lihat semua kandidat dan rekomendasi tim, ubah status, lihat Data Analysis, ekspor data | Kelola akun dan master data |
-| Konsultan (Recruiter) | Staf rekrutmen | Tambah/ubah kandidat, unggah CV, ubah status, buat rekomendasi, lihat Consultant Business miliknya | Hapus permanen kandidat, lihat kinerja konsultan lain |
-| Klien (opsional, fase 2) | HR perusahaan klien | Lihat kandidat yang direkomendasikan ke perusahaannya, beri feedback | Melihat bank resume |
+Meskipun sistem beroperasi dalam mode satu pengguna (*Single-User Mode*), fondasi arsitektur role enterprise tetap dipertahankan untuk fleksibilitas jangka panjang:
+
+| Role | Identitas Default | Hak Akses |
+| --- | --- | --- |
+| **Super Admin** | `AUL SuperAdmin` | **Full Control**: Kelola kandidat, posting lowongan kerja klien, edit/hapus lowongan, atur jadwal wawancara, buat offer letter & e-sign, kelola kamus master data (perusahaan, posisi, bahasa, negara), atur user, dan ekspor seluruh analitik CSV. |
+| Manajer | *(Arsitektur Multi-User)* | Monitoring pipeline tim, persetujuan lintas konsultan, ekspor data, analitik. |
+| Konsultan (Recruiter) | *(Arsitektur Multi-User)* | Tambah/edit kandidat, unduh resume, ajukan rekomendasi klien, outreach WhatsApp/Email. |
+| Klien Portal | *(Arsitektur Multi-User)* | Portal khusus perwakilan klien (misal: HR alauda) untuk mereview dan approve/reject CV. |
 
 Setiap aksi penting (ubah status, rekomendasi, unduh CV, hapus) dicatat di log audit beserta pelaku dan waktunya.
 

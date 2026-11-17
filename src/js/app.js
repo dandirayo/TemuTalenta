@@ -206,7 +206,7 @@ function applyRolePermissions() {
           <span class="client-portal-tag">Client Portal</span>
           <span><strong>${escapeHtml(activeUser.clientCompany || "Client")} Portal</strong> — Logged in as ${escapeHtml(activeUser.name)} (${escapeHtml(activeUser.roleName)}). Review submitted CVs and take quick actions.</span>
         </div>
-        <button type="button" class="btn-outlined" style="color: white; border-color: rgba(255,255,255,0.4); font-size: 11px; padding: 3px 8px;" onclick="switchActiveUser('USR-01')">Exit Client Portal</button>
+        <button type="button" class="btn-outlined" style="color: white; border-color: rgba(255,255,255,0.4); font-size: 11px; padding: 3px 8px;" onclick="switchActiveUser('USR-AUL')">Exit Client Portal</button>
       `;
     }
     if (btnOpenAdd) btnOpenAdd.style.display = "none";
@@ -510,11 +510,18 @@ function bindGlobalEvents() {
     showToast(t("msgResetDone"));
   });
 
+
+/**
+ * OPEN ADD CANDIDATE MODAL HELPER
+ */
+function openAddCandidateModal() {
+  populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
+  document.getElementById("addCandidateModal")?.showModal();
+}
+window.openAddCandidateModal = openAddCandidateModal;
+
   // Add Candidate
-  document.getElementById("btnOpenAddModal")?.addEventListener("click", () => {
-    populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
-    document.getElementById("addCandidateModal")?.showModal();
-  });
+  document.getElementById("btnOpenAddModal")?.addEventListener("click", openAddCandidateModal);
 
   // Export & Import CSV (RL-22, RL-23)
   document.getElementById("btnExportCsv")?.addEventListener("click", exportFilteredCandidatesToCsv);
@@ -691,8 +698,7 @@ function bindGlobalEvents() {
 
 function switchWorkspaceView(viewId, pushHistory = true) {
   if (viewId === "addCandidateModalTrigger") {
-    populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
-    document.getElementById("addCandidateModal")?.showModal();
+    openAddCandidateModal();
     return;
   }
 
@@ -2397,6 +2403,17 @@ function renderClientCompaniesView() {
       companyMap[comp].roles.add(r.position);
     });
   });
+
+  if (Object.keys(companyMap).length === 0) {
+    clientTbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 36px 16px; color: var(--text-muted); font-size: 13px;">
+          Belum ada riwayat kandidat yang direkomendasikan ke perusahaan klien.
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
   clientTbody.innerHTML = Object.values(companyMap).map(info => `
     <tr>
@@ -5013,5 +5030,8 @@ function copyOutreachDraft() {
 }
 
 window.openOutreachModal = openOutreachModal;
+window.openAddCandidateModal = openAddCandidateModal;
+window.deleteMasterCompany = deleteMasterCompany;
+window.deleteMasterPosition = deleteMasterPosition;
 window.deleteMasterLanguage = deleteMasterLanguage;
 window.deleteMasterCountry = deleteMasterCountry;

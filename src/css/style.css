@@ -1696,6 +1696,15 @@ dialog::backdrop {
   display: flex;
   flex-direction: column;
   max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-shell > form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -1733,6 +1742,8 @@ dialog::backdrop {
   padding: 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-footer {

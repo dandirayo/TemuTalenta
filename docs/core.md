@@ -151,3 +151,21 @@ Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
 
 - **Zero Decorative Emoji Policy**: Antarmuka bisnis menggunakan ikonografi vektor SVG garis tipis standar enterprise, bukan emoji kasual.
 - **Pelindungan Data Pribadi (UU PDP No. 27/2022)**: Penyimpanan lokal menjamin data kandidat tidak dikirim ke pihak ketiga tanpa otorisasi eksplisit.
+
+---
+
+## 5. Model Deployment: Single-User Full Control (AUL SuperAdmin)
+
+Platform dikonfigurasi untuk operasional **Single-User Full Control**:
+- **Profil Pengguna Utama**: `AUL SuperAdmin` (`USR-AUL`).
+- **Tingkat Otoritas**: `superadmin` (*Super Administrator - Full Control*).
+- **Hak Akses Eksklusif**:
+  - Penuh atas seluruh tab navigasi (*Talent Management*, *Consultant Business*, *Data Analysis*, dan *Settings*).
+  - Mengelola bank data kandidat (tambah, edit, tagging, internal notes, CV multi-versi, hapus/arsip).
+  - Mengelola lowongan klien di Portal Karir (buat lowongan baru, edit rincian posisi, hapus lowongan).
+  - Mengatur jadwal wawancara di Kalender Interaktif dan unduh file `.ics`.
+  - Menerbitkan Offering Letter dengan tanggal mulai kerja dan e-signature digital.
+  - Memantau garansi 90 hari probation, fee agensi, dan status invoice.
+  - Mengatur kamus Master Data (perusahaan, posisi, bahasa, negara) dan manajemen akun pengguna.
+  - Melakukan ekspor/impor CSV dan backup/restore JSON database secara mandiri.
+

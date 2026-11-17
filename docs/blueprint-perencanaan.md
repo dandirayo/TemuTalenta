@@ -9,7 +9,10 @@ Dokumen ini memuat cetak biru arsitektur, alur operasional konsultan rekrutmen, 
 **TemuTalenta** adalah platform manajemen rekrutmen terpadu (*Applicant Tracking System & Consultant Resume Library*) yang memfasilitasi konsultan rekrutmen dan tim HR dalam mengelola ribuan resume kandidat, memfilter kualifikasi multibahasa, serta melacak riwayat pengajuan kandidat ke berbagai perusahaan mitra (*Recommended Repeat & Recommended List*).
 
 ### Fitur Pilar Utama:
+- **Single-User Full Control (AUL SuperAdmin)**: Mode deployment satu pengguna terpadu dengan hak akses penuh (*SuperAdmin*) ke seluruh fungsi tanpa restriksi.
 - **Enterprise Resume Library (`Resume Lib`)**: Tabel data kepadatan tinggi (*high-density data table*) dengan penyaringan multi-parameter, pengurutan waktu masuk (*Entry time*), dan visibilitas kolom yang dapat dikustomisasi.
+- **Draggable & Resizable Left Sidebar**: Menu navigasi samping kiri yang dapat ditarik lebarnya ke arah tengah secara dinamis dengan batas aman (*min 175px, max 450px*) dan reset klik ganda (*double-click*).
+- **Career Portal Job Management**: Portal lowongan kerja klien dengan kemampuan pembuatan lowongan baru (+ Post Job Order), edit lowongan, dan hapus lowongan.
 - **Multi-Stage Pipeline Tracking**: Pemantauan status kandidat dari `New`, `Pending`, `Original resume pass`, `Interview`, `Failed`, hingga `Entry`.
 - **Bilingual UI (Indonesia & English)**: Sistem lokalisasi instan tanpa muat ulang halaman.
 - **Dual Theme (Light & Dark Mode)**: Antarmuka adaptif untuk kenyamanan kerja jangka panjang dengan kontras terukur.

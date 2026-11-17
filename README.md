@@ -4,23 +4,33 @@ Sistem manajemen rekrutmen konsultan dan pustaka resume (*Applicant Tracking Sys
 
 ---
 
-## 📌 Fitur Utama (Versi 2.0)
+## 📌 Fitur Utama (Versi 2.1)
 
-1. **Tata Letak Enterprise Resume Library (`Resume Lib`)**:
-   - Navigasi samping (*collapsible sidebar*) dengan 3 pilar: **Talent Management**, **Consultant Business**, dan **Data Analysis**.
+1. **Mode Single-User Full Control (`AUL SuperAdmin`)**:
+   - Dikonfigurasikan khusus untuk pengoperasian mandiri dengan satu akun Super Administrator utama (**AUL SuperAdmin**).
+   - Memiliki kendali penuh atas seluruh modul rekrutmen: pengelolaan kandidat, penerbitan lowongan, kalender wawancara, offering letter e-sign, pelacak garansi 90 hari, master data, dan analitik.
+2. **Tata Letak Interaktif & Resizable Sidebar**:
+   - Menu samping (*sidebar*) kiri dapat diubah lebarnya secara fleksibel dengan menarik pembatas ke arah tengah (*min 175px, max 450px*) dan reset instan melalui *double-click*.
+   - Navigasi mencakup 3 pilar: **Talent Management**, **Consultant Business**, dan **Data Analysis**.
+3. **Portal Lowongan Kerja Klien & Manajemen Lowongan**:
+   - Menampilkan peluang karir aktif lintas klien, formulir input lowongan baru, edit lowongan yang sudah ada, serta opsi penutupan/penghapusan lowongan.
+4. **Tata Letak Enterprise Resume Library (`Resume Lib`)**:
    - Tabel kandidat kepadatan tinggi dengan 12 kolom standar (`Candidate`, `Nationality`, `Status`, `Gender`, `Age`, `Education`, `Language`, `Year of service`, `Recommended Position`, `Recommended Company`, `Entry time`, `Operation`).
-2. **Bilingual Instant Switcher (`Indonesia` / `English`)**:
+   - Tampilan ganda: **Tampilan Tabel** dan **Papan Kanban** 7-tahap dengan *drag-and-drop*.
+5. **Bilingual Instant Switcher (`Indonesia` / `English` / `Chinese`)**:
    - Sakelar dwibahasa interaktif di bilah atas yang menerjemahkan seluruh menu, filter, header kolom, dan tombol operasi secara instan.
-3. **Dual Theme (`Light Mode` & `Dark Mode`)**:
+6. **Dual Theme (`Light Mode` & `Dark Mode`)**:
    - Mendukung skema warna terang dan gelap dengan sinkronisasi `<meta name="color-scheme">` dan variabel CSS tanpa *flash* saat dimuat.
-4. **Filter Pipeline 7 Tahapan & Pencarian Lanjutan**:
+7. **Filter Pipeline 7 Tahapan & Pencarian Lanjutan**:
    - Filter cepat berdasarkan tahapan seleksi: `All`, `New`, `Pending`, `Original resume pass`, `Interview`, `Failed`, dan `Entry`.
-   - Pengaturan visibilitas kolom dinamis (`Columns: Candidate × | + 11`) dan pengurutan kolom (`Entry time`, `Status`, `Age`, `Year of service`).
-5. **Operasi Kandidat Fungsional**:
+   - Pengaturan visibilitas kolom dinamis dan pengurutan multi-kolom (*Sortable Headers*).
+8. **Operasi Kandidat Fungsional Lengkap**:
    - **`Download Resume`**: Mengunduh berkas ringkasan CV kandidat terstruktur.
-   - **`Recommended Repeat`**: Mengajukan kandidat ke posisi dan perusahaan klien baru sekaligus menambah skor riwayat rekomendasi.
-   - **`Recommended List`**: Menampilkan tabel riwayat seluruh pengajuan kandidat lintas perusahaan klien.
-6. **Ikonografi Vektor Bersih (Non-AI Look)**:
+   - **`Recommended Repeat`**: Mengajukan kandidat ke posisi dan perusahaan klien baru dengan penegakan 6 aturan bisnis.
+   - **`Schedule Interview`**: Penjadwalan interview terintegrasi dengan ekspor kalender `.ics`.
+   - **`Offer Letter Generator`**: Pembuatan surat penawaran kerja resmi dengan e-signature digital.
+   - **`Outreach Generator`**: Template pesan instan ke WhatsApp (`wa.me`) dan Email (`mailto:`).
+9. **Ikonografi Vektor Bersih (Non-AI Look)**:
    - Seluruh antarmuka menggunakan ikon garis tipis **Inline SVG** standar aplikasi B2B enterprise tanpa penggunaan emoji dekoratif.
 
 ---

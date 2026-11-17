@@ -11,11 +11,11 @@ const STORAGE_KEYS = {
   VISIBLE_COLS: "temutalenta_visible_cols_v4",
   AUDIT_LOGS: "temutalenta_audit_logs_v4",
   PAGE_SIZE: "temutalenta_page_size_v4",
-  ACTIVE_USER: "temutalenta_active_user_v4",
+  ACTIVE_USER: "temutalenta_active_user_v5",
   NOTIFICATIONS: "temutalenta_notifications_clean_v1",
   MASTER_COMPANIES: "temutalenta_master_companies_v4",
   MASTER_POSITIONS: "temutalenta_master_positions_v4",
-  USERS: "temutalenta_users_v4",
+  USERS: "temutalenta_users_v5",
   OPEN_JOBS: "temutalenta_open_jobs_v4",
   INTERVIEWS: "temutalenta_interviews_clean_v1",
   SETTINGS: "temutalenta_system_settings_v1",
@@ -23,13 +23,9 @@ const STORAGE_KEYS = {
   MASTER_COUNTRIES: "temutalenta_master_countries_v1"
 };
 
-// Users & Roles sesuai PRD (Super Admin, Manajer, Konsultan, dan Klien Portal)
+// Users & Roles: Single-user Full Control / SuperAdmin deployment (AUL SuperAdmin)
 const INITIAL_USERS = [
-  { id: "USR-01", name: "Rina Wijaya", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "RW", email: "rina.w@temutalenta.com", active: true },
-  { id: "USR-02", name: "Budi Hartono", role: "manager", roleName: "Team Manager", avatar: "BH", email: "budi.h@temutalenta.com", active: true },
-  { id: "USR-03", name: "Hendra Kusuma", role: "consultant", roleName: "Consultant (Recruiter)", avatar: "HK", email: "hendra.k@temutalenta.com", active: true },
-  { id: "USR-ADMIN", name: "Admin TemuTalenta", role: "superadmin", roleName: "Super Admin (IT)", avatar: "AD", email: "admin@temutalenta.com", active: true },
-  { id: "USR-04", name: "David Chen", role: "client", roleName: "Client HR (alauda)", clientCompany: "alauda", avatar: "DC", email: "david.chen@alauda.io", active: true }
+  { id: "USR-AUL", name: "AUL SuperAdmin", role: "superadmin", roleName: "Super Admin (Full Control)", avatar: "AUL", email: "aul.superadmin@temutalenta.com", active: true }
 ];
 
 let USERS = [...INITIAL_USERS];
