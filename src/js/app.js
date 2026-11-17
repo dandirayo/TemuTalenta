@@ -466,7 +466,7 @@ function syncTableResponsiveLabels() {
       const btn = th.querySelector(".sort-header-btn");
       let labelText = "";
       if (btn) {
-        const span = btn.querySelector("span[data-i18n], span:not(.sort-icons)");
+        const span = btn.querySelector("span[data-i18n], span:not(.sort-icons):not(.sort-icon-wrap)");
         labelText = (span ? span.textContent : btn.textContent).trim();
       } else {
         labelText = th.textContent.trim();
@@ -1157,9 +1157,11 @@ function renderResumeTable() {
             <input type="checkbox" id="selectAllCandidatesCb" aria-label="Select all visible candidates" title="Select all visible candidates">
             <button type="button" class="sort-header-btn" data-sort-col="${col.id}">
               <span>${t(col.key)}</span>
-              <span class="sort-icons" aria-hidden="true">
-                <span class="sort-up">▲</span>
-                <span class="sort-down">▼</span>
+              <span class="sort-icon-wrap" aria-hidden="true">
+                <svg class="sort-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path class="sort-svg-up" d="m7 9 5-5 5 5"/>
+                  <path class="sort-svg-down" d="m7 15 5 5 5-5"/>
+                </svg>
               </span>
             </button>
           </div>
@@ -1172,9 +1174,11 @@ function renderResumeTable() {
           <div class="col-th-content">
             <button type="button" class="sort-header-btn" data-sort-col="${col.id}">
               <span>${t(col.key)}</span>
-              <span class="sort-icons" aria-hidden="true">
-                <span class="sort-up">▲</span>
-                <span class="sort-down">▼</span>
+              <span class="sort-icon-wrap" aria-hidden="true">
+                <svg class="sort-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path class="sort-svg-up" d="m7 9 5-5 5 5"/>
+                  <path class="sort-svg-down" d="m7 15 5 5 5-5"/>
+                </svg>
               </span>
             </button>
             <button type="button" class="btn-hide-col" data-hide-col="${col.id}" title="${t('tipHideCol')}: ${t(col.key)}" aria-label="${t('tipHideCol')}: ${t(col.key)}">✕</button>

@@ -348,23 +348,25 @@
 
         <!-- Filter Row 1: Search Inputs & Action Buttons -->
         <div class="search-row">
-          <input type="text" id="searchCandidateName" class="ctrl-input" data-i18n-ph="phCandidateName" placeholder="Candidate Name">
-          <input type="text" id="searchKeyword" class="ctrl-input" data-i18n-ph="phKeyword" placeholder="Key word">
+          <div class="search-inputs-group">
+            <input type="text" id="searchCandidateName" class="ctrl-input" data-i18n-ph="phCandidateName" placeholder="Candidate Name">
+            <input type="text" id="searchKeyword" class="ctrl-input" data-i18n-ph="phKeyword" placeholder="Key word">
 
-          <select id="searchStateSelect" class="ctrl-select" aria-label="State">
-            <option value="all" data-i18n="phState">State</option>
-            <option value="new" data-i18n="stageNew">New</option>
-            <option value="pending" data-i18n="stagePending">Pending</option>
-            <option value="pass" data-i18n="stagePass">Original resume pass</option>
-            <option value="interview" data-i18n="stageInterview">Interview</option>
-            <option value="offer" data-i18n="stageOffer">Offer</option>
-            <option value="failed" data-i18n="stageFailed">Failed</option>
-            <option value="entry" data-i18n="stageEntry">Entry</option>
-          </select>
+            <select id="searchStateSelect" class="ctrl-select" aria-label="State">
+              <option value="all" data-i18n="phState">State</option>
+              <option value="new" data-i18n="stageNew">New</option>
+              <option value="pending" data-i18n="stagePending">Pending</option>
+              <option value="pass" data-i18n="stagePass">Original resume pass</option>
+              <option value="interview" data-i18n="stageInterview">Interview</option>
+              <option value="offer" data-i18n="stageOffer">Offer</option>
+              <option value="failed" data-i18n="stageFailed">Failed</option>
+              <option value="entry" data-i18n="stageEntry">Entry</option>
+            </select>
 
-          <button type="button" id="btnSearch" class="btn-solid" data-i18n="btnSearch">Search</button>
-          <button type="button" id="btnSearchAll" class="btn-solid" data-i18n="btnSearchAll">Search All</button>
-          <button type="button" id="btnToggleAdvSearch" class="btn-outlined" data-i18n="btnAdvSearch">Advanced Search</button>
+            <button type="button" id="btnSearch" class="btn-solid" data-i18n="btnSearch">Search</button>
+            <button type="button" id="btnSearchAll" class="btn-outlined" data-i18n="btnSearchAll">Search All</button>
+            <button type="button" id="btnToggleAdvSearch" class="btn-outlined" data-i18n="btnAdvSearch">Advanced Search</button>
+          </div>
           <div class="search-actions-group">
             <button type="button" id="btnExportCsv" class="btn-outlined" style="display: none;" data-i18n="btnExportCsv">Export CSV</button>
             <button type="button" id="btnOpenImportModal" class="btn-outlined" data-i18n="btnImportCsv">Import CSV</button>
@@ -469,10 +471,11 @@
 
           <!-- Display View Mode & Columns Selector -->
           <div class="col-selector-wrap">
-            <div style="display: inline-flex; gap: 4px; margin-right: 6px;">
-              <button type="button" id="btnViewTable" class="btn-outlined active-view-btn" style="height: 30px; font-size: 12px; padding: 0 10px;" data-i18n="btnViewTable">Table View</button>
-              <button type="button" id="btnViewKanban" class="btn-outlined" style="height: 30px; font-size: 12px; padding: 0 10px;" data-i18n="btnViewKanban">Kanban Board</button>
+            <div class="view-mode-toggle-group">
+              <button type="button" id="btnViewTable" class="btn-view-toggle active-view-btn" data-i18n="btnViewTable">Table View</button>
+              <button type="button" id="btnViewKanban" class="btn-view-toggle" data-i18n="btnViewKanban">Kanban Board</button>
             </div>
+            <div class="col-controls-divider"></div>
             <span class="col-selector-label" data-i18n="lblDisplayCols">Columns:</span>
             <div class="col-preset-pills" role="group" aria-label="Preset Kolom">
               <button type="button" id="btnPresetSimple" class="btn-preset-pill" title="Tampilkan 5 kolom inti">⚡ <span data-i18n="btnPresetSimple">Ringkas</span></button>
