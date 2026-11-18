@@ -62,7 +62,7 @@
                 <line x1="8" y1="13" x2="16" y2="13"/>
                 <line x1="8" y1="17" x2="14" y2="17"/>
               </svg>
-              <span data-i18n="navResumeLib">Resume Lib</span>
+              <span data-i18n="navResumeLib">Pustaka Resume</span>
             </button>
           </li>
           <li>
@@ -226,7 +226,7 @@
         </button>
         <span class="mobile-header-brand">TemuTalenta</span>
         <div class="header-greeting">
-          <span class="greeting-text">Welcome back</span>
+          <span class="greeting-text" data-i18n="greetingWelcome">Selamat datang kembali</span>
           <span class="greeting-wave" aria-hidden="true">👋</span>
         </div>
       </div>
@@ -240,18 +240,10 @@
         </div>
 
         <!-- Bilingual Switcher: Chinese [Switch] English + ID dropdown -->
-        <div class="lang-switch-group">
-          <span id="langLabelZh" class="lang-label" data-i18n="langChinese">Chinese</span>
-          <button type="button" id="langSwitchBtn" class="pill-switch" role="switch" aria-checked="true" aria-label="Switch Language Chinese or English">
-            <span class="pill-switch-thumb"></span>
-          </button>
-          <span id="langLabelEn" class="lang-label active" data-i18n="langEnglish">English</span>
-
-          <select id="langSelectorDropdown" class="ctrl-select header-lang-select" aria-label="Select Language">
-            <option value="en">English</option>
-            <option value="zh">中文 (ZH)</option>
-            <option value="id">Bahasa (ID)</option>
-          </select>
+        <!-- Unified Dual-Language Segmented Control (ID & EN) -->
+        <div class="lang-segmented-group" role="group" aria-label="Language Selector">
+          <button type="button" id="btnLangId" class="lang-seg-btn active" onclick="setLanguage('id')" title="Bahasa Indonesia">ID</button>
+          <button type="button" id="btnLangEn" class="lang-seg-btn" onclick="setLanguage('en')" title="English">EN</button>
         </div>
 
         <!-- Interactive Notification Bell & Popover -->
@@ -410,7 +402,7 @@
             <input type="number" id="advMinService" class="ctrl-input" min="0" max="40" placeholder="0">
           </div>
           <div class="adv-field">
-            <label for="advMaxService">Max Year of Service</label>
+            <label for="advMaxService" data-i18n="advMaxService">Max Year of Service</label>
             <input type="number" id="advMaxService" class="ctrl-input" min="0" max="40" placeholder="40">
           </div>
           <div class="adv-field">
@@ -418,11 +410,11 @@
             <input type="text" id="advPosition" class="ctrl-input" placeholder="e.g. Pre sales, Backend">
           </div>
           <div class="adv-field">
-            <label for="advDateFrom">Entry Date From</label>
+            <label for="advDateFrom" data-i18n="advDateFrom">Entry Date From</label>
             <input type="date" id="advDateFrom" class="ctrl-input">
           </div>
           <div class="adv-field">
-            <label for="advDateTo">Entry Date To</label>
+            <label for="advDateTo" data-i18n="advDateTo">Entry Date To</label>
             <input type="date" id="advDateTo" class="ctrl-input">
           </div>
           <div class="adv-field">
@@ -443,7 +435,7 @@
             </select>
           </div>
           <div class="adv-field">
-            <label for="advArchiveMode">Record State</label>
+            <label for="advArchiveMode" data-i18n="advArchiveMode">Record State</label>
             <select id="advArchiveMode" class="ctrl-select">
               <option value="active">Active Only</option>
               <option value="archived">Archived (Soft-Deleted)</option>
@@ -483,7 +475,7 @@
             </div>
             <button type="button" id="colSelectorTrigger" class="col-selector-trigger" aria-label="Select Display Columns">
               <span style="display: inline-flex; align-items: center; gap: 5px;">
-                <span class="col-tag"><span data-i18n="colCandidate">Candidate</span> ×</span>
+                <span class="col-tag"><span data-i18n="colCandidate">Candidate</span></span>
                 <span id="colExtraCountTag" class="col-tag">+ 11</span>
               </span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -498,10 +490,10 @@
         <div id="batchActionToolbar" class="batch-action-bar" style="display: none;">
           <span id="batchSelectedCount" style="font-weight: 700; color: var(--brand-primary);">0 selected</span>
           <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <button type="button" id="btnBatchRecommend" class="btn-solid" style="height: 28px; font-size: 12px;">Batch Recommend to Client</button>
-            <button type="button" id="btnBatchTag" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Batch Add Tag</button>
-            <button type="button" id="btnBatchArchive" class="btn-outlined" style="height: 28px; font-size: 12px; color: var(--warning-color);">Batch Archive</button>
-            <button type="button" id="btnBatchClear" class="btn-outlined" style="height: 28px; font-size: 12px;">Clear Selection</button>
+            <button type="button" id="btnBatchRecommend" class="btn-solid" style="height: 28px; font-size: 12px;" data-i18n="btnBatchRecommend">Batch Recommend to Client</button>
+            <button type="button" id="btnBatchTag" class="btn-outlined" style="height: 28px; font-size: 12px;" data-i18n="btnBatchTag">+ Batch Add Tag</button>
+            <button type="button" id="btnBatchArchive" class="btn-outlined" style="height: 28px; font-size: 12px; color: var(--warning-color);" data-i18n="btnBatchArchive">Batch Archive</button>
+            <button type="button" id="btnBatchClear" class="btn-outlined" style="height: 28px; font-size: 12px;" data-i18n="btnBatchClear">Clear Selection</button>
           </div>
         </div>
 
@@ -788,7 +780,7 @@
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Languages (PG-02)</h3>
             <form id="formAddMasterLanguage" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterLanguageName" class="ctrl-input" placeholder="New Language..." required style="flex: 1;">
-              <button type="submit" class="btn-solid">+ Add Language</button>
+              <button type="submit" class="btn-solid" data-i18n="btnAddLanguage">+ Add Language</button>
             </form>
             <ul id="settingsLanguageList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
           </div>
@@ -798,7 +790,7 @@
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Countries / Nationalities (PG-02)</h3>
             <form id="formAddMasterCountry" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterCountryName" class="ctrl-input" placeholder="New Country..." required style="flex: 1;">
-              <button type="submit" class="btn-solid">+ Add Country</button>
+              <button type="submit" class="btn-solid" data-i18n="btnAddCountry">+ Add Country</button>
             </form>
             <ul id="settingsCountryList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
           </div>
@@ -806,14 +798,13 @@
 
         <!-- Master 2-Digit Status Code Dictionary (PG-02 Reference) -->
         <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px; margin-bottom: 18px;">
-          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Master Status Code Dictionary (PG-02 Tri-Lingual Registry)</h3>
+          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;" data-i18n="settingsStatusCodeTitle">Master Status Code Dictionary (Bilingual Registry)</h3>
           <div tabindex="0" role="region" aria-label="Master Status Codes" class="table-wrapper" style="max-height: 260px;">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>Code</th>
                   <th>English Label</th>
-                  <th>中文名称</th>
                   <th>Nama (Indonesia)</th>
                   <th>Stage Tab</th>
                   <th>Rule Flag</th>
@@ -836,7 +827,7 @@
               <label for="settingFeePercentInput">Default Placement Fee Rate (%)</label>
               <input type="number" id="settingFeePercentInput" class="ctrl-input" min="5" max="35" value="18" style="width: 150px;">
             </div>
-            <button type="button" id="btnSaveSystemSettings" class="btn-solid">Save Policy</button>
+            <button type="button" id="btnSaveSystemSettings" class="btn-solid" data-i18n="btnSavePolicy">Save Policy</button>
           </div>
         </div>
 
@@ -956,14 +947,14 @@
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
         </svg>
-        <span data-i18n="navResumeLib">Resume Lib</span>
+        <span data-i18n="mobileNavResume">Resume Lib</span>
       </button>
       <button type="button" class="mobile-nav-item" data-view="careerPortal">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
         </svg>
-        <span>Jobs</span>
+        <span data-i18n="mobileNavJobs">Jobs</span>
       </button>
       <button type="button" class="mobile-nav-item" data-view="interviewCalendar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -972,7 +963,7 @@
           <line x1="8" y1="2" x2="8" y2="6"/>
           <line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-        <span>Calendar</span>
+        <span data-i18n="mobileNavCalendar">Calendar</span>
       </button>
       <button type="button" class="mobile-nav-item" data-view="recList">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -980,7 +971,7 @@
           <line x1="8" y1="12" x2="21" y2="12"/>
           <line x1="8" y1="18" x2="21" y2="18"/>
         </svg>
-        <span>Business</span>
+        <span data-i18n="mobileNavBusiness">Business</span>
       </button>
       <button type="button" id="mobileBottomMenuBtn" class="mobile-nav-item" aria-label="Open Full Menu">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -1565,12 +1556,12 @@
               <div>
                 <strong style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  <span>Upload CV untuk Auto-Fill Lamaran (.PDF / .DOCX / .TXT)</span>
+                  <span data-i18n="cvDropzoneHint">Upload CV untuk Auto-Fill Lamaran (.PDF / .DOCX / .TXT)</span>
                 </strong>
                 <div id="applyCvStatusText" style="font-size: 11px; color: var(--text-muted);">Unggah file CV Anda agar formulir di bawah terisi otomatis</div>
               </div>
               <input type="file" id="applyCvFileInput" accept=".pdf,.docx,.doc,.txt,.md,.rtf" style="display: none;">
-              <button type="button" id="btnSelectApplyCvFile" class="btn-solid" style="height: 28px; font-size: 11.5px; padding: 0 12px;">Pilih File CV</button>
+              <button type="button" id="btnSelectApplyCvFile" class="btn-solid" style="height: 28px; font-size: 11.5px; padding: 0 12px;" data-i18n="btnChooseCvFile">Pilih File CV</button>
             </div>
           </div>
           <div class="form-field">
@@ -1676,30 +1667,30 @@
   <dialog id="editJobModal" aria-labelledby="editJobModalTitle" closedby="any">
     <div class="modal-shell">
       <div class="modal-header">
-        <h2 id="editJobModalTitle">Edit Lowongan Pekerjaan</h2>
+        <h2 id="editJobModalTitle" data-i18n="modalEditJobTitle">Edit Lowongan Pekerjaan</h2>
         <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
       </div>
       <form id="formEditJob">
         <input type="hidden" id="editJobId">
         <div class="modal-body form-grid">
           <div class="form-field">
-            <label for="editJobTitle">Nama Posisi / Job Title *</label>
+            <label for="editJobTitle" data-i18n="lblJobTitle">Nama Posisi / Job Title *</label>
             <input type="text" id="editJobTitle" required placeholder="e.g. Senior Pre-sales Specialist">
           </div>
           <div class="form-field">
-            <label for="editJobCompany">Perusahaan Klien *</label>
+            <label for="editJobCompany" data-i18n="lblClientCompany">Perusahaan Klien *</label>
             <input type="text" id="editJobCompany" required placeholder="e.g. alauda">
           </div>
           <div class="form-field">
-            <label for="editJobDepartment">Departemen</label>
+            <label for="editJobDepartment" data-i18n="lblDepartment">Departemen</label>
             <input type="text" id="editJobDepartment" placeholder="e.g. Enterprise Cloud Solutions">
           </div>
           <div class="form-field">
-            <label for="editJobLocation">Lokasi *</label>
+            <label for="editJobLocation" data-i18n="lblLocation">Lokasi *</label>
             <input type="text" id="editJobLocation" required placeholder="e.g. Jakarta (Hybrid)">
           </div>
           <div class="form-field">
-            <label for="editJobType">Tipe Pekerjaan</label>
+            <label for="editJobType" data-i18n="lblEmploymentType">Tipe Pekerjaan</label>
             <select id="editJobType" class="ctrl-select">
               <option value="Full-time">Full-time</option>
               <option value="Contract">Contract (12 Months)</option>
@@ -1708,19 +1699,19 @@
             </select>
           </div>
           <div class="form-field">
-            <label for="editJobSalary">Kisaran Gaji / Budget</label>
+            <label for="editJobSalary" data-i18n="lblSalaryRange">Kisaran Gaji / Budget</label>
             <input type="text" id="editJobSalary" placeholder="e.g. IDR 20,000,000 - 32,000,000">
           </div>
           <div class="form-field">
-            <label for="editJobExp">Minimal Pengalaman</label>
+            <label for="editJobExp" data-i18n="lblMinExp">Minimal Pengalaman</label>
             <input type="text" id="editJobExp" placeholder="e.g. 3+ yrs">
           </div>
           <div class="form-field">
-            <label for="editJobTags">Keahlian Utama (Pisahkan koma)</label>
+            <label for="editJobTags" data-i18n="lblKeySkills">Keahlian Utama (Pisahkan koma)</label>
             <input type="text" id="editJobTags" placeholder="Kubernetes, DevOps, Bilingual">
           </div>
           <div class="form-field full">
-            <label for="editJobDesc">Deskripsi & Kualifikasi Lowongan *</label>
+            <label for="editJobDesc" data-i18n="lblJobDesc">Deskripsi & Kualifikasi Lowongan *</label>
             <textarea id="editJobDesc" rows="4" required placeholder="Jelaskan ruang lingkup pekerjaan dan kriteria kandidat..."></textarea>
           </div>
         </div>
@@ -1728,7 +1719,7 @@
           <button type="button" class="btn-outlined" id="btnDeleteJob" style="color: var(--danger-dot); border-color: var(--danger-dot);">Hapus Lowongan</button>
           <div style="display: flex; gap: 8px;">
             <button type="button" class="btn-outlined" data-close-modal data-i18n="btnCancel">Cancel</button>
-            <button type="submit" class="btn-solid">Simpan Perubahan</button>
+            <button type="submit" class="btn-solid" data-i18n="btnSaveJobChanges">Simpan Perubahan</button>
           </div>
         </div>
       </form>
@@ -1778,13 +1769,13 @@
       <div class="custom-prompt-header">
         <div id="customPromptIcon" class="custom-prompt-icon danger" aria-hidden="true"></div>
         <div class="custom-prompt-content">
-          <h3 id="customPromptTitle" class="custom-prompt-title">Konfirmasi Tindakan</h3>
+          <h3 id="customPromptTitle" class="custom-prompt-title" data-i18n="confirmAction">Konfirmasi Tindakan</h3>
           <p id="customPromptMessage" class="custom-prompt-message">Pesan konfirmasi...</p>
         </div>
       </div>
       <div class="custom-prompt-footer">
-        <button type="button" id="btnCustomPromptCancel" class="btn-outlined">Batal</button>
-        <button type="button" id="btnCustomPromptConfirm" class="btn-solid btn-danger">Hapus</button>
+        <button type="button" id="btnCustomPromptCancel" class="btn-outlined" data-i18n="btnCancel">Batal</button>
+        <button type="button" id="btnCustomPromptConfirm" class="btn-solid btn-danger" data-i18n="btnConfirm">Konfirmasi</button>
       </div>
     </div>
   </dialog>

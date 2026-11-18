@@ -49,10 +49,10 @@ function getPromptIconSvg(type) {
 }
 
 function showConfirmDialog({
-  title = "Konfirmasi Tindakan",
-  message = "Apakah Anda yakin ingin melanjutkan?",
-  confirmText = "Konfirmasi",
-  cancelText = "Batal",
+  title = t("confirmAction"),
+  message = t("confirmProceedMsg"),
+  confirmText = t("btnConfirm"),
+  cancelText = t("btnCancel"),
   type = "danger"
 } = {}) {
   return new Promise(resolve => {
@@ -130,9 +130,9 @@ function showConfirmDialog({
 }
 
 function showAlertDialog({
-  title = "Pemberitahuan",
+  title = t("alertNotification"),
   message = "",
-  okText = "Mengerti",
+  okText = t("btnUnderstood"),
   type = "info"
 } = {}) {
   return new Promise(resolve => {
@@ -199,10 +199,10 @@ function showAlertDialog({
 // Global window.alert override so that all browser alert() calls turn into centered blur modals
 window.alert = function (message) {
   showAlertDialog({
-    title: "Pemberitahuan",
+    title: t("alertNotification"),
     message: String(message || ""),
     type: "info",
-    okText: "Mengerti"
+    okText: t("btnUnderstood")
   });
 };
 
@@ -287,13 +287,12 @@ function t(key) {
 function getStatusName(statusCode) {
   const meta = STATUS_CODES[statusCode];
   if (!meta) return `Status ${statusCode}`;
-  if (currentLang === "zh") return meta.nameZh;
-  if (currentLang === "id") return meta.nameId;
+  if (currentLang === "id") return meta.nameId || meta.nameEn;
   return meta.nameEn;
 }
 
 function setLanguage(lang) {
-  if (!I18N[lang]) return;
+  if (lang !== "id" && lang !== "en") lang = "id";
   currentLang = lang;
   saveLang(lang);
   applyTranslations();
@@ -314,15 +313,10 @@ function applyTranslations() {
     el.placeholder = t(key);
   });
 
-  const switchBtn = document.getElementById("langSwitchBtn");
-  const lblZh = document.getElementById("langLabelZh");
-  const lblEn = document.getElementById("langLabelEn");
-  const selLang = document.getElementById("langSelectorDropdown");
-
-  if (switchBtn) switchBtn.setAttribute("aria-checked", currentLang === "en" ? "true" : "false");
-  if (lblZh) lblZh.classList.toggle("active", currentLang === "zh");
-  if (lblEn) lblEn.classList.toggle("active", currentLang === "en");
-  if (selLang) selLang.value = currentLang;
+  const btnId = document.getElementById("btnLangId");
+  const btnEn = document.getElementById("btnLangEn");
+  if (btnId) btnId.classList.toggle("active", currentLang === "id");
+  if (btnEn) btnEn.classList.toggle("active", currentLang === "en");
 
   const advBox = document.getElementById("advSearchBox");
   const advBtn = document.getElementById("btnToggleAdvSearch");
@@ -601,14 +595,8 @@ function bindGlobalEvents() {
     switchActiveUser(e.target.value);
   });
 
-  document.getElementById("langSwitchBtn")?.addEventListener("click", () => {
-    setLanguage(currentLang === "zh" ? "en" : "zh");
-  });
-  document.getElementById("langLabelZh")?.addEventListener("click", () => setLanguage("zh"));
-  document.getElementById("langLabelEn")?.addEventListener("click", () => setLanguage("en"));
-  document.getElementById("langSelectorDropdown")?.addEventListener("change", (e) => {
-    setLanguage(e.target.value);
-  });
+  document.getElementById("btnLangId")?.addEventListener("click", () => setLanguage("id"));
+  document.getElementById("btnLangEn")?.addEventListener("click", () => setLanguage("en"));
 
   document.getElementById("themeSwitchBtn")?.addEventListener("click", toggleThemeScheme);
 
@@ -1246,15 +1234,15 @@ function renderResumeTable() {
         <td colspan="${activeCols.length}" style="padding: 56px 20px; text-align: center;">
           <div style="font-size: 36px; margin-bottom: 12px;">📁</div>
           <div style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
-            ${isTotallyEmpty ? "Belum ada data kandidat di database" : t("emptyTable")}
+            ${isTotallyEmpty ? t("emptyDatabaseTitle") : t("emptyTable")}
           </div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; max-width: 440px; margin-left: auto; margin-right: auto;">
-            ${isTotallyEmpty ? "Database kandidat Anda masih kosong. Silakan mulai input kandidat baru secara manual atau impor berkas data dari Excel / CSV." : ""}
+            ${isTotallyEmpty ? t("emptyDatabaseDesc") : ""}
           </div>
           ${isTotallyEmpty ? `
             <div style="display: inline-flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <button type="button" class="btn-solid" style="height: 34px; padding: 0 18px; font-size: 12px; font-weight: 700;" onclick="openAddCandidateModal()">+ Tambah Kandidat Baru</button>
-              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCandidatesInput')?.click()">Impor Excel / CSV</button>
+              <button type="button" class="btn-solid" style="height: 34px; padding: 0 18px; font-size: 12px; font-weight: 700;" onclick="openAddCandidateModal()">${t("btnNewCandidate")}</button>
+              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCandidatesInput')?.click()">${t("btnImportCsv")}</button>
             </div>
           ` : ""}
         </td>
@@ -2106,7 +2094,7 @@ function handleRecRepeatSubmit(e) {
   const ruleResult = evaluateRecRepeatRules(c, comp, pos, consultant);
   if (ruleResult.blocked) {
     showAlertDialog({
-      title: "Rekomendasi Ditolak (Aturan Bisnis)",
+      title: t("alertRuleRejected"),
       message: ruleResult.message,
       type: "danger"
     });
@@ -2114,8 +2102,8 @@ function handleRecRepeatSubmit(e) {
   }
   if (ruleResult.requiresReason && !reason) {
     showAlertDialog({
-      title: "Alasan Wajib Diisi",
-      message: "Alasan rekomendasi wajib diisi untuk melanjutkan proses ini.",
+      title: t("alertNotification"),
+      message: t("alertReasonRequired"),
       type: "warning"
     });
     return;
@@ -2124,8 +2112,8 @@ function handleRecRepeatSubmit(e) {
     const mgrCheck = document.getElementById("recRepeatManagerCheck");
     if (!mgrCheck?.checked) {
       showAlertDialog({
-        title: "Persetujuan Manajer Diperlukan",
-        message: "Centang persetujuan manajer diperlukan untuk melanjutkan rekomendasi berisiko ini.",
+        title: t("alertNotification"),
+        message: t("alertManagerApprovalRequired"),
         type: "warning"
       });
       return;
@@ -2251,10 +2239,10 @@ async function handleAddCandidateSubmit(e) {
 
   if (isDuplicate) {
     const proceed = await showConfirmDialog({
-      title: "Peringatan Duplikasi (RL-21)",
-      message: `Kandidat "${isDuplicate.name}" dengan tanggal lahir atau kontak yang sama sudah terdaftar di database. Tetap simpan?`,
-      confirmText: "Tetap Simpan",
-      cancelText: "Batal",
+      title: t("confirmDuplicateTitle"),
+      message: t("confirmDuplicateMsg").replace("{name}", isDuplicate.name).replace("{birthDate}", isDuplicate.birthDate || "-").replace("{contact}", isDuplicate.phone || isDuplicate.email || "-").replace("{id}", isDuplicate.id),
+      confirmText: t("btnKeepSaving"),
+      cancelText: t("btnCancel"),
       type: "warning"
     });
     if (!proceed) {
@@ -2336,8 +2324,8 @@ async function handleAddCandidateSubmit(e) {
 function exportFilteredCandidatesToCsv() {
   if (activeUser.role !== "manager" && activeUser.role !== "superadmin") {
     showAlertDialog({
-      title: "Akses Ditolak",
-      message: "Hanya Manajer dan Super Admin yang dapat mengekspor data kandidat.",
+      title: t("alertAccessDenied"),
+      message: t("alertManagerExport"),
       type: "danger"
     });
     return;
@@ -2346,8 +2334,8 @@ function exportFilteredCandidatesToCsv() {
   const filtered = getFilteredCandidates();
   if (filtered.length === 0) {
     showAlertDialog({
-      title: "Data Kosong",
-      message: "Tidak ada kandidat pada filter saat ini untuk diekspor ke CSV.",
+      title: t("emptyTable"),
+      message: t("alertEmptyExport"),
       type: "info"
     });
     return;
@@ -2421,8 +2409,8 @@ function handleCsvImportSubmit(e) {
     processCsvData(textInput);
   } else {
     showAlertDialog({
-      title: "Pilih File CSV",
-      message: "Silakan pilih file CSV atau tempel teks data CSV terlebih dahulu.",
+      title: t("alertNotification"),
+      message: t("alertSelectCsv"),
       type: "warning"
     });
   }
@@ -2432,8 +2420,8 @@ function processCsvData(csvText) {
   const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
   if (lines.length <= 1) {
     showAlertDialog({
-      title: "Data CSV Kosong",
-      message: "Data CSV kosong atau hanya berisi baris header.",
+      title: t("alertNotification"),
+      message: t("alertEmptyCsv"),
       type: "warning"
     });
     return;
@@ -2751,7 +2739,7 @@ function renderClientCompaniesView() {
     clientTbody.innerHTML = `
       <tr>
         <td colspan="4" style="text-align: center; padding: 36px 16px; color: var(--text-muted); font-size: 13px;">
-          Belum ada riwayat kandidat yang direkomendasikan ke perusahaan klien.
+          ${t("emptyClientList")}
         </td>
       </tr>
     `;
@@ -3488,10 +3476,10 @@ function runDemoScenario(index) {
 
 async function resetAllDemoData() {
   const ok = await showConfirmDialog({
-    title: "Reset Database ke Kondisi Awal?",
-    message: "Seluruh data kandidat, konfigurasi, dan riwayat lokal akan dikembalikan ke kondisi awal. Tindakan ini tidak dapat dibatalkan.",
-    confirmText: "Reset Database",
-    cancelText: "Batal",
+    title: t("confirmResetDbTitle"),
+    message: t("confirmResetDbMsg"),
+    confirmText: t("btnConfirm"),
+    cancelText: t("btnCancel"),
     type: "danger"
   });
   if (ok) {
@@ -3553,7 +3541,6 @@ function renderMasterDataLists() {
         <tr>
           <th scope="row"><strong>${st.code}</strong></th>
           <td>${escapeHtml(st.nameEn)}</td>
-          <td>${escapeHtml(st.nameZh)}</td>
           <td>${escapeHtml(st.nameId)}</td>
           <td><code>${escapeHtml(st.tab)}</code></td>
           <td><span style="font-size: 11px; font-weight: 600; color: ${flagColor};">${ruleFlag}</span></td>
@@ -3596,10 +3583,10 @@ async function deleteMasterDictionaryItem(list, index, saveFn, label) {
   if (index < 0 || index >= list.length) return;
   const itemVal = list[index];
   const ok = await showConfirmDialog({
-    title: "Hapus Entri Data Master?",
-    message: `Apakah Anda yakin ingin menghapus ${label} "${itemVal}" dari kamus sistem?`,
-    confirmText: "Hapus",
-    cancelText: "Batal",
+    title: t("confirmDeleteMasterTitle"),
+    message: t("confirmDeleteMasterMsg").replace("{label}", label).replace("{name}", itemVal),
+    confirmText: t("btnDelete"),
+    cancelText: t("btnCancel"),
     type: "danger"
   });
   if (ok) {
@@ -3822,10 +3809,10 @@ function handleApplyJobSubmit(e) {
 
   if (!fullName || !email) {
     showAlertDialog({
-      title: "Data Wajib Belum Lengkap",
-      message: "Silakan lengkapi Nama Lengkap dan Email sebelum mengirim lamaran.",
+      title: t("alertNotification"),
+      message: t("alertFillRequired"),
       type: "warning",
-      okText: "Mengerti"
+      okText: t("btnUnderstood")
     });
     return;
   }
@@ -5027,10 +5014,10 @@ async function handleCvFileSelected(file, mode = "add") {
         if (mainLabel) mainLabel.textContent = t("lblCvDropzoneSub");
       }
       showAlertDialog({
-        title: "Teks CV Tidak Terbaca",
-        message: `File "${file.name}" berhasil dibuka tetapi tidak ditemukan teks terbaca (kemungkinan PDF hasil scan gambar). Silakan salin-tempel teks CV secara manual melalui tombol "Tempel Teks Manual".`,
+        title: t("alertCvNoTextTitle"),
+        message: t("alertCvNoTextMsg").replace("{filename}", file.name),
         type: "warning",
-        okText: "Mengerti"
+        okText: t("btnUnderstood")
       });
       return;
     }
@@ -5051,7 +5038,7 @@ async function handleCvFileSelected(file, mode = "add") {
       const chip = document.getElementById("cvUploadedFileChip");
       const chipName = document.getElementById("cvUploadedFileName");
       if (chip && chipName) {
-        chipName.textContent = `📄 ${file.name} (${sizeKb} KB) — Terekstrak otomatis`;
+        chipName.textContent = `📄 ${file.name} (${sizeKb} KB) — ${t("cvAutoExtracted")}`;
         chip.style.display = "flex";
       }
 
@@ -5071,10 +5058,10 @@ async function handleCvFileSelected(file, mode = "add") {
       if (mainLabel) mainLabel.textContent = t("lblCvDropzoneSub");
     }
     showAlertDialog({
-      title: "Gagal Membaca File CV",
-      message: `Terjadi kendala saat mengekstrak file "${file.name}". Pastikan file berformat .PDF, .DOCX, atau .TXT yang valid.`,
+      title: t("alertCvReadFailedTitle"),
+      message: t("alertCvReadFailedMsg").replace("{filename}", file.name),
       type: "warning",
-      okText: "Mengerti"
+      okText: t("btnUnderstood")
     });
   }
 }
@@ -5209,10 +5196,10 @@ function handleRunCvParser() {
   if (!rawText) {
     if (rawWrap) rawWrap.style.display = "block";
     showAlertDialog({
-      title: "Input Resume / CV Kosong",
-      message: "Silakan unggah file CV (.PDF / .DOCX / .TXT) atau tempel teks resume/CV terlebih dahulu.",
+      title: t("alertNotification"),
+      message: t("alertEmptyCv"),
       type: "warning",
-      okText: "Mengerti"
+      okText: t("btnUnderstood")
     });
     return;
   }
@@ -5365,13 +5352,13 @@ function renderKanbanBoard(filteredCandidates) {
   const list = Array.isArray(filteredCandidates) ? filteredCandidates : getFilteredCandidates();
 
   const kanbanCols = [
-    { stageKey: "new", title: "New (0)", dropCode: 0, color: "var(--brand-primary)" },
-    { stageKey: "pending", title: "Pending Client (10-11)", dropCode: 10, color: "#4f46e5" },
-    { stageKey: "pass", title: "CV Pass (12)", dropCode: 12, color: "#06b6d4" },
-    { stageKey: "interview", title: "Interview (20-22)", dropCode: 20, color: "#0ea5e9" },
-    { stageKey: "offer", title: "Offer (30-31)", dropCode: 30, color: "#8b5cf6" },
-    { stageKey: "entry", title: "Entry (40-41)", dropCode: 40, color: "var(--success-color)" },
-    { stageKey: "failed", title: "Failed / Closed", dropCode: 19, color: "var(--danger-dot)" }
+    { stageKey: "new", title: t("kanbanNew"), dropCode: 0, color: "var(--brand-primary)" },
+    { stageKey: "pending", title: t("kanbanPending"), dropCode: 10, color: "#4f46e5" },
+    { stageKey: "pass", title: t("kanbanPass"), dropCode: 12, color: "#06b6d4" },
+    { stageKey: "interview", title: t("kanbanInterview"), dropCode: 20, color: "#0ea5e9" },
+    { stageKey: "offer", title: t("kanbanOffer"), dropCode: 30, color: "#8b5cf6" },
+    { stageKey: "entry", title: t("kanbanEntry"), dropCode: 40, color: "var(--success-color)" },
+    { stageKey: "failed", title: t("kanbanFailed"), dropCode: 19, color: "var(--danger-dot)" }
   ];
 
   container.innerHTML = kanbanCols.map(col => {
@@ -5383,7 +5370,7 @@ function renderKanbanBoard(filteredCandidates) {
           <span class="status-count-badge" style="background-color: var(--brand-dark); color: #ffffff; font-weight: 800;">${colItems.length}</span>
         </div>
         <div class="kanban-col-body">
-          ${colItems.length === 0 ? `<div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 18px 8px;">Drop candidate card here</div>` : colItems.map(c => {
+          ${colItems.length === 0 ? `<div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 18px 8px;">${currentLang === "id" ? "Tarik kartu kandidat ke sini" : "Drop candidate card here"}</div>` : colItems.map(c => {
             const code = computeCandidateBadge(c);
             return `
               <article class="kanban-card" draggable="true" data-candidate-id="${c.id}">
@@ -5689,8 +5676,8 @@ function handleEditJobSubmit(e) {
 
   if (!jobId || !title || !company || !description) {
     showAlertDialog({
-      title: "Data Belum Lengkap",
-      message: "Mohon lengkapi judul posisi, perusahaan klien, dan deskripsi lowongan.",
+      title: t("alertNotification"),
+      message: t("alertFillJobRequired"),
       type: "warning"
     });
     return;
@@ -5739,10 +5726,10 @@ async function handleDeleteJob() {
   if (!job) return;
 
   const ok = await showConfirmDialog({
-    title: "Hapus Lowongan Kerja?",
-    message: `Hapus lowongan "${job.title}" di ${job.company}? Tindakan ini tidak dapat dibatalkan.`,
-    confirmText: "Hapus Lowongan",
-    cancelText: "Batal",
+    title: t("confirmDeleteJobTitle"),
+    message: t("confirmDeleteJobMsg").replace("{job}", job.title).replace("{company}", job.company),
+    confirmText: t("btnDelete"),
+    cancelText: t("btnCancel"),
     type: "danger"
   });
 
@@ -5832,8 +5819,8 @@ function toggleSoftDeleteCandidate(candidateId) {
 async function hardDeleteCandidate(candidateId) {
   if (activeUser.role !== "superadmin") {
     showAlertDialog({
-      title: "Akses Ditolak",
-      message: "Penghapusan permanen hanya diizinkan untuk akun Super Admin.",
+      title: t("alertAccessDenied"),
+      message: t("alertSuperAdminDeleteOnly"),
       type: "danger"
     });
     return false;
@@ -5843,10 +5830,10 @@ async function hardDeleteCandidate(candidateId) {
 
   const candidate = candidates[idx];
   const ok = await showConfirmDialog({
-    title: "Hapus Kandidat Permanen?",
-    message: `Hapus ${candidate.name} (${candidate.id}) secara permanen? Tindakan ini tidak dapat dibatalkan dan seluruh data kandidat akan dihapus.`,
-    confirmText: "Hapus Permanen",
-    cancelText: "Batal",
+    title: t("confirmDeleteCandidateTitle"),
+    message: t("confirmDeleteCandidateMsg").replace("{name}", candidate.name).replace("{id}", candidate.id),
+    confirmText: t("btnDelete"),
+    cancelText: t("btnCancel"),
     type: "danger"
   });
   if (!ok) {
@@ -6021,10 +6008,10 @@ async function handleBatchArchive() {
   if (selectedCandidateIds.size === 0) return;
   const count = selectedCandidateIds.size;
   const ok = await showConfirmDialog({
-    title: "Arsipkan Kandidat Terpilih?",
-    message: `Arsipkan ${count} kandidat yang dipilih? Catatan kandidat yang berstatus Onboarded (>= Code 40) akan otomatis dilindungi.`,
-    confirmText: "Arsipkan Kandidat",
-    cancelText: "Batal",
+    title: t("confirmBatchArchiveTitle"),
+    message: t("confirmBatchArchiveMsg").replace("{count}", count),
+    confirmText: t("btnConfirm"),
+    cancelText: t("btnCancel"),
     type: "warning"
   });
   if (!ok) {

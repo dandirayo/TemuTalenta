@@ -694,64 +694,54 @@ button:active {
   outline: none;
 }
 
-/* Language Switcher */
-.lang-switch-group {
+/* Unified Language Segmented Control (ID & EN) */
+.lang-segmented-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  user-select: none;
-  white-space: nowrap !important;
-  flex-shrink: 0;
-}
-
-.lang-label {
-  cursor: pointer;
-  transition: color 0.15s;
-  font-weight: 500;
-  white-space: nowrap !important;
-}
-
-.lang-label.active {
-  color: #161922;
-  font-weight: 700;
-}
-
-:root[data-theme="dark"] .lang-label.active {
-  color: #ffffff;
-}
-
-.pill-switch {
-  position: relative;
-  width: 44px;
-  height: 22px;
-  background-color: #2b3245;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  border: none;
-  cursor: pointer;
   padding: 2px;
+  gap: 2px;
+  user-select: none;
+  flex-shrink: 0;
+  height: 28px;
+  box-sizing: border-box;
+}
+
+.lang-seg-btn {
+  height: 22px;
+  min-width: 32px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+  transition: all 0.15s ease;
+  white-space: nowrap !important;
 }
 
-.pill-switch-thumb {
-  width: 18px;
-  height: 18px;
-  background-color: #ffffff;
-  border-radius: 50%;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s;
-  transform: translateX(0);
+.lang-seg-btn:hover {
+  color: var(--text-primary);
 }
 
-.pill-switch[aria-checked="true"] {
+.lang-seg-btn.active {
   background-color: var(--brand-dark);
+  color: var(--brand-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
-.pill-switch[aria-checked="true"] .pill-switch-thumb {
-  transform: translateX(22px);
+[data-theme="dark"] .lang-seg-btn.active {
   background-color: var(--brand-primary);
+  color: var(--brand-primary-text);
 }
 
 /* Theme Switcher */
@@ -3064,17 +3054,11 @@ dialog::backdrop {
 
 /* Touch Device Comfort Adjustments */
 @media (pointer: coarse) {
-  .pill-switch {
-    position: relative;
-    min-block-size: 20px;
-  }
-
   .theme-switch-btn {
     position: relative;
     min-block-size: 22px;
   }
 
-  .pill-switch::after,
   .theme-switch-btn::after {
     content: "";
     position: absolute;
@@ -3129,10 +3113,6 @@ dialog::backdrop {
     display: inline-block;
   }
 
-  .lang-label,
-  #langSwitchBtn {
-    display: none;
-  }
 
   .workspace-body {
     overflow-y: auto;
