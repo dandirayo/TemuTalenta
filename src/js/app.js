@@ -697,6 +697,7 @@ function bindGlobalEvents() {
  */
 function openAddCandidateModal() {
   populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
+  resetCvUploadUi("add");
   document.getElementById("addCandidateModal")?.showModal();
 }
 window.openAddCandidateModal = openAddCandidateModal;
@@ -812,6 +813,7 @@ window.openAddCandidateModal = openAddCandidateModal;
   document.getElementById("btnExportAnalytics")?.addEventListener("click", exportAnalyticsCsv);
 
   // Fase 4: Career Portal, Interview Scheduler, Offer Letter & CV Parser
+  initCvUploadAndParserHandlers();
   document.getElementById("btnRunCvParser")?.addEventListener("click", handleRunCvParser);
   document.getElementById("careerFilterCompany")?.addEventListener("change", renderCareerPortal);
   document.getElementById("careerSearchQuery")?.addEventListener("input", renderCareerPortal);
@@ -1761,7 +1763,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     body.querySelector("#cvVersionFileInput")?.click();
   });
 
-  body.querySelector("#cvVersionFileInput")?.addEventListener("change", e => {
+  body.querySelector("#cvVersionFileInput")?.addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
     const verLabel = `v${c.cvVersions.length + 1} (${file.name})`;
@@ -1778,12 +1780,15 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
       openCandidateProfileModal(c.id, "cvViewer", 0);
     };
 
-    if (file.type.startsWith("text/") || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
-      const reader = new FileReader();
-      reader.onload = ev => addVer(String(ev.target.result || ""));
-      reader.readAsText(file);
-    } else {
-      addVer(`[Binary Document Uploaded]\nFile Name : ${file.name}\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
+    try {
+      const extractedText = await extractTextFromCvFile(file);
+      if (extractedText && extractedText.trim().length > 10) {
+        addVer(`[Uploaded Document: ${file.name} | ${(file.size / 1024).toFixed(1)} KB | By: ${activeUser.name}]\n\n${extractedText.trim()}`);
+      } else {
+        addVer(`[Binary Document Uploaded]\nFile Name : ${file.name}\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
+      }
+    } catch (err) {
+      addVer(`[Uploaded Document: ${file.name}]\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
     }
   });
 
@@ -2272,6 +2277,12 @@ async function handleAddCandidateSubmit(e) {
     });
   }
 
+  const uploadedCv = pendingUploadedCvData && pendingUploadedCvData.mode === "add" ? pendingUploadedCvData : null;
+  const parsedExtra = uploadedCv?.parsed || {};
+  const mergedSkills = Array.isArray(parsedExtra.skills) && parsedExtra.skills.length > 0
+    ? parsedExtra.skills
+    : (position ? [position] : []);
+
   const newRecord = {
     id: `CND-${1000 + candidates.length + 1}`,
     name,
@@ -2287,23 +2298,32 @@ async function handleAddCandidateSubmit(e) {
     email,
     phone,
     whatsapp: phone,
-    domicile: "Indonesia",
-    salaryExpectation: "Negotiable",
+    domicile: parsedExtra.domicile || "Indonesia",
+    salaryExpectation: parsedExtra.salaryExpectation || "Negotiable",
     currentSalary: "-",
     availability: "Immediate",
     ownerId: activeUser.id,
     ownerName: activeUser.name,
-    skills: position ? [position] : [],
-    tags: ["New Entry"],
+    skills: mergedSkills,
+    tags: ["New Entry", ...(uploadedCv ? ["CV Auto-Parsed"] : [])],
     summary,
+    workHistory: Array.isArray(parsedExtra.workHistory) && parsedExtra.workHistory.length > 0 ? parsedExtra.workHistory : undefined,
+    educationHistory: Array.isArray(parsedExtra.educationHistory) && parsedExtra.educationHistory.length > 0 ? parsedExtra.educationHistory : undefined,
+    cvVersions: uploadedCv ? [{
+      version: `v1 (${uploadedCv.fileName})`,
+      uploadedAt: nowStr,
+      uploadedBy: activeUser.name,
+      content: `[Uploaded CV File: ${uploadedCv.fileName}]\n\n${uploadedCv.rawText}`
+    }] : undefined,
     isUnviewed: true,
     recommendations: newRecs
   };
 
   candidates.unshift(newRecord);
-  addAuditLog("CREATE_CANDIDATE", `Candidate ${name}`, `Added new candidate profile`);
+  addAuditLog("CREATE_CANDIDATE", `Candidate ${name}`, `Added new candidate profile${uploadedCv ? ` via CV (${uploadedCv.fileName})` : ""}`);
   saveCandidates(candidates);
   e.target.reset();
+  resetCvUploadUi("add");
   document.getElementById("addCandidateModal")?.close();
   currentPage = 1;
   renderAllViews();
@@ -3784,6 +3804,7 @@ function openApplyJobModal(jobId) {
   const form = document.getElementById("formApplyJob");
   if (form) form.reset();
   if (idInput) idInput.value = job.id;
+  resetCvUploadUi("apply");
 
   modal?.showModal();
 }
@@ -3800,7 +3821,12 @@ function handleApplyJobSubmit(e) {
   const coverLetter = document.getElementById("applyCoverLetter")?.value.trim();
 
   if (!fullName || !email) {
-    alert("Please provide full name and email.");
+    showAlertDialog({
+      title: "Data Wajib Belum Lengkap",
+      message: "Silakan lengkapi Nama Lengkap dan Email sebelum mengirim lamaran.",
+      type: "warning",
+      okText: "Mengerti"
+    });
     return;
   }
 
@@ -3809,25 +3835,37 @@ function handleApplyJobSubmit(e) {
 
   const now = new Date();
   const nowFormatted = formatTimestamp(now);
+  const uploadedCv = pendingUploadedCvData && pendingUploadedCvData.mode === "apply" ? pendingUploadedCvData : null;
+  const parsedExtra = uploadedCv?.parsed || {};
 
   const newCand = {
     id: candidateId,
     name: fullName,
-    nationality: "Indonesia",
-    gender: "Unknown",
-    birthDate: "1996-01-01",
+    nationality: parsedExtra.nationality || "Indonesia",
+    gender: parsedExtra.gender || "Male",
+    birthDate: parsedExtra.birthDate || "1996-01-01",
     education: education,
-    language: "Indonesian, English",
+    language: parsedExtra.language || "Indonesian, English",
     yearsOfService: years,
     email: email,
     phone: phone,
     whatsapp: phone,
-    domicile: job ? job.location.split(",")[0] : "Jakarta",
+    domicile: parsedExtra.domicile || (job ? job.location.split(",")[0] : "Jakarta"),
     salaryExpectation: salary,
     currentSalary: "-",
     availability: "1 month notice",
-    recommendedPosition: job ? job.title : "Candidate",
+    recommendedPosition: job ? job.title : (parsedExtra.position || "Candidate"),
     recommendedCompany: job ? job.company : "General",
+    skills: Array.isArray(parsedExtra.skills) && parsedExtra.skills.length > 0 ? parsedExtra.skills : undefined,
+    summary: parsedExtra.summary || coverLetter || "",
+    workHistory: Array.isArray(parsedExtra.workHistory) && parsedExtra.workHistory.length > 0 ? parsedExtra.workHistory : undefined,
+    educationHistory: Array.isArray(parsedExtra.educationHistory) && parsedExtra.educationHistory.length > 0 ? parsedExtra.educationHistory : undefined,
+    cvVersions: uploadedCv ? [{
+      version: `v1 (${uploadedCv.fileName})`,
+      uploadedAt: nowFormatted,
+      uploadedBy: fullName,
+      content: `[Uploaded CV File: ${uploadedCv.fileName}]\n\n${uploadedCv.rawText}`
+    }] : undefined,
     ownerName: activeUser.name,
     entryTime: nowFormatted,
     isUnviewed: true,
@@ -3849,6 +3887,7 @@ function handleApplyJobSubmit(e) {
 
   candidates.unshift(newCand);
   saveCandidates(candidates);
+  resetCvUploadUi("apply");
 
   addAuditLog(
     "CAREER_PORTAL_APPLY",
@@ -4334,142 +4373,866 @@ function handleSendOfferClick() {
 }
 
 /**
- * 14D. HEURISTIC SMART CV PARSER & AUTO-FILL (Fase 4D)
+ * 14D. CLIENT-SIDE MULTI-FORMAT CV UPLOAD (PDF/DOCX/TXT) & FULL AUTO-FILL
  */
+let pendingUploadedCvData = null;
+
+function resetCvUploadUi(mode = "add") {
+  if (pendingUploadedCvData && pendingUploadedCvData.mode === mode) {
+    pendingUploadedCvData = null;
+  }
+  if (mode === "add") {
+    const fileInput = document.getElementById("cvUploadFileInput");
+    const chip = document.getElementById("cvUploadedFileChip");
+    const pillsBox = document.getElementById("cvParseExtractedPills");
+    const rawBox = document.getElementById("rawCvParseText");
+    if (fileInput) fileInput.value = "";
+    if (chip) chip.style.display = "none";
+    if (pillsBox) {
+      pillsBox.innerHTML = "";
+      pillsBox.style.display = "none";
+    }
+    if (rawBox) rawBox.value = "";
+  } else if (mode === "apply") {
+    const fileInput = document.getElementById("applyCvFileInput");
+    const statusText = document.getElementById("applyCvStatusText");
+    if (fileInput) fileInput.value = "";
+    if (statusText) {
+      statusText.textContent = "Unggah file CV Anda agar formulir di bawah terisi otomatis";
+      statusText.style.color = "var(--text-muted)";
+    }
+  }
+}
+
+function flashInputHighlight(el) {
+  if (!el) return;
+  el.classList.remove("autofill-flash");
+  void el.offsetWidth;
+  el.classList.add("autofill-flash");
+  setTimeout(() => el.classList.remove("autofill-flash"), 1700);
+}
+
+function setSelectOrAppendOption(selectEl, targetValue) {
+  if (!selectEl || !targetValue) return false;
+  const normalizedTarget = targetValue.trim().toLowerCase();
+  for (const opt of selectEl.options) {
+    if (opt.value.toLowerCase() === normalizedTarget || opt.value.toLowerCase().includes(normalizedTarget)) {
+      selectEl.value = opt.value;
+      return true;
+    }
+  }
+  const newOpt = document.createElement("option");
+  newOpt.value = targetValue.trim();
+  newOpt.textContent = targetValue.trim();
+  selectEl.appendChild(newOpt);
+  selectEl.value = newOpt.value;
+  return true;
+}
+
+/** Decode XML entities inside extracted DOCX XML */
+function decodeXmlEntities(str) {
+  return String(str || "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+/** Browser-native fallback to read word/document.xml from DOCX ZIP buffer */
+async function extractDocxXmlFallback(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const view = new DataView(arrayBuffer);
+  let offset = 0;
+
+  while (offset + 30 < bytes.length) {
+    if (view.getUint32(offset, true) !== 0x04034b50) {
+      offset++;
+      continue;
+    }
+    const method = view.getUint16(offset + 8, true);
+    const compSize = view.getUint32(offset + 18, true);
+    const nameLen = view.getUint16(offset + 26, true);
+    const extraLen = view.getUint16(offset + 28, true);
+    const dataStart = offset + 30 + nameLen + extraLen;
+    const fileName = new TextDecoder().decode(bytes.subarray(offset + 30, offset + 30 + nameLen));
+
+    if (fileName === "word/document.xml" && compSize > 0 && dataStart + compSize <= bytes.length) {
+      const compSlice = bytes.subarray(dataStart, dataStart + compSize);
+      let xmlBytes;
+      if (method === 0) {
+        xmlBytes = compSlice;
+      } else if (method === 8 && typeof DecompressionStream === "function") {
+        const ds = new DecompressionStream("deflate-raw");
+        const writer = ds.writable.getWriter();
+        writer.write(compSlice);
+        writer.close();
+        xmlBytes = new Uint8Array(await new Response(ds.readable).arrayBuffer());
+      }
+      if (xmlBytes) {
+        const xmlStr = new TextDecoder("utf-8").decode(xmlBytes);
+        const textWithBreaks = xmlStr
+          .replace(/<w:tab\b[^>]*\/?>/gi, " | ")
+          .replace(/<w:br\b[^>]*\/?>/gi, "\n")
+          .replace(/<\/w:p>/gi, "\n")
+          .replace(/<\/w:tr>/gi, "\n")
+          .replace(/<\/w:tc>/gi, " | ")
+          .replace(/<[^>]+>/g, "");
+        return decodeXmlEntities(textWithBreaks).replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+      }
+    }
+    offset = compSize > 0 ? dataStart + compSize : offset + 1;
+  }
+  return "";
+}
+
+/** Browser-native fallback for reading FlateDecode PDF streams offline */
+async function extractPdfTextFallback(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const latin1 = new TextDecoder("latin1").decode(bytes);
+  const chunks = [];
+  const streamRegex = /stream\r?\n([\s\S]*?)\r?\n?endstream/g;
+  let match;
+
+  while ((match = streamRegex.exec(latin1)) !== null) {
+    const startIdx = match.index + match[0].indexOf("\n") + 1;
+    let endIdx = match.index + match[0].lastIndexOf("endstream");
+    while (endIdx > startIdx && (bytes[endIdx - 1] === 10 || bytes[endIdx - 1] === 13)) {
+      endIdx--;
+    }
+    const rawSlice = bytes.subarray(startIdx, endIdx);
+    let contentText = "";
+
+    try {
+      const slicePreview = new TextDecoder("latin1").decode(rawSlice.subarray(0, Math.min(200, rawSlice.length)));
+      if (!/\bBT\b|\bTj\b|\bTJ\b/.test(slicePreview) && typeof DecompressionStream === "function" && rawSlice.length > 2) {
+        try {
+          const ds = new DecompressionStream("deflate");
+          const writer = ds.writable.getWriter();
+          writer.write(rawSlice).catch(() => {});
+          writer.close().catch(() => {});
+          const out = await new Response(ds.readable).arrayBuffer();
+          contentText = new TextDecoder("latin1").decode(out);
+        } catch (_) {
+          contentText = new TextDecoder("latin1").decode(rawSlice);
+        }
+      } else {
+        contentText = new TextDecoder("latin1").decode(rawSlice);
+      }
+    } catch (_) {
+      continue;
+    }
+
+    if (!contentText.includes("Tj") && !contentText.includes("TJ") && !contentText.includes("BT")) continue;
+    const textMatches = contentText.match(/\((?:\\.|[^\\)])*\)\s*(?:Tj|'|")|\[(?:[\s\S]*?)\]\s*TJ/g);
+    if (textMatches) {
+      const lineParts = [];
+      for (const op of textMatches) {
+        const innerRegex = /\(([^\\)]*(?:\\.[^\\)]*)*)\)/g;
+        let partMatch;
+        let segment = "";
+        while ((partMatch = innerRegex.exec(op)) !== null) {
+          let decoded = partMatch[1]
+            .replace(/\\n/g, "\n")
+            .replace(/\\r/g, " ")
+            .replace(/\\t/g, " ")
+            .replace(/\\\(/g, "(")
+            .replace(/\\\)/g, ")")
+            .replace(/\\\\/g, "\\");
+          segment += decoded;
+        }
+        if (segment.trim()) lineParts.push(segment.trim());
+      }
+      if (lineParts.length > 0) chunks.push(lineParts.join("\n"));
+    }
+  }
+
+  return chunks.join("\n").replace(/\s{2,}/g, " ").replace(/ \n/g, "\n").trim();
+}
+
+/** Extract clean readable text from .pdf, .docx, .rtf, or .txt/.md files */
+async function extractTextFromCvFile(file) {
+  const lowerName = (file.name || "").toLowerCase();
+  const isText = file.type.startsWith("text/") || lowerName.endsWith(".txt") || lowerName.endsWith(".md") || lowerName.endsWith(".csv");
+
+  if (isText) {
+    return await file.text();
+  }
+
+  if (lowerName.endsWith(".rtf")) {
+    const rawRtf = await file.text();
+    return rawRtf
+      .replace(/\\par[d]?/g, "\n")
+      .replace(/\{\*?\\[^{}]+\}|\\[a-z]+-?\d*\s?/gi, "")
+      .replace(/[{}]/g, "")
+      .trim();
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+
+  if (lowerName.endsWith(".docx")) {
+    if (window.mammoth && typeof window.mammoth.extractRawText === "function") {
+      try {
+        const res = await window.mammoth.extractRawText({ arrayBuffer: arrayBuffer.slice(0) });
+        if (res && res.value && res.value.trim()) return res.value.trim();
+      } catch (err) {
+        console.warn("Mammoth extraction fallback triggered:", err);
+      }
+    }
+    return await extractDocxXmlFallback(arrayBuffer);
+  }
+
+  if (lowerName.endsWith(".pdf") || file.type === "application/pdf") {
+    if (window.pdfjsLib && typeof window.pdfjsLib.getDocument === "function") {
+      try {
+        if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        }
+        const withTimeout = (promise, ms) => Promise.race([
+          promise,
+          new Promise((_, rej) => setTimeout(() => rej(new Error("PDF.js timeout")), ms))
+        ]);
+        let pdfDoc;
+        try {
+          pdfDoc = await withTimeout(
+            window.pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise,
+            4000
+          );
+        } catch (_) {
+          pdfDoc = await withTimeout(
+            window.pdfjsLib.getDocument({ data: arrayBuffer.slice(0), disableWorker: true }).promise,
+            4000
+          );
+        }
+        const pageTexts = [];
+        for (let p = 1; p <= pdfDoc.numPages; p++) {
+          const page = await pdfDoc.getPage(p);
+          const content = await page.getTextContent();
+          const lineMap = new Map();
+          for (const item of content.items) {
+            if (!item.str) continue;
+            const y = Math.round((item.transform?.[5] || 0) / 4) * 4;
+            if (!lineMap.has(y)) lineMap.set(y, []);
+            lineMap.get(y).push({ x: item.transform?.[4] || 0, str: item.str });
+          }
+          const sortedYs = Array.from(lineMap.keys()).sort((a, b) => b - a);
+          const pageLines = sortedYs.map(y =>
+            lineMap.get(y).sort((a, b) => a.x - b.x).map(i => i.str).join(" ").replace(/\s{2,}/g, " ").trim()
+          ).filter(Boolean);
+          pageTexts.push(pageLines.join("\n"));
+        }
+        const combined = pageTexts.join("\n\n").trim();
+        if (combined) return combined;
+      } catch (err) {
+        console.warn("PDF.js extraction fallback triggered:", err);
+      }
+    }
+    return await extractPdfTextFallback(arrayBuffer);
+  }
+
+  // Legacy .doc binary fallback: collect printable text runs
+  const decoder = new TextDecoder("latin1");
+  const raw = decoder.decode(new Uint8Array(arrayBuffer));
+  const printableRuns = raw.match(/[A-Za-z0-9@.,:;+\-/()\n ]{6,}/g) || [];
+  return printableRuns.join("\n").trim();
+}
+
+/** Normalize Indonesian / English date strings to YYYY-MM-DD */
+function parseFlexibleBirthDate(rawStr) {
+  if (!rawStr) return "";
+  const cleaned = rawStr.trim();
+
+  const isoMatch = cleaned.match(/\b(19[5-9]\d|200[0-8])[-\/](0?[1-9]|1[0-2])[-\/](0?[1-9]|[12]\d|3[01])\b/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+  }
+
+  const dmyMatch = cleaned.match(/\b(0?[1-9]|[12]\d|3[01])[-\/.](0?[1-9]|1[0-2])[-\/.](19[5-9]\d|200[0-8])\b/);
+  if (dmyMatch) {
+    return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+  }
+
+  const monthMap = {
+    januari: "01", january: "01", jan: "01",
+    februari: "02", february: "02", feb: "02",
+    maret: "03", march: "03", mar: "03",
+    april: "04", apr: "04",
+    mei: "05", may: "05",
+    juni: "06", june: "06", jun: "06",
+    juli: "07", july: "07", jul: "07",
+    agustus: "08", august: "08", aug: "08", agu: "08", agst: "08",
+    september: "09", sep: "09", sept: "09",
+    oktober: "10", october: "10", oct: "10", okt: "10",
+    november: "11", nov: "11", nop: "11",
+    desember: "12", december: "12", dec: "12", des: "12"
+  };
+
+  const textDateMatch = cleaned.match(/\b(0?[1-9]|[12]\d|3[01])\s+([A-Za-z]+),?\s+(19[5-9]\d|200[0-8])\b/i);
+  if (textDateMatch && monthMap[textDateMatch[2].toLowerCase()]) {
+    return `${textDateMatch[3]}-${monthMap[textDateMatch[2].toLowerCase()]}-${textDateMatch[1].padStart(2, "0")}`;
+  }
+
+  const monthFirstMatch = cleaned.match(/\b([A-Za-z]+)\s+(0?[1-9]|[12]\d|3[01]),?\s+(19[5-9]\d|200[0-8])\b/i);
+  if (monthFirstMatch && monthMap[monthFirstMatch[1].toLowerCase()]) {
+    return `${monthFirstMatch[3]}-${monthMap[monthFirstMatch[1].toLowerCase()]}-${monthFirstMatch[2].padStart(2, "0")}`;
+  }
+
+  return "";
+}
+
+/** Smart Multi-Field CV Parser Engine supporting Indonesian, English & Mandarin patterns */
+function parseCvTextToStructuredData(rawText, fileName = "") {
+  const normalized = String(rawText || "").replace(/\r\n/g, "\n").trim();
+  const extracted = {
+    name: "",
+    nationality: "",
+    gender: "",
+    birthDate: "",
+    education: "",
+    years: undefined,
+    language: "",
+    position: "",
+    company: "",
+    email: "",
+    phone: "",
+    summary: "",
+    skills: [],
+    domicile: "",
+    salaryExpectation: "",
+    workHistory: [],
+    educationHistory: []
+  };
+
+  // 1. Email
+  const emailMatch = normalized.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/);
+  if (emailMatch) extracted.email = emailMatch[0].trim();
+
+  // 2. Phone / WhatsApp
+  const phoneLabelMatch = normalized.match(/(?:WhatsApp|WA|Phone|No\.?\s*HP|Handphone|Telepon|Telp|Mobile|Kontak|Contact)\s*[:\-]\s*([+\d][\d\s.\-()]{7,18})/i);
+  const phoneFallbackMatch = normalized.match(/(?:\+?62|08)[0-9\s.\-()]{8,16}/);
+  const rawPhone = phoneLabelMatch ? phoneLabelMatch[1] : (phoneFallbackMatch ? phoneFallbackMatch[0] : "");
+  if (rawPhone) {
+    extracted.phone = rawPhone.split(/[\n\r|]/)[0].replace(/\s{2,}/g, " ").trim();
+  }
+
+  // 3. Name
+  const namePrefixMatch = normalized.match(/(?:Nama\s*Lengkap|Full\s*Name|Candidate\s*Name|Nama|Name)\s*[:\-]\s*([^\n\r|•]+)/i);
+  if (namePrefixMatch) {
+    extracted.name = namePrefixMatch[1].replace(/\s{2,}/g, " ").trim();
+  } else {
+    const skipHeaderPattern = /^(curriculum vitae|resume|cv|daftar riwayat hidup|biodata|profile|profil)$/i;
+    const lines = normalized.split("\n")
+      .map(l => l.trim())
+      .filter(l => l.length > 2 && l.length < 65 && !l.includes("@") && !/http|linkedin|github/i.test(l) && !/^\+?\d[\d\s\-()]{6,}$/.test(l) && !skipHeaderPattern.test(l));
+    if (lines.length > 0) {
+      const candidateLine = lines[0].replace(/^(curriculum vitae|resume|cv)\s*[-:]?\s*/i, "").split(/\s*[|•]\s*/)[0].trim();
+      if (candidateLine && !/\d{4}/.test(candidateLine)) {
+        extracted.name = candidateLine;
+      }
+    }
+  }
+  if (!extracted.name && fileName) {
+    const cleanBase = fileName.replace(/\.[^.]+$/, "").replace(/\b(cv|resume|lamaran|updated|latest|final)\b/gi, "").replace(/[_\-]+/g, " ").trim();
+    if (cleanBase.length >= 3) {
+      extracted.name = cleanBase.replace(/\b\w/g, c => c.toUpperCase());
+    }
+  }
+
+  // 4. Gender
+  const genderMatch = normalized.match(/(?:Jenis\s*Kelamin|Gender|Kelamin|Sex|性别)\s*[:\-]?\s*(Perempuan|Wanita|Female|Woman|女|Laki-laki|Laki|Pria|Male|Man|男)/i)
+    || normalized.match(/\b(Perempuan|Wanita|Female|Laki-laki|Pria|Male)\b/i);
+  if (genderMatch) {
+    const gToken = genderMatch[1].toLowerCase();
+    extracted.gender = /^(perempuan|wanita|female|woman|女)$/.test(gToken) ? "Female" : "Male";
+  }
+
+  // 5. Birth Date / Age
+  const dobLabelMatch = normalized.match(/(?:Tanggal\s*Lahir|Tgl\.?\s*Lahir|Tempat\s*[\/,&]?\s*Tanggal\s*Lahir|TTL|Date\s*of\s*Birth|DOB|Birth\s*Date|Born|出生日期)\s*[:\-]?\s*([^\n\r|]+)/i);
+  if (dobLabelMatch) {
+    extracted.birthDate = parseFlexibleBirthDate(dobLabelMatch[1]);
+  }
+  if (!extracted.birthDate) {
+    extracted.birthDate = parseFlexibleBirthDate(normalized);
+  }
+  if (!extracted.birthDate) {
+    const ageMatch = normalized.match(/(?:Usia|Umur|Age)\s*[:\-]?\s*(\d{2})\s*(?:tahun|thn|years|yrs)?/i)
+      || normalized.match(/\b(\d{2})\s*(?:tahun|years\s*old)\b/i);
+    if (ageMatch) {
+      const ageNum = parseInt(ageMatch[1], 10);
+      if (ageNum >= 18 && ageNum <= 65) {
+        extracted.birthDate = `${new Date().getFullYear() - ageNum}-06-15`;
+      }
+    }
+  }
+
+  // 6. Nationality & Domicile
+  const natMatch = normalized.match(/(?:Kewarganegaraan|Warga\s*Negara|Nationality|Citizenship|国籍)\s*[:\-]\s*([^\n\r|,•]+)/i);
+  if (natMatch) {
+    const rawNat = natMatch[1].trim();
+    if (/^(wni|indonesia|indonesian)$/i.test(rawNat)) extracted.nationality = "Indonesia";
+    else if (/^(china|chinese|tiongkok|prc|中国)$/i.test(rawNat)) extracted.nationality = "China";
+    else extracted.nationality = rawNat;
+  } else if (/\b(?:Jakarta|Bandung|Surabaya|Tangerang|Bekasi|Depok|Bogor|Semarang|Yogyakarta|Medan|Cikarang|Karawang|Indonesia)\b/i.test(normalized) || /(?:\+62|08)/.test(normalized)) {
+    extracted.nationality = "Indonesia";
+  }
+
+  const domMatch = normalized.match(/(?:Domisili|Domicile|Alamat|Address|Location|Lokasi|Kota)\s*[:\-]\s*([^\n\r|]+)/i);
+  if (domMatch) {
+    extracted.domicile = domMatch[1].trim();
+  } else {
+    const cityMatch = normalized.match(/\b(Jakarta(?:\s+(?:Selatan|Pusat|Barat|Timur|Utara))?|Bandung|Surabaya|Tangerang(?:\s+Selatan)?|Bekasi|Depok|Bogor|Semarang|Yogyakarta|Medan|Bali|Cikarang|Karawang)\b/i);
+    if (cityMatch) extracted.domicile = cityMatch[1];
+  }
+
+  // 7. Education Level & History
+  if (/\b(?:master|magister|s2|s-2|m\.kom|m\.sc|m\.t|m\.m|mba|m\.eng|pascasarjana)\b/i.test(normalized)) {
+    extracted.education = "master";
+  } else if (/\b(?:diploma|d3|d-3|d4|d-4|ahli\s*madya|a\.md|associate|politeknik)\b/i.test(normalized)) {
+    extracted.education = "diploma";
+  } else if (/\b(?:undergraduate|bachelor|sarjana|s1|s-1|s\.kom|s\.t|s\.e|s\.h|s\.psi|s\.sos|b\.sc|b\.eng|b\.a|universitas|institut)\b/i.test(normalized)) {
+    extracted.education = "undergraduate";
+  }
+
+  // 8. Years of Service / Experience
+  const expMatch = normalized.match(/(\d+(?:\.\d+)?)\+?\s*(?:tahun|thn|years?|yrs?)\s*(?:of\s*)?(?:pengalaman|kerja|experience|exp)\b/i)
+    || normalized.match(/(?:berpengalaman|pengalaman(?:\s+kerja)?|masa\s+kerja|total\s+experience|work\s+experience|experience)\s*(?:lebih\s+dari|selama|minimal|sekitar|kurang\s+lebih|over|more\s+than|at\s+least|>|:|-)?\s*(\d+(?:\.\d+)?)\+?\s*(?:tahun|thn|years?|yrs?)/i);
+  if (expMatch) {
+    extracted.years = Math.min(40, Math.round(parseFloat(expMatch[1])));
+  } else {
+    const currentYear = new Date().getFullYear();
+    const nonEduText = normalized.split("\n").filter(l => !/\b(?:pend\.|pendidikan|education|universitas|institut|politeknik|university|college|bachelor|sarjana|master|magister|s1|s2|d3|d4|sma|smk)\b/i.test(l)).join("\n");
+    const yearRanges = Array.from(nonEduText.matchAll(/(20[0-2]\d|199\d)\s*(?:-|–|—|to|s\/d|sampai|hingga)\s*(20[0-2]\d|Present|Sekarang|Now|Current|Saat\s*ini)/gi));
+    if (yearRanges.length > 0) {
+      let minStart = currentYear;
+      let maxEnd = 0;
+      for (const yr of yearRanges) {
+        const sY = parseInt(yr[1], 10);
+        const eY = /^\d{4}$/.test(yr[2]) ? parseInt(yr[2], 10) : currentYear;
+        if (sY < minStart) minStart = sY;
+        if (eY > maxEnd) maxEnd = eY;
+      }
+      if (maxEnd >= minStart) {
+        extracted.years = Math.max(0, Math.min(40, maxEnd - minStart));
+      }
+    }
+  }
+
+  // 9. Languages
+  const detectedLangs = [];
+  if (/\b(?:Indonesian|Bahasa\s*Indonesia|Indonesia)\b/i.test(normalized)) detectedLangs.push("Indonesian");
+  if (/\b(?:English|Inggris|TOEFL|IELTS|TOEIC)\b/i.test(normalized)) detectedLangs.push("English");
+  if (/\b(?:Mandarin|Chinese|Tionghoa|HSK)\b|中文|普通话/i.test(normalized)) detectedLangs.push("Mandarin");
+  if (/\b(?:Japanese|Jepang|JLPT)\b|日本語/i.test(normalized)) detectedLangs.push("Japanese");
+  if (/\b(?:Korean|Korea|TOPIK)\b/i.test(normalized)) detectedLangs.push("Korean");
+  if (/\b(?:Arabic|Arab)\b/i.test(normalized)) detectedLangs.push("Arabic");
+  if (/\b(?:German|Jerman)\b/i.test(normalized)) detectedLangs.push("German");
+  if (detectedLangs.length > 0) {
+    extracted.language = detectedLangs.join(", ");
+  }
+
+  // 10. Skills
+  const knownSkills = [
+    "Kubernetes", "Docker", "Golang", "Go", "Java", "Spring Boot", "Python", "FastAPI", "Django",
+    "React", "Next.js", "Vue", "Angular", "Node.js", "TypeScript", "JavaScript", "PHP", "Laravel",
+    "Flutter", "Kotlin", "Swift", "AWS", "GCP", "Azure", "PostgreSQL", "MySQL", "MongoDB", "Kafka",
+    "Redis", "Figma", "UI/UX", "Scrum", "Agile", "Product Management", "Microservices", "CI/CD",
+    "Terraform", "DevOps", "SAP", "ERP", "CEISA", "Import/Export", "Customs", "Supply Chain",
+    "Logistics", "Accounting", "Brevet A/B", "Tax", "Financial Modeling", "Recruitment", "HRIS",
+    "Digital Marketing", "SEO", "SEM", "Mandarin Translation", "Presales", "B2B Sales", "SQL", "Excel"
+  ];
+  extracted.skills = knownSkills.filter(skill => {
+    const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(normalized);
+  });
+
+  // 11. Target / Recommended Position
+  const explicitPosMatch = normalized.match(/(?:Posisi\s*yang\s*Dilamar|Posisi\s*Tujuan|Applied\s*Position|Target\s*Position|Current\s*Role|Job\s*Title|Posisi|Jabatan|Role)\s*[:\-]\s*([^\n\r|]+)/i);
+  if (explicitPosMatch) {
+    extracted.position = explicitPosMatch[1].trim();
+  } else {
+    for (const pos of masterPositions) {
+      if (new RegExp(pos.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(normalized)) {
+        extracted.position = pos;
+        break;
+      }
+    }
+    if (!extracted.position) {
+      const textNoContact = normalized.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, " ").replace(/https?:\/\/\S+/g, " ");
+      if (/\b(?:customs|ceisa|import|export|ekspor|impor|ppjk)\b/i.test(textNoContact)) extracted.position = "Customs Documentation Specialist";
+      else if (/\b(?:cloud|devops|infrastructure|kubernetes|terraform)\b/i.test(textNoContact)) extracted.position = "Lead Cloud Architect";
+      else if (/\b(?:fullstack|react|next\.js|node\.js)\b/i.test(textNoContact)) extracted.position = "Fullstack Engineer (React & Node.js)";
+      else if (/\b(?:backend|go|golang|spring boot|microservice)\b/i.test(textNoContact)) extracted.position = "Senior Backend Engineer";
+      else if (/\b(?:product manager|product owner|roadmap)\b/i.test(textNoContact)) extracted.position = "Technical Product Manager";
+      else if (/\b(?:interpreter|translator|penerjemah|mandarin)\b/i.test(textNoContact)) extracted.position = "Mandarin Interpreter";
+      else if (/\b(?:ui\/ux|figma|product designer)\b/i.test(textNoContact)) extracted.position = "UI/UX Designer";
+      else if (/\b(?:finance|accounting|akuntansi|pajak|tax|brevet)\b/i.test(textNoContact)) extracted.position = "Finance & Tax Specialist";
+      else if (/\b(?:hr|human resources|rekruiter|recruitment|talent acquisition)\b/i.test(textNoContact)) extracted.position = "HR & Talent Specialist";
+      else if (/\b(?:presales|solution architect)\b/i.test(textNoContact)) extracted.position = "Presales Lead";
+    }
+  }
+
+  // 12. Target Company (if explicitly mentioned)
+  const explicitCompanyMatch = normalized.match(/(?:Target\s*Company|Perusahaan\s*Tujuan|Melamar\s*ke|Apply\s*to)\s*[:\-]\s*([^\n\r|]+)/i);
+  if (explicitCompanyMatch) {
+    extracted.company = explicitCompanyMatch[1].trim();
+  }
+
+  // 13. Salary Expectation
+  const salaryMatch = normalized.match(/(?:Expected\s*Salary|Ekspektasi\s*Gaji|Gaji\s*Diharapkan|Salary\s*Expectation)\s*[:\-]\s*([^\n\r|]+)/i);
+  if (salaryMatch) {
+    extracted.salaryExpectation = salaryMatch[1].trim();
+  }
+
+  // 14. Structured Work & Education History
+  const workLineMatches = Array.from(normalized.matchAll(/^([A-Za-z0-9 &\/,.()-]{4,60}?)\s*(?:-|@|at|di|–)\s*([A-Za-z0-9 &\/,.()-]{2,50}?)\s*\(([^)]*\d{4}[^)]*)\)/gm));
+  for (const wm of workLineMatches.slice(0, 5)) {
+    extracted.workHistory.push({
+      role: wm[1].trim(),
+      company: wm[2].trim(),
+      period: wm[3].trim(),
+      desc: "Extracted automatically from uploaded CV document."
+    });
+  }
+  const uniMatch = normalized.match(/((?:Universitas|Institut|Politeknik|University|Institute|College)\s+[A-Za-z0-9 &.'-]{3,55})/i);
+  if (uniMatch || extracted.education) {
+    extracted.educationHistory.push({
+      degree: extracted.education === "master" ? "Master (S2)" : extracted.education === "diploma" ? "Diploma (D3/D4)" : "Bachelor (S1)",
+      institution: uniMatch ? uniMatch[1].trim() : "University / Higher Education",
+      year: (normalized.match(/\b(200\d|201\d|202\d)\b/) || [])[1] || "Graduated"
+    });
+  }
+
+  // 15. Professional Summary (Combine summary section + skills/highlights)
+  const summarySectionMatch = normalized.match(/(?:PROFESSIONAL\s*SUMMARY|EXECUTIVE\s*SUMMARY|RINGKASAN\s*PROFESIONAL|TENTANG\s*SAYA|PROFIL\s*SINGKAT|PROFILE|SUMMARY|ABOUT\s*ME|OBJECTIVE)\s*[:\-]?\s*\n+([\s\S]{15,500}?)(?=\n\s*\n|\n(?:CORE\s*SKILLS|SKILLS|KEAHLIAN|EXPERIENCE|PENGALAMAN|EDUCATION|PENDIDIKAN|LANGUAGES|BAHASA)\b|$)/i);
+  let summaryParts = [];
+  if (summarySectionMatch) {
+    summaryParts.push(summarySectionMatch[1].replace(/\n+/g, " ").replace(/\s{2,}/g, " ").trim());
+  } else {
+    const introParts = [];
+    if (extracted.position) introParts.push(extracted.position);
+    if (extracted.years !== undefined) introParts.push(`${extracted.years} tahun pengalaman`);
+    if (extracted.domicile) introParts.push(`berdomisili di ${extracted.domicile}`);
+    if (introParts.length > 0) summaryParts.push(`Kandidat profesional: ${introParts.join(" • ")}.`);
+  }
+  if (extracted.skills.length > 0) {
+    const skillsLine = `Keahlian Utama: ${extracted.skills.slice(0, 10).join(", ")}.`;
+    if (!summaryParts[0] || !summaryParts[0].toLowerCase().includes(extracted.skills[0].toLowerCase())) {
+      summaryParts.push(skillsLine);
+    }
+  }
+  extracted.summary = summaryParts.join("\n").trim();
+
+  return extracted;
+}
+
+/** Auto-fill ALL 12 fields inside #formAddCandidate and render extracted badges */
+function autoFillAddCandidateForm(extracted, sourceLabel = "CV") {
+  let filledCount = 0;
+  const fillField = (id, val, isSelect = false) => {
+    if (val === undefined || val === null || val === "") return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (isSelect) {
+      setSelectOrAppendOption(el, String(val));
+    } else {
+      el.value = String(val);
+    }
+    flashInputHighlight(el);
+    filledCount++;
+  };
+
+  fillField("addName", extracted.name);
+  fillField("addNationality", extracted.nationality || "Indonesia");
+  fillField("addGender", extracted.gender);
+  fillField("addBirthDate", extracted.birthDate);
+  fillField("addEducation", extracted.education);
+  if (extracted.years !== undefined) fillField("addYears", extracted.years);
+  fillField("addLanguage", extracted.language);
+  if (extracted.position) fillField("addPositionSelect", extracted.position, true);
+  if (extracted.company) fillField("addCompanySelect", extracted.company, true);
+  fillField("addEmail", extracted.email);
+  fillField("addPhone", extracted.phone);
+  fillField("addSummary", extracted.summary);
+
+  const pillsBox = document.getElementById("cvParseExtractedPills");
+  if (pillsBox) {
+    pillsBox.style.display = "flex";
+    const badges = [
+      `<span class="parse-extracted-badge" style="background: rgba(163, 230, 53, 0.25); color: var(--text-primary); border: 1px solid #84cc16;">✓ ${filledCount} Kolom Auto-Fill (${escapeHtml(sourceLabel)})</span>`
+    ];
+    if (extracted.name) badges.push(`<span class="parse-extracted-badge">Nama: ${escapeHtml(extracted.name)}</span>`);
+    if (extracted.email) badges.push(`<span class="parse-extracted-badge">Email: ${escapeHtml(extracted.email)}</span>`);
+    if (extracted.phone) badges.push(`<span class="parse-extracted-badge">HP: ${escapeHtml(extracted.phone)}</span>`);
+    if (extracted.gender) badges.push(`<span class="parse-extracted-badge">Gender: ${escapeHtml(extracted.gender)}</span>`);
+    if (extracted.birthDate) badges.push(`<span class="parse-extracted-badge">Lahir: ${escapeHtml(extracted.birthDate)}</span>`);
+    if (extracted.education) badges.push(`<span class="parse-extracted-badge">Pendidikan: ${escapeHtml(extracted.education)}</span>`);
+    if (extracted.years !== undefined) badges.push(`<span class="parse-extracted-badge">Exp: ${extracted.years} thn</span>`);
+    if (extracted.language) badges.push(`<span class="parse-extracted-badge">Bahasa: ${escapeHtml(extracted.language)}</span>`);
+    if (extracted.position) badges.push(`<span class="parse-extracted-badge">Posisi: ${escapeHtml(extracted.position)}</span>`);
+    if (extracted.skills?.length) badges.push(`<span class="parse-extracted-badge">Skills: ${escapeHtml(extracted.skills.slice(0, 4).join(", "))}</span>`);
+    pillsBox.innerHTML = badges.join("");
+  }
+
+  return filledCount;
+}
+
+/** Auto-fill fields inside #formApplyJob */
+function autoFillApplyJobForm(extracted, sourceLabel = "CV") {
+  let filledCount = 0;
+  const fillApply = (id, val) => {
+    if (val === undefined || val === null || val === "") return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = String(val);
+    flashInputHighlight(el);
+    filledCount++;
+  };
+
+  fillApply("applyFullName", extracted.name);
+  fillApply("applyEmail", extracted.email);
+  fillApply("applyPhone", extracted.phone);
+  if (extracted.years !== undefined) fillApply("applyYears", extracted.years);
+  fillApply("applyEducation", extracted.education);
+  fillApply("applySalary", extracted.salaryExpectation);
+  fillApply("applyCoverLetter", extracted.summary);
+
+  const statusText = document.getElementById("applyCvStatusText");
+  if (statusText) {
+    statusText.textContent = `✓ Berhasil mengisi ${filledCount} kolom dari ${sourceLabel}`;
+    statusText.style.color = "var(--success-color)";
+  }
+  return filledCount;
+}
+
+/** Handle file upload event for Add Candidate or Apply Job modals */
+async function handleCvFileSelected(file, mode = "add") {
+  if (!file) return;
+  const sizeKb = (file.size / 1024).toFixed(1);
+
+  if (mode === "add") {
+    const mainLabel = document.getElementById("cvDropzoneMainLabel");
+    if (mainLabel) mainLabel.textContent = `Sedang membaca & mengekstrak "${file.name}"...`;
+  } else {
+    const statusText = document.getElementById("applyCvStatusText");
+    if (statusText) statusText.textContent = `Sedang membaca & mengekstrak "${file.name}"...`;
+  }
+
+  try {
+    const rawText = await extractTextFromCvFile(file);
+    if (!rawText || rawText.trim().length < 5) {
+      if (mode === "add") {
+        const mainLabel = document.getElementById("cvDropzoneMainLabel");
+        if (mainLabel) mainLabel.textContent = t("lblCvDropzoneSub");
+      }
+      showAlertDialog({
+        title: "Teks CV Tidak Terbaca",
+        message: `File "${file.name}" berhasil dibuka tetapi tidak ditemukan teks terbaca (kemungkinan PDF hasil scan gambar). Silakan salin-tempel teks CV secara manual melalui tombol "Tempel Teks Manual".`,
+        type: "warning",
+        okText: "Mengerti"
+      });
+      return;
+    }
+
+    const parsed = parseCvTextToStructuredData(rawText, file.name);
+    pendingUploadedCvData = {
+      mode,
+      fileName: file.name,
+      fileSize: file.size,
+      rawText,
+      parsed
+    };
+
+    if (mode === "add") {
+      const mainLabel = document.getElementById("cvDropzoneMainLabel");
+      if (mainLabel) mainLabel.textContent = t("lblCvDropzoneSub");
+
+      const chip = document.getElementById("cvUploadedFileChip");
+      const chipName = document.getElementById("cvUploadedFileName");
+      if (chip && chipName) {
+        chipName.textContent = `📄 ${file.name} (${sizeKb} KB) — Terekstrak otomatis`;
+        chip.style.display = "flex";
+      }
+
+      const rawBox = document.getElementById("rawCvParseText");
+      if (rawBox) rawBox.value = rawText;
+
+      const count = autoFillAddCandidateForm(parsed, file.name);
+      showToast(`CV "${file.name}" diproses! ${count} kolom form terisi otomatis.`);
+    } else {
+      const count = autoFillApplyJobForm(parsed, file.name);
+      showToast(`CV "${file.name}" diproses! ${count} kolom lamaran terisi otomatis.`);
+    }
+  } catch (err) {
+    console.error("CV upload extraction error:", err);
+    if (mode === "add") {
+      const mainLabel = document.getElementById("cvDropzoneMainLabel");
+      if (mainLabel) mainLabel.textContent = t("lblCvDropzoneSub");
+    }
+    showAlertDialog({
+      title: "Gagal Membaca File CV",
+      message: `Terjadi kendala saat mengekstrak file "${file.name}". Pastikan file berformat .PDF, .DOCX, atau .TXT yang valid.`,
+      type: "warning",
+      okText: "Mengerti"
+    });
+  }
+}
+
+function initCvUploadAndParserHandlers() {
+  const dropzone = document.getElementById("cvUploadDropzone");
+  const fileInput = document.getElementById("cvUploadFileInput");
+  const btnSelectFile = document.getElementById("btnSelectCvFile");
+  const btnClearFile = document.getElementById("btnClearUploadedCv");
+  const btnToggleRaw = document.getElementById("btnToggleRawCvText");
+  const rawWrap = document.getElementById("rawCvParseWrap");
+  const btnSample = document.getElementById("btnLoadSampleCv");
+
+  const triggerPicker = (e) => {
+    if (e) e.stopPropagation();
+    fileInput?.click();
+  };
+
+  btnSelectFile?.addEventListener("click", triggerPicker);
+  dropzone?.addEventListener("click", e => {
+    if (e.target.closest("#btnSelectCvFile")) return;
+    fileInput?.click();
+  });
+  dropzone?.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      fileInput?.click();
+    }
+  });
+
+  if (dropzone) {
+    ["dragenter", "dragover"].forEach(evtName => {
+      dropzone.addEventListener(evtName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add("drag-over");
+      });
+    });
+    ["dragleave", "drop"].forEach(evtName => {
+      dropzone.addEventListener(evtName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("drag-over");
+      });
+    });
+    dropzone.addEventListener("drop", e => {
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleCvFileSelected(file, "add");
+    });
+  }
+
+  fileInput?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (file) handleCvFileSelected(file, "add");
+  });
+
+  btnClearFile?.addEventListener("click", () => {
+    resetCvUploadUi("add");
+    showToast("Lampiran CV dibersihkan.");
+  });
+
+  btnToggleRaw?.addEventListener("click", () => {
+    if (!rawWrap) return;
+    const isHidden = rawWrap.style.display === "none" || !rawWrap.style.display;
+    rawWrap.style.display = isHidden ? "block" : "none";
+    if (isHidden) document.getElementById("rawCvParseText")?.focus();
+  });
+
+  btnSample?.addEventListener("click", () => {
+    const sampleText = [
+      "CURRICULUM VITAE",
+      "Nama Lengkap: Maya Indah Kusuma",
+      "Jenis Kelamin: Perempuan",
+      "Tanggal Lahir: 14 Agustus 1998",
+      "Kewarganegaraan: Indonesia",
+      "Domisili: Jakarta Selatan",
+      "Email: maya.indah@fintech.co.id",
+      "No. HP / WhatsApp: +62 813-8899-7711",
+      "Posisi Tujuan: Senior Backend Engineer",
+      "Perusahaan Tujuan: Shopee Indonesia",
+      "Bahasa: Indonesian, English, Mandarin (HSK 4)",
+      "Pendidikan: S1 Teknik Informatika - Institut Teknologi Bandung (2016 - 2020)",
+      "Ekspektasi Gaji: IDR 25,000,000",
+      "",
+      "RINGKASAN PROFESIONAL:",
+      "Senior Backend Engineer berpengalaman lebih dari 6 tahun membangun arsitektur microservices berkecepatan tinggi menggunakan Golang, Docker, Kubernetes, PostgreSQL, dan Apache Kafka.",
+      "",
+      "CORE SKILLS:",
+      "Golang, Docker, Kubernetes, PostgreSQL, Redis, Kafka, Microservices, CI/CD, AWS",
+      "",
+      "PENGALAMAN KERJA:",
+      "Senior Backend Engineer - FinTech Unicorn Jakarta (2021 - Present)",
+      "Backend Developer - Digital Payment Solutions (2020 - 2021)"
+    ].join("\n");
+
+    const rawBox = document.getElementById("rawCvParseText");
+    if (rawBox) rawBox.value = sampleText;
+    const parsed = parseCvTextToStructuredData(sampleText, "CV_Maya_Indah_Kusuma.pdf");
+    pendingUploadedCvData = {
+      mode: "add",
+      fileName: "CV_Maya_Indah_Kusuma.pdf",
+      fileSize: sampleText.length,
+      rawText: sampleText,
+      parsed
+    };
+    const chip = document.getElementById("cvUploadedFileChip");
+    const chipName = document.getElementById("cvUploadedFileName");
+    if (chip && chipName) {
+      chipName.textContent = "📄 CV_Maya_Indah_Kusuma.pdf (Contoh Demo)";
+      chip.style.display = "flex";
+    }
+    const count = autoFillAddCandidateForm(parsed, "Contoh CV Demo");
+    showToast(`Contoh CV diproses! ${count} kolom form terisi otomatis.`);
+  });
+
+  // Apply Job Modal CV Upload bindings
+  const applyFileInput = document.getElementById("applyCvFileInput");
+  document.getElementById("btnSelectApplyCvFile")?.addEventListener("click", () => {
+    applyFileInput?.click();
+  });
+  applyFileInput?.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (file) handleCvFileSelected(file, "apply");
+  });
+}
+
 function handleRunCvParser() {
   const rawBox = document.getElementById("rawCvParseText");
+  const rawWrap = document.getElementById("rawCvParseWrap");
   const rawText = rawBox ? rawBox.value.trim() : "";
-  const pillsBox = document.getElementById("cvParseExtractedPills");
 
   if (!rawText) {
+    if (rawWrap) rawWrap.style.display = "block";
     showAlertDialog({
       title: "Input Resume / CV Kosong",
-      message: "Silakan tempel teks resume/CV ke area parser terlebih dahulu sebelum memproses.",
+      message: "Silakan unggah file CV (.PDF / .DOCX / .TXT) atau tempel teks resume/CV terlebih dahulu.",
       type: "warning",
       okText: "Mengerti"
     });
     return;
   }
 
-  const extracted = {};
-
-  // 1. Email extraction
-  const emailMatch = rawText.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/);
-  if (emailMatch) extracted.email = emailMatch[0];
-
-  // 2. Phone extraction (Indonesian phone patterns e.g. +62, 0812, etc.)
-  const phoneMatch = rawText.match(/(?:\+62|62|08)[0-9\s-]{8,15}/);
-  if (phoneMatch) extracted.phone = phoneMatch[0].replace(/\s+/g, " ").trim();
-
-  // 3. Years of Experience extraction
-  const expMatch = rawText.match(/(\d+)\+?\s*(?:years|thn|tahun|yrs)\s*(?:of\s*)?(?:experience|exp|pengalaman)?/i);
-  if (expMatch) extracted.years = parseInt(expMatch[1], 10);
-
-  // 4. Education level extraction
-  if (/master|magister|s2|m\.sc|mba/i.test(rawText)) {
-    extracted.education = "master";
-  } else if (/undergraduate|bachelor|sarjana|s1|s\.kom|s\.t|b\.sc/i.test(rawText)) {
-    extracted.education = "undergraduate";
-  } else if (/diploma|d3|associate/i.test(rawText)) {
-    extracted.education = "diploma";
+  const parsed = parseCvTextToStructuredData(rawText);
+  if (!pendingUploadedCvData || pendingUploadedCvData.mode !== "add") {
+    pendingUploadedCvData = {
+      mode: "add",
+      fileName: "Pasted_Resume_Text.txt",
+      fileSize: rawText.length,
+      rawText,
+      parsed
+    };
   } else {
-    extracted.education = "undergraduate";
+    pendingUploadedCvData.rawText = rawText;
+    pendingUploadedCvData.parsed = parsed;
   }
 
-  // 5. Name extraction (heuristic: look for "Name:" or "Nama:" or take top line that is not an email/phone)
-  const namePrefixMatch = rawText.match(/(?:Name|Nama|Full Name)\s*[:\-]\s*([A-Za-z\s'’.]+)/i);
-  if (namePrefixMatch) {
-    extracted.name = namePrefixMatch[1].trim().split("\n")[0];
-  } else {
-    const lines = rawText.split("\n").map(l => l.trim()).filter(l => l.length > 2 && !l.includes("@") && !l.startsWith("http"));
-    if (lines.length > 0) {
-      extracted.name = lines[0].replace(/^(curriculum vitae|resume|cv)\s*[-:]?\s*/i, "").trim();
-    }
-  }
-
-  // 6. Keywords / Skills extraction
-  const knownSkills = [
-    "Kubernetes", "Docker", "Golang", "Go", "Java", "Spring Boot", "Python", "FastAPI", "React", "Next.js",
-    "Node.js", "TypeScript", "AWS", "GCP", "PostgreSQL", "Kafka", "Redis", "Figma", "UI/UX", "Scrum",
-    "Product Management", "Microservices", "CI/CD", "Terraform", "DevOps"
-  ];
-  const matchedSkills = knownSkills.filter(skill => {
-    const regex = new RegExp(`\\b${skill.replace(".", "\\.")}\\b`, "i");
-    return regex.test(rawText);
-  });
-  extracted.skills = matchedSkills;
-
-  // 7. Target Position matching
-  let matchedPos = "";
-  for (const pos of masterPositions) {
-    if (new RegExp(pos.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(rawText)) {
-      matchedPos = pos;
-      break;
-    }
-  }
-  if (!matchedPos) {
-    if (/cloud|devops|infrastructure/i.test(rawText)) matchedPos = "Lead Cloud Architect";
-    else if (/backend|go|golang|microservice/i.test(rawText)) matchedPos = "Senior Backend Engineer";
-    else if (/product manager|pm/i.test(rawText)) matchedPos = "Technical Product Manager";
-    else if (/presales|solution/i.test(rawText)) matchedPos = "Presales Lead";
-  }
-  if (matchedPos) extracted.position = matchedPos;
-
-  // Auto-fill form fields
-  if (extracted.name) {
-    const nameInput = document.getElementById("addName");
-    if (nameInput) nameInput.value = extracted.name;
-  }
-  if (extracted.email) {
-    const emailInput = document.getElementById("addEmail");
-    if (emailInput) emailInput.value = extracted.email;
-  }
-  if (extracted.phone) {
-    const phoneInput = document.getElementById("addPhone");
-    if (phoneInput) phoneInput.value = extracted.phone;
-  }
-  if (extracted.years !== undefined) {
-    const yearsInput = document.getElementById("addYears");
-    if (yearsInput) yearsInput.value = extracted.years;
-  }
-  if (extracted.education) {
-    const eduSelect = document.getElementById("addEducation");
-    if (eduSelect) eduSelect.value = extracted.education;
-  }
-  if (extracted.position) {
-    const posSelect = document.getElementById("addPositionSelect");
-    if (posSelect) {
-      let found = false;
-      for (const opt of posSelect.options) {
-        if (opt.value.toLowerCase() === extracted.position.toLowerCase()) {
-          posSelect.value = opt.value;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        const newOpt = document.createElement("option");
-        newOpt.value = extracted.position;
-        newOpt.textContent = extracted.position;
-        posSelect.appendChild(newOpt);
-        posSelect.value = extracted.position;
-      }
-    }
-  }
-
-  // Display extracted badge indicators
-  if (pillsBox) {
-    pillsBox.innerHTML = `
-      <span class="parse-extracted-badge">Name: ${escapeHtml(extracted.name || "N/A")}</span>
-      <span class="parse-extracted-badge">Email: ${escapeHtml(extracted.email || "N/A")}</span>
-      <span class="parse-extracted-badge">Phone: ${escapeHtml(extracted.phone || "N/A")}</span>
-      <span class="parse-extracted-badge">Exp: ${extracted.years !== undefined ? `${extracted.years} yrs` : "N/A"}</span>
-      <span class="parse-extracted-badge">Edu: ${escapeHtml(extracted.education || "N/A")}</span>
-      ${extracted.skills && extracted.skills.length > 0 ? `<span class="parse-extracted-badge">Skills: ${escapeHtml(extracted.skills.slice(0, 4).join(", "))}</span>` : ""}
-    `;
-  }
-
-  showToast("CV parsed! Form fields auto-populated.");
+  const count = autoFillAddCandidateForm(parsed, "Teks CV");
+  showToast(`Teks CV diproses! ${count} kolom form terisi otomatis.`);
 }
 
 /**
