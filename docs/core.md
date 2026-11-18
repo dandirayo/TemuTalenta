@@ -199,3 +199,26 @@ Untuk mengoptimalkan densitas informasi pada layar desktop dan laptop tanpa scro
 4. **Penyimpanan Preferensi**:
    - Pilihan kolom tersimpan otomatis di `localStorage` (`STORAGE_KEYS.VISIBLE_COLS`).
 
+---
+
+## 8. Standar Centering & Keselarasan Tombol (Global Button Optical & Flex Centering)
+
+Untuk menjamin seluruh tombol dan elemen interaktif selalu berada tepat di tengah (*perfectly centered*) baik secara vertikal maupun horizontal:
+1. **Aturan Dasar `:where(button)` & Button Classes**:
+   - Seluruh elemen `<button>`, `.btn-solid`, `.btn-outlined`, `.btn-danger`, `.stage-tab`, `.btn-view-toggle`, `.btn-preset-pill`, `.op-btn`, dan `.col-dropdown-action-btn` wajib menyertakan:
+     ```css
+     display: inline-flex;
+     align-items: center;
+     justify-content: center;
+     text-align: center;
+     line-height: 1;
+     vertical-align: middle;
+     box-sizing: border-box;
+     ```
+2. **Pencegahan Pergeseran Baseline Vertikal**:
+   - Hindari penetapan `line-height` relatif (seperti 1.45 warisan teks badan) pada tombol dengan tinggi tetap (`height: 32px`, `height: 26px`, dll.).
+   - Penggunaan `line-height: 1` bersama `align-items: center` menjamin sumbu vertikal teks membagi tinggi tombol secara presisi (selisih atas-bawah = 0px).
+3. **Penyelarasan Komponen Sejajar Toolbar**:
+   - Input dan selektor (`.ctrl-input`, `.ctrl-select`) memiliki tinggi yang sama persis (32px) dan dibungkus dalam flex container dengan `align-items: center` sehingga berada di sumbu tengah yang identik dengan tombol-tombol aksi di sisi kanan.
+
+
