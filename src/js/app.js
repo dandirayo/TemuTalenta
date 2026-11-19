@@ -48,6 +48,21 @@ function getPromptIconSvg(type) {
   }
 }
 
+function closeDialogSmooth(dialog) {
+  if (!dialog || !dialog.open) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    dialog.close();
+    return;
+  }
+  dialog.setAttribute("data-closing", "true");
+  setTimeout(() => {
+    dialog.removeAttribute("data-closing");
+    if (dialog.open) {
+      dialog.close();
+    }
+  }, 180);
+}
+
 function showConfirmDialog({
   title = t("confirmAction"),
   message = t("confirmProceedMsg"),
@@ -102,7 +117,7 @@ function showConfirmDialog({
         if (!settled) {
           settled = true;
           cleanup();
-          dialog.close();
+          closeDialogSmooth(dialog);
           resolve(false);
         }
       };
@@ -113,7 +128,7 @@ function showConfirmDialog({
         if (!settled) {
           settled = true;
           cleanup();
-          dialog.close();
+          closeDialogSmooth(dialog);
           resolve(true);
         }
       };
@@ -180,7 +195,7 @@ function showAlertDialog({
         if (!settled) {
           settled = true;
           cleanup();
-          dialog.close();
+          closeDialogSmooth(dialog);
           resolve();
         }
       };
@@ -886,20 +901,28 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     navigationHistory.push(viewId);
   }
 
-  document.querySelectorAll(".submenu-item-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
-  });
+  const applyViewChange = () => {
+    document.querySelectorAll(".submenu-item-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+    });
 
-  document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
-  });
+    document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
+      btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+    });
 
-  document.querySelectorAll(".workspace-panel").forEach(panel => {
-    panel.classList.toggle("active", panel.id === `panel-${viewId}`);
-  });
+    document.querySelectorAll(".workspace-panel").forEach(panel => {
+      panel.classList.toggle("active", panel.id === `panel-${viewId}`);
+    });
 
-  closeMobileSidebar();
-  renderAllViews();
+    closeMobileSidebar();
+    renderAllViews();
+  };
+
+  if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.startViewTransition(() => applyViewChange());
+  } else {
+    applyViewChange();
+  }
 }
 
 function syncStageTabsUI() {
@@ -3640,13 +3663,22 @@ function setupDialogLightDismiss() {
     for (const dialog of document.querySelectorAll('dialog[closedby="any"]')) {
       let pressedOutside = false;
       dialog.addEventListener("pointerdown", e => { pressedOutside = outside(e, dialog); });
-      dialog.addEventListener("pointerup", e => { if (pressedOutside && outside(e, dialog)) dialog.close(); });
+      dialog.addEventListener("pointerup", e => { if (pressedOutside && outside(e, dialog)) closeDialogSmooth(dialog); });
     }
   }
 
   document.querySelectorAll("[data-close-modal]").forEach(btn => {
     btn.addEventListener("click", () => {
-      btn.closest("dialog")?.close();
+      const d = btn.closest("dialog");
+      if (d) closeDialogSmooth(d);
+    });
+  });
+
+  // Smooth exit on Esc key cancel event
+  document.querySelectorAll("dialog").forEach(dialog => {
+    dialog.addEventListener("cancel", (e) => {
+      e.preventDefault();
+      closeDialogSmooth(dialog);
     });
   });
 }

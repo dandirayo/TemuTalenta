@@ -474,10 +474,10 @@ button:active {
 }
 
 .submenu-item-btn.active {
-  background-color: var(--brand-primary);
+  background: linear-gradient(135deg, #d8ff3e 0%, #b5e818 100%);
   color: #161922;
   font-weight: 800;
-  box-shadow: 0 4px 14px rgba(204, 245, 53, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 14px rgba(204, 245, 53, 0.35);
 }
 
 .submenu-item-btn.active .menu-icon {
@@ -560,6 +560,17 @@ button:active {
   min-width: 0;
   height: 100vh;
   height: 100dvh;
+  background-color: var(--bg-app);
+  background-image: 
+    radial-gradient(circle at 14% -4%, rgba(204, 245, 53, 0.05) 0%, transparent 35%),
+    radial-gradient(circle at 86% -6%, rgba(14, 165, 233, 0.035) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+[data-theme="dark"] .app-shell {
+  background-image: 
+    radial-gradient(circle at 16% -6%, rgba(204, 245, 53, 0.045) 0%, transparent 38%),
+    radial-gradient(circle at 84% -4%, rgba(99, 102, 241, 0.055) 0%, transparent 42%);
 }
 
 .top-header {
@@ -573,6 +584,20 @@ button:active {
   flex-shrink: 0;
   gap: 8px;
   white-space: nowrap;
+  position: relative;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.top-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(204, 245, 53, 0.3) 30%, rgba(14, 165, 233, 0.22) 70%, transparent 100%);
+  pointer-events: none;
 }
 
 .header-left {
@@ -1015,6 +1040,47 @@ button:active {
 
 .workspace-panel.active {
   display: flex;
+  animation: panelGlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes panelGlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modern View Transitions API (Chromium 111+, Safari 18+) */
+::view-transition-old(root) {
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both vtFadeOut;
+}
+::view-transition-new(root) {
+  animation: 200ms cubic-bezier(0, 0, 0.2, 1) both vtFadeIn;
+}
+
+@keyframes vtFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.995); }
+}
+
+@keyframes vtFadeIn {
+  from { opacity: 0; transform: scale(1.005); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-panel.active {
+    animation: none !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 .search-row {
@@ -1111,22 +1177,40 @@ button:active {
   min-block-size: 32px;
   height: 32px;
   padding: 0 14px;
-  background-color: var(--brand-primary);
-  color: var(--brand-primary-text);
-  border: none;
+  background: linear-gradient(135deg, #d8ff3e 0%, #b5e818 100%);
+  color: #121603;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-pill);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap !important;
-  box-shadow: 0 2px 8px rgba(204, 245, 53, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 8px rgba(204, 245, 53, 0.25);
 }
 
 .btn-solid:hover {
-  background-color: var(--brand-primary-hover);
+  background: linear-gradient(135deg, #e2ff56 0%, #c0f222 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(204, 245, 53, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 14px rgba(204, 245, 53, 0.35);
+}
+
+.btn-solid:active {
+  transform: translateY(0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15), 0 1px 4px rgba(204, 245, 53, 0.2);
+}
+
+.btn-solid.btn-danger {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px rgba(239, 68, 68, 0.25) !important;
+}
+
+.btn-solid.btn-danger:hover {
+  background: linear-gradient(135deg, #fb7185 0%, #dc2626 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 14px rgba(239, 68, 68, 0.35) !important;
+  transform: translateY(-1px);
 }
 
 .btn-outlined {
@@ -1289,11 +1373,11 @@ button:active {
 }
 
 .stage-tab.active {
-  background-color: var(--brand-primary);
-  border-color: var(--brand-primary);
-  color: var(--brand-primary-text);
+  background: linear-gradient(135deg, #d8ff3e 0%, #b5e818 100%);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #121603;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(204, 245, 53, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 2px 8px rgba(204, 245, 53, 0.28);
 }
 
 .dot-danger {
@@ -2038,15 +2122,30 @@ dialog:modal {
   overscroll-behavior: contain;
   border: 1px solid var(--border-base);
   border-radius: var(--radius-lg, 16px);
-  background-color: var(--bg-surface);
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-subtle) 100%);
   color: var(--text-primary);
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45);
+  box-shadow: 
+    0 24px 60px -15px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   max-width: 720px;
   width: 94vw;
   max-height: 90vh;
   margin: auto;
   padding: 0;
-  animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-behavior: allow-discrete;
+}
+
+@starting-style {
+  dialog:modal {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
 }
 
 dialog::backdrop {
@@ -2055,17 +2154,28 @@ dialog::backdrop {
   background: rgba(10, 14, 23, 0.65);
   backdrop-filter: blur(8px) saturate(180%);
   -webkit-backdrop-filter: blur(8px) saturate(180%);
+  opacity: 1;
+  transition-property: opacity, background-color, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
 }
 
-@keyframes modalPopIn {
-  from {
+@starting-style {
+  dialog::backdrop {
     opacity: 0;
-    transform: scale(0.96) translateY(8px);
   }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+}
+
+dialog[data-closing] {
+  opacity: 0 !important;
+  transform: scale(0.96) translateY(8px) !important;
+  transition-duration: 0.18s !important;
+}
+
+dialog[data-closing]::backdrop {
+  opacity: 0 !important;
+  transition-duration: 0.18s !important;
 }
 
 /* ==========================================================================
@@ -2074,13 +2184,35 @@ dialog::backdrop {
 .custom-prompt-modal {
   max-width: 460px !important;
   width: 90vw !important;
-  border-radius: 18px !important;
+  border-radius: 20px !important;
   border: 1px solid var(--border-base) !important;
-  background: var(--bg-surface) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-subtle) 100%) !important;
+  box-shadow: 
+    0 25px 60px -12px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   padding: 0 !important;
   margin: auto !important;
   overflow: hidden !important;
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-behavior: allow-discrete;
+}
+
+@starting-style {
+  .custom-prompt-modal {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+}
+
+.custom-prompt-modal[data-closing] {
+  opacity: 0 !important;
+  transform: scale(0.95) translateY(8px) !important;
+  transition-duration: 0.18s !important;
 }
 
 .custom-prompt-shell {
