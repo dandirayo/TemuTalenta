@@ -1,4 +1,4 @@
-# TemuTalenta (Enterprise Recruitment & Resume Library)
+# NextKerja (Enterprise Recruitment & Resume Library)
 
 Sistem manajemen rekrutmen konsultan dan pustaka resume (*Applicant Tracking System & Resume Library*) berstandar enterprise yang berjalan mandiri (*Offline-First*).
 
@@ -38,7 +38,7 @@ Sistem manajemen rekrutmen konsultan dan pustaka resume (*Applicant Tracking Sys
 ## 📁 Struktur Repositori & Dokumentasi
 
 ```text
-TemuTalenta/
+NextKerja/
 ├── docs/
 │   ├── PRD.md                    # Product Requirements Document (Spesifikasi Produk Lengkap)
 │   ├── blueprint-perencanaan.md  # Blueprint arsitektur & alur operasional konsultan
@@ -61,10 +61,10 @@ TemuTalenta/
 ## 🚀 Cara Menjalankan Secara Offline
 
 1. **Langsung Buka di Browser**:
-   Klik ganda pada berkas [index.html](file:///C:/Users/901191/GitHub/TemuTalenta/index.html).
+   Klik ganda pada berkas [index.html](file:///C:/Users/901191/GitHub/NextKerja/index.html).
 2. **Melalui Local Server Node.js**:
    ```powershell
-   cd C:\Users\901191\GitHub\TemuTalenta
+   cd C:\Users\901191\GitHub\NextKerja
    npm start
    ```
    Buka `http://localhost:3000` di peramban Anda.
@@ -72,6 +72,6 @@ TemuTalenta/
 ---
 
 ## 📖 Dokumentasi Perencanaan & Spesifikasi
-- [docs/PRD.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/PRD.md) – Product Requirements Document (PRD v2.0).
-- [docs/blueprint-perencanaan.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/blueprint-perencanaan.md) – Blueprint Perencanaan Sistem.
-- [docs/core.md](file:///C:/Users/901191/GitHub/TemuTalenta/docs/core.md) – Knowledge Core & Standar Skema Data.
+- [docs/PRD.md](file:///C:/Users/901191/GitHub/NextKerja/docs/PRD.md) – Product Requirements Document (PRD v2.0).
+- [docs/blueprint-perencanaan.md](file:///C:/Users/901191/GitHub/NextKerja/docs/blueprint-perencanaan.md) – Blueprint Perencanaan Sistem.
+- [docs/core.md](file:///C:/Users/901191/GitHub/NextKerja/docs/core.md) – Knowledge Core & Standar Skema Data.

@@ -1,5 +1,5 @@
 /**
- * Zero-dependency Offline Static Server for TemuTalenta
+ * Zero-dependency Offline Static Server for NextKerja
  * Menggunakan Node.js native http & fs module.
  */
 
@@ -58,7 +58,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n======================================================`);
-  console.log(`🚀 TemuTalenta Offline Server running at:`);
+  console.log(`🚀 NextKerja Offline Server running at:`);
   console.log(`   http://localhost:${PORT}`);
   console.log(`   Tekan Ctrl+C untuk menghentikan server.`);
   console.log(`======================================================\n`);

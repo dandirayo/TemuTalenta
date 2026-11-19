@@ -1,5 +1,5 @@
 /**
- * TemuTalenta Enterprise ATS & Resume Library
+ * NextKerja Enterprise ATS & Resume Library
  * Dataset, Status Codes, Master Data, & Tri-lingual I18N
  * Sesuai spesifikasi PRD.md (Nov 16, 2026)
  */
@@ -25,7 +25,7 @@ const STORAGE_KEYS = {
 
 // Users & Roles: Single-user Full Control / SuperAdmin deployment (AUL SuperAdmin)
 const INITIAL_USERS = [
-  { id: "USR-AUL", name: "AUL SuperAdmin", role: "superadmin", roleName: "Super Admin (Full Control)", avatar: "AUL", email: "aul.superadmin@temutalenta.com", active: true }
+  { id: "USR-AUL", name: "AUL SuperAdmin", role: "superadmin", roleName: "Super Admin (Full Control)", avatar: "AUL", email: "aul.superadmin@nextkerja.com", active: true }
 ];
 
 let USERS = [...INITIAL_USERS];

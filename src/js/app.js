@@ -1,5 +1,5 @@
 /**
- * TemuTalenta - Enterprise ATS Controller (Comprehensive & Multi-Phase Implementation)
+ * NextKerja - Enterprise ATS Controller (Comprehensive & Multi-Phase Implementation)
  * Menjalankan seluruh spesifikasi PRD.md:
  * - Fase 1 (P0): URL query param sync, profil kandidat multi-tab (DK-01 s.d DK-06), validasi transisi kode gagal.
  * - Fase 2 (P1): Role switcher (Super Admin, Manajer, Konsultan), Ekspor & Impor massal CSV, Notifikasi interaktif, Consultant Business.
@@ -1678,7 +1678,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
         <div class="timeline-item">
           <div class="timeline-time">${c.entryTime}</div>
           <div class="timeline-title">Candidate Profile Created</div>
-          <div class="timeline-desc">Initial registration into TemuTalenta Resume Lib by ${escapeHtml(c.ownerName || "Rina Wijaya")}.</div>
+          <div class="timeline-desc">Initial registration into NextKerja Resume Lib by ${escapeHtml(c.ownerName || "Rina Wijaya")}.</div>
         </div>
         ${(c.recommendations || []).map(r => `
           <div class="timeline-item">
@@ -4151,11 +4151,11 @@ function downloadIcsCalendar(interviewId) {
   const icsLines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//TemuTalenta ATS//Interview Scheduler//EN",
+    "PRODID:-//NextKerja ATS//Interview Scheduler//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
-    `UID:tt-int-${item.id}-${Date.now()}@temutalenta.local`,
+    `UID:nk-int-${item.id}-${Date.now()}@nextkerja.local`,
     `DTSTAMP:${formatIcsTime(new Date())}`,
     `DTSTART:${formatIcsTime(startDt)}`,
     `DTEND:${formatIcsTime(endDt)}`,
@@ -4212,7 +4212,7 @@ function openOfferLetterModal(candidateId) {
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-base); padding-bottom: 14px; margin-bottom: 16px;">
       <div>
         <h2 style="font-size: 20px; font-weight: 800; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.5px;">${escapeHtml(companyName)}</h2>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">In Partnership with TemuTalenta Executive Talent Search</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">In Partnership with NextKerja Executive Talent Search</p>
         <p style="font-size: 11px; color: var(--text-muted);">Equity Tower Level 22, SCBD, Senayan, Jakarta Selatan</p>
       </div>
       <div style="text-align: right; font-size: 11.5px; color: var(--text-secondary);">
@@ -5868,7 +5868,7 @@ function handleSaveSystemSettings() {
 
 function exportFullDatabaseJson() {
   const bundle = {
-    app: "TemuTalenta ATS",
+    app: "NextKerja ATS",
     version: "Phase 5 (P4)",
     exportedAt: new Date().toISOString(),
     exportedBy: activeUser.name,
@@ -5887,7 +5887,7 @@ function exportFullDatabaseJson() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `TemuTalenta_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `NextKerja_Backup_${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -6120,17 +6120,17 @@ function refreshOutreachMessageDraft() {
 
   const pos = c.recommendedPosition || "Senior Role";
   const comp = c.recommendedCompany || "our partner client";
-  const sender = activeUser?.name || "TemuTalenta Recruitment Team";
+  const sender = activeUser?.name || "NextKerja Recruitment Team";
 
   const templates = {
     interview_invite:
-      `Halo ${c.name},\n\nSaya ${sender} dari TemuTalenta. Klien kami (${comp}) sangat tertarik dengan profil Anda untuk posisi ${pos}.\n\nApakah Anda bersedia untuk jadwal interview online dalam 2 hari ke depan? Mohon info slot waktu yang paling nyaman untuk Anda.\n\nTerima kasih,\n${sender}`,
+      `Halo ${c.name},\n\nSaya ${sender} dari NextKerja. Klien kami (${comp}) sangat tertarik dengan profil Anda untuk posisi ${pos}.\n\nApakah Anda bersedia untuk jadwal interview online dalam 2 hari ke depan? Mohon info slot waktu yang paling nyaman untuk Anda.\n\nTerima kasih,\n${sender}`,
     offer_followup:
       `Halo ${c.name},\n\nSelamat! Surat penawaran resmi (Offer Letter) untuk posisi ${pos} di ${comp} telah kami terbitkan.\n\nSilakan tinjau detail kompensasi dan lengkapi tanda tangan digital Anda agar proses onboarding dapat segera dijadwalkan.\n\nSalam hangat,\n${sender}`,
     headhunter_intro:
-      `Hi ${c.name},\n\nI'm ${sender} at TemuTalenta Executive Search. Given your background, we have an exciting ${pos} mandate with ${comp} offering competitive compensation and career growth.\n\nWould you be open to a brief 15-minute confidential chat this week?\n\nBest regards,\n${sender}`,
+      `Hi ${c.name},\n\nI'm ${sender} at NextKerja Executive Search. Given your background, we have an exciting ${pos} mandate with ${comp} offering competitive compensation and career growth.\n\nWould you be open to a brief 15-minute confidential chat this week?\n\nBest regards,\n${sender}`,
     probation_checkin:
-      `Halo ${c.name},\n\nSemoga masa onboarding dan probation Anda sebagai ${pos} di ${comp} berjalan lancar! Sebagai bentuk layanan garansi 90 hari TemuTalenta, kami ingin memastikan adaptasi tim dan target berjalan optimal.\n\nKabari jika ada hal yang perlu kami bantu koordinasikan.\n\nTerima kasih,\n${sender}`
+      `Halo ${c.name},\n\nSemoga masa onboarding dan probation Anda sebagai ${pos} di ${comp} berjalan lancar! Sebagai bentuk layanan garansi 90 hari NextKerja, kami ingin memastikan adaptasi tim dan target berjalan optimal.\n\nKabari jika ada hal yang perlu kami bantu koordinasikan.\n\nTerima kasih,\n${sender}`
   };
 
   textArea.value = templates[tmpl] || templates.interview_invite;
@@ -6151,7 +6151,7 @@ function syncOutreachLinks() {
     waBtn.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
   }
   if (mailBtn) {
-    const subject = `TemuTalenta Opportunity: ${c?.recommendedPosition || "Recruitment Update"} - ${c?.recommendedCompany || ""}`;
+    const subject = `NextKerja Opportunity: ${c?.recommendedPosition || "Recruitment Update"} - ${c?.recommendedCompany || ""}`;
     mailBtn.href = `mailto:${encodeURIComponent(c?.email || "")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
   }
 }
