@@ -267,10 +267,16 @@ button:active {
   overflow-x: hidden;
   user-select: none;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              min-width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.22s ease,
+              border-color 0.22s ease;
+  will-change: width;
 }
 
 .app-sidebar.is-resizing {
   transition: none !important;
+  will-change: auto;
 }
 
 .sidebar-resizer {
@@ -312,8 +318,16 @@ button:active {
 }
 
 .app-sidebar.collapsed {
-  width: 0;
-  border-right: none;
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  border-right-color: transparent;
+  overflow: hidden;
+}
+
+.app-sidebar.collapsed .sidebar-resizer {
+  display: none;
 }
 
 .sidebar-brand {
@@ -356,7 +370,15 @@ button:active {
 }
 
 .sidebar-backdrop {
-  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .brand-logo-svg {
@@ -419,7 +441,7 @@ button:active {
   width: 13px;
   height: 13px;
   stroke: #cbd5e1;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   opacity: 0.95;
 }
 
@@ -429,13 +451,26 @@ button:active {
 
 .submenu-list {
   list-style: none;
-  display: none;
-  background-color: transparent;
-  padding: 2px 0 6px 0;
+  display: block;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: max-height 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.22s ease,
+              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              padding 0.25s ease;
 }
 
 .menu-group.open .submenu-list {
-  display: block;
+  max-height: 380px;
+  opacity: 1;
+  padding: 2px 0 6px 0;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .submenu-item-btn {
@@ -466,6 +501,14 @@ button:active {
 .submenu-item-btn:hover {
   color: #ffffff;
   background-color: rgba(255, 255, 255, 0.12);
+}
+
+.submenu-item-btn:active {
+  transform: scale(0.98);
+}
+
+.menu-group-btn:active {
+  transform: scale(0.99);
 }
 
 .submenu-item-btn:hover .menu-icon {
@@ -1055,10 +1098,33 @@ button:active {
 }
 
 /* Modern View Transitions API (Chromium 111+, Safari 18+) */
-::view-transition-old(root) {
+/* Isolate persistent app shell from page content transitions so sidebar & header never shake or flicker */
+.app-sidebar {
+  view-transition-name: app-sidebar;
+}
+
+.top-header {
+  view-transition-name: top-header;
+}
+
+.workspace-body {
+  view-transition-name: workspace-body;
+}
+
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-old(app-sidebar),
+::view-transition-new(app-sidebar),
+::view-transition-old(top-header),
+::view-transition-new(top-header) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(workspace-body) {
   animation: 160ms cubic-bezier(0.4, 0, 1, 1) both vtFadeOut;
 }
-::view-transition-new(root) {
+::view-transition-new(workspace-body) {
   animation: 200ms cubic-bezier(0, 0, 0.2, 1) both vtFadeIn;
 }
 
@@ -3213,20 +3279,22 @@ dialog[data-closing]::backdrop {
     inset-block: 0;
     inset-inline-start: 0;
     z-index: 100;
-    width: 260px;
+    width: 260px !important;
+    min-width: 260px !important;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease !important;
+    box-shadow: none;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0);
     box-shadow: var(--shadow-modal);
   }
 
   .app-sidebar.collapsed {
-    width: 260px;
     transform: translateX(-100%);
-  }
-
-  .app-sidebar.mobile-open {
-    width: 260px;
-    transform: translateX(0);
   }
 
   .sidebar-close-btn {
@@ -3234,11 +3302,8 @@ dialog[data-closing]::backdrop {
   }
 
   .sidebar-backdrop.open {
-    display: block;
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.55);
-    z-index: 90;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .mobile-header-brand {

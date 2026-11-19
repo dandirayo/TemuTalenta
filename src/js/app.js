@@ -901,15 +901,15 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     navigationHistory.push(viewId);
   }
 
+  // Update nav active pill immediately for instant tactile response
+  document.querySelectorAll(".submenu-item-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+  });
+  document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+  });
+
   const applyViewChange = () => {
-    document.querySelectorAll(".submenu-item-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
-    });
-
-    document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
-      btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
-    });
-
     document.querySelectorAll(".workspace-panel").forEach(panel => {
       panel.classList.toggle("active", panel.id === `panel-${viewId}`);
     });
