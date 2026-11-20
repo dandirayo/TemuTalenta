@@ -705,6 +705,17 @@ function openAddCandidateModal() {
 }
 window.openAddCandidateModal = openAddCandidateModal;
 
+function loadDemoCandidates() {
+  if (typeof PRESET_DEMO_CANDIDATES !== "undefined" && Array.isArray(PRESET_DEMO_CANDIDATES)) {
+    candidates = JSON.parse(JSON.stringify(PRESET_DEMO_CANDIDATES));
+    saveCandidates(candidates);
+    currentPage = 1;
+    renderAllViews();
+    showToast(t("msgDemoLoaded"));
+  }
+}
+window.loadDemoCandidates = loadDemoCandidates;
+
   // Add Candidate
   document.getElementById("btnOpenAddModal")?.addEventListener("click", openAddCandidateModal);
 
@@ -1265,7 +1276,8 @@ function renderResumeTable() {
           ${isTotallyEmpty ? `
             <div style="display: inline-flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
               <button type="button" class="btn-solid" style="height: 34px; padding: 0 18px; font-size: 12px; font-weight: 700;" onclick="openAddCandidateModal()">${t("btnNewCandidate")}</button>
-              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCandidatesInput')?.click()">${t("btnImportCsv")}</button>
+              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCsvModal')?.showModal()">${t("btnImportCsv")}</button>
+              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="loadDemoCandidates()">${t("btnLoadDemo")}</button>
             </div>
           ` : ""}
         </td>
