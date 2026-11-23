@@ -297,6 +297,8 @@
               <button type="button" id="btnImportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Restore JSON Backup</button>
               <input type="file" id="restoreJsonFileInput" accept=".json,application/json" style="display: none;">
               <button type="button" id="btnQuickResetPassword" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Change Password</button>
+              <div style="border-top: 1px solid var(--border-base); margin: 4px 0;"></div>
+              <button type="button" id="btnOpenDemoGuide" class="btn-solid" style="width: 100%; justify-content: center; font-size: 12px;" data-i18n="btnDemoScenarios">⚡ Interactive Feature Tester (18 Scenarios)</button>
             </div>
           </div>
         </div>
@@ -1239,7 +1241,7 @@
   </dialog>
 
   <!-- Modal 6: Interactive Feature Tester & Pre-configured Scenarios (Disabled) -->
-  <dialog id="demoGuideModal" aria-labelledby="demoGuideModalTitle" closedby="any" style="display: none;">
+  <dialog id="demoGuideModal" aria-labelledby="demoGuideModalTitle" closedby="any">
     <div class="modal-shell" style="max-inline-size: 800px;">
       <div class="modal-header">
         <h2 id="demoGuideModalTitle" data-i18n="modalDemoTitle">Interactive ATS Feature Tester & Scenarios</h2>

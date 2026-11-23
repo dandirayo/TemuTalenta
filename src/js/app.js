@@ -556,7 +556,7 @@ function initSidebarResizer() {
     try {
       localStorage.removeItem("temutalenta_sidebar_width");
     } catch (e) {}
-    showToast("Lebar menu samping di-reset ke standar (215px).");
+    showToast(t("msgSidebarReset"));
   });
 }
 
@@ -930,7 +930,8 @@ function switchWorkspaceView(viewId, pushHistory = true) {
   };
 
   if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    document.startViewTransition(() => applyViewChange());
+    const transition = document.startViewTransition(() => applyViewChange());
+    transition.finished.catch(() => {});
   } else {
     applyViewChange();
   }
@@ -2536,8 +2537,8 @@ function processCsvData(csvText) {
 
   if (failedRows.length > 0) {
     showAlertDialog({
-      title: "Hasil Impor CSV",
-      message: `Impor selesai: ${importedCount} berhasil. Terdapat error pada ${failedRows.length} baris:\n${failedRows.slice(0, 5).join("\n")}`,
+      title: t("dialogImportResultTitle"),
+      message: t("dialogImportResultError").replace("{count}", importedCount).replace("{errorCount}", failedRows.length).replace("{errors}", failedRows.slice(0, 5).join("\n")),
       type: "warning"
     });
   } else {
@@ -3159,15 +3160,15 @@ async function resetUserPassword(userId) {
   const target = USERS.find(u => u.id === userId);
   if (target) {
     const ok = await showConfirmDialog({
-      title: "Reset Password Pengguna?",
-      message: `Reset password untuk ${target.name} (${target.email})? Tautan password sementara baru yang aman akan diterbitkan.`,
-      confirmText: "Reset Password",
-      cancelText: "Batal",
+      title: t("dialogResetPasswordTitle"),
+      message: t("dialogResetPasswordMsg").replace("{name}", target.name).replace("{email}", target.email),
+      confirmText: t("btnSave"),
+      cancelText: t("btnCancel"),
       type: "warning"
     });
     if (ok) {
       addAuditLog("RESET_PASSWORD", `User ${target.name}`, `Temporary password generated`);
-      showToast(`Temporary password reset email sent to ${target.email}`);
+      showToast(t("msgPasswordResetSent").replace("{email}", target.email));
     }
   }
 }
@@ -3178,10 +3179,10 @@ async function deleteUser(userId) {
   if (index >= 0) {
     const userName = USERS[index].name;
     const ok = await showConfirmDialog({
-      title: "Hapus Akun Pengguna?",
-      message: `Apakah Anda yakin ingin menghapus akun pengguna "${userName}"? Tindakan ini tidak dapat dibatalkan.`,
-      confirmText: "Hapus Akun",
-      cancelText: "Batal",
+      title: t("dialogDeleteUserTitle"),
+      message: t("dialogDeleteUserMsg").replace("{name}", userName),
+      confirmText: t("btnDeletePermanent"),
+      cancelText: t("btnCancel"),
       type: "danger"
     });
     if (ok) {
@@ -3189,7 +3190,7 @@ async function deleteUser(userId) {
       saveUsers(USERS);
       addAuditLog("DELETE_USER", `User ${removed.name}`, `Deleted user account`);
       renderUserManagementList();
-      showToast(`User ${removed.name} removed.`);
+      showToast(t("msgUserRemoved").replace("{name}", removed.name));
     }
   }
 }
@@ -5090,7 +5091,7 @@ async function handleCvFileSelected(file, mode = "add") {
       if (rawBox) rawBox.value = rawText;
 
       const count = autoFillAddCandidateForm(parsed, file.name);
-      showToast(`CV "${file.name}" diproses! ${count} kolom form terisi otomatis.`);
+      showToast(t("msgCvProcessed").replace("{fileName}", file.name).replace("{count}", count));
     } else {
       const count = autoFillApplyJobForm(parsed, file.name);
       showToast(`CV "${file.name}" diproses! ${count} kolom lamaran terisi otomatis.`);
@@ -5164,7 +5165,7 @@ function initCvUploadAndParserHandlers() {
 
   btnClearFile?.addEventListener("click", () => {
     resetCvUploadUi("add");
-    showToast("Lampiran CV dibersihkan.");
+    showToast(t("msgCvCleared"));
   });
 
   btnToggleRaw?.addEventListener("click", () => {
@@ -5218,7 +5219,7 @@ function initCvUploadAndParserHandlers() {
       chip.style.display = "flex";
     }
     const count = autoFillAddCandidateForm(parsed, "Contoh CV Demo");
-    showToast(`Contoh CV diproses! ${count} kolom form terisi otomatis.`);
+    showToast(t("msgCvSampleProcessed").replace("{count}", count));
   });
 
   // Apply Job Modal CV Upload bindings
@@ -5263,7 +5264,7 @@ function handleRunCvParser() {
   }
 
   const count = autoFillAddCandidateForm(parsed, "Teks CV");
-  showToast(`Teks CV diproses! ${count} kolom form terisi otomatis.`);
+  showToast(t("msgCvTextProcessed").replace("{count}", count));
 }
 
 /**
@@ -5888,7 +5889,7 @@ async function hardDeleteCandidate(candidateId) {
   saveCandidates(candidates);
   addAuditLog("HARD_DELETE", `Candidate ${removed.name}`, `Permanently removed record ${removed.id}`);
   renderAllViews();
-  showToast(`Permanently deleted ${removed.name}.`);
+  showToast(t("msgCandidateDeleted").replace("{name}", removed.name));
   return true;
 }
 
@@ -5907,7 +5908,7 @@ function handleSaveSystemSettings() {
   saveSystemSettings(systemSettings);
   addAuditLog("UPDATE_POLICY", "System Governance", `Set duplicate check window=${months}mo, agency fee=${fee}%`);
   renderWarrantyTracker();
-  showToast(`Saved policy: ${months}-month duplicate window & ${fee}% agency fee.`);
+  showToast(t("msgPolicySaved").replace("{months}", months).replace("{fee}", fee));
 }
 
 function exportFullDatabaseJson() {
