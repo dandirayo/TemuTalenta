@@ -628,6 +628,7 @@ button:active {
   gap: 8px;
   white-space: nowrap;
   position: relative;
+  z-index: 95;
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
@@ -847,6 +848,7 @@ button:active {
 /* Notification Button & Interactive Dropdown */
 .notif-container {
   position: relative;
+  z-index: 100;
 }
 
 .header-icon-btn {
@@ -897,8 +899,8 @@ button:active {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-dropdown);
-  z-index: 50;
+  box-shadow: 0 16px 38px -4px rgba(22, 25, 34, 0.16), 0 6px 14px -2px rgba(22, 25, 34, 0.08);
+  z-index: 100;
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -959,6 +961,7 @@ button:active {
 
 .user-menu-container {
   position: relative;
+  z-index: 100;
 }
 
 .user-avatar {
@@ -987,8 +990,9 @@ button:active {
   width: 280px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-base);
-  box-shadow: var(--shadow-dropdown);
+  box-shadow: 0 16px 38px -4px rgba(22, 25, 34, 0.16), 0 6px 14px -2px rgba(22, 25, 34, 0.08);
   overflow: hidden;
+  z-index: 100;
 }
 
 .notif-dropdown {
@@ -1013,6 +1017,11 @@ button:active {
   from { opacity: 0; }
 }
 
+[data-theme="dark"] .notif-dropdown,
+[data-theme="dark"] .user-profile-popover {
+  box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.65), 0 6px 16px -2px rgba(0, 0, 0, 0.45);
+}
+
 /* ==========================================================================
    SUB-HEADER NAVIGATION BAR (< , Refresh , Home)
    ========================================================================== */
@@ -1026,6 +1035,8 @@ button:active {
   flex-shrink: 0;
   gap: 8px;
   flex-wrap: nowrap;
+  position: relative;
+  z-index: 50;
 }
 
 .nav-tool-group {
@@ -1461,6 +1472,7 @@ button:active {
   align-items: center;
   gap: 8px;
   position: relative;
+  z-index: 30;
   flex-shrink: 0;
 }
 
@@ -1611,7 +1623,7 @@ button:active {
   border-radius: 8px;
   box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 0;
-  z-index: 50;
+  z-index: 60;
   display: none;
   max-height: 420px;
   overflow: hidden;
@@ -2645,10 +2657,11 @@ dialog[data-closing]::backdrop {
   position: fixed;
   bottom: 18px;
   right: 18px;
-  z-index: 60;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  pointer-events: none;
 }
 
 .toast-msg {
@@ -3361,6 +3374,8 @@ dialog[data-closing]::backdrop {
     inset-inline: 10px;
     width: auto;
     max-inline-size: calc(100dvw - 20px);
+    z-index: 120;
+    box-shadow: 0 20px 48px -6px rgba(0, 0, 0, 0.35);
   }
 
   .workspace-body {
