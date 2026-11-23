@@ -907,6 +907,13 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     return;
   }
 
+  // Combined view: Career Portal is now integrated inside Perusahaan Klien (jobs sub-tab)
+  if (viewId === "careerPortal") {
+    switchWorkspaceView("clientList", pushHistory);
+    switchClientSubtab("jobs");
+    return;
+  }
+
   currentView = viewId;
   if (pushHistory && navigationHistory[navigationHistory.length - 1] !== viewId) {
     navigationHistory.push(viewId);
@@ -936,6 +943,35 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     applyViewChange();
   }
 }
+
+/**
+ * Sub-tab switcher inside Perusahaan Klien (combines Client Companies & Career Portal)
+ */
+function switchClientSubtab(tab) {
+  const isJobs = tab === "jobs";
+  const btnClients = document.getElementById("tabBtnClientOverview");
+  const btnJobs = document.getElementById("tabBtnClientJobs");
+  const paneClients = document.getElementById("subpane-clientOverview");
+  const paneJobs = document.getElementById("subpane-clientJobs");
+
+  if (btnClients) btnClients.classList.toggle("active", !isJobs);
+  if (btnJobs) btnJobs.classList.toggle("active", isJobs);
+  if (paneClients) {
+    paneClients.classList.toggle("active", !isJobs);
+    paneClients.style.display = isJobs ? "none" : "block";
+  }
+  if (paneJobs) {
+    paneJobs.classList.toggle("active", isJobs);
+    paneJobs.style.display = isJobs ? "block" : "none";
+  }
+
+  if (isJobs) {
+    renderJobBoard();
+  } else {
+    renderClientCompaniesTable();
+  }
+}
+window.switchClientSubtab = switchClientSubtab;
 
 function syncStageTabsUI() {
   document.querySelectorAll(".stage-tab").forEach(tab => {
@@ -1740,6 +1776,26 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
             </button>
           </div>
         </div>
+
+        ${(activeCvObj.fileType === 'application/pdf' || activeCvObj.fileName.toLowerCase().endsWith('.pdf')) ? `
+          <div style="width: 100%; height: 580px; border: 1px solid var(--border-base); border-radius: 8px; overflow: hidden; background: #fff; margin-top: 4px;">
+            <iframe id="cvPdfViewerFrame" src="${activeCvObj.fileDataUrl || ''}" style="width: 100%; height: 100%; border: none;" title="${escapeHtml(activeCvObj.fileName)}"></iframe>
+          </div>
+        ` : `
+          <div style="padding: 28px 20px; text-align: center; background: var(--bg-hover, rgba(0,0,0,0.02)); border: 1px solid var(--border-base); border-radius: 8px; margin-top: 4px;">
+            <div style="font-size: 38px; margin-bottom: 8px;">${getCvFileIcon(activeCvObj.fileName)}</div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">${escapeHtml(activeCvObj.fileName)}</div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; max-width: 480px; margin-left: auto; margin-right: auto;">
+              Dokumen asli tersimpan dengan format asli (${escapeHtml(activeCvObj.fileName.split('.').pop().toUpperCase())}). Anda dapat mengunduh dan membukanya langsung di aplikasi dokumen.
+            </p>
+            <div style="margin-top: 14px;">
+              <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 32px; padding: 0 16px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Unduh ${escapeHtml(activeCvObj.fileName)}
+              </button>
+            </div>
+          </div>
+        `}
       ` : `
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-hover, rgba(0,0,0,0.02)); border: 1px dashed var(--border-base); border-radius: var(--radius-md, 8px); margin-bottom: 12px; flex-wrap: wrap;">
           <div style="font-size: 12px; color: var(--text-secondary);">
@@ -1750,9 +1806,8 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
             📤 Unggah File Asli
           </button>
         </div>
+        <div class="cv-preview-paper">${escapeHtml(cvPreviewContent)}</div>
       `}
-
-      <div class="cv-preview-paper">${escapeHtml(cvPreviewContent)}</div>
     </div>
 
     <!-- PANE 4: Activity Timeline (DK-05) -->
@@ -1830,6 +1885,17 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     openCandidateProfileModal(c.id, "cvViewer", idx);
   });
 
+  // If active version has PDF but fileDataUrl is missing from memory, load from IndexedDB
+  const pdfFrame = body.querySelector("#cvPdfViewerFrame");
+  if (pdfFrame && !pdfFrame.src && activeCvObj.fileKey && typeof CvFileDB !== "undefined") {
+    CvFileDB.getFile(activeCvObj.fileKey).then(url => {
+      if (url) {
+        activeCvObj.fileDataUrl = url;
+        pdfFrame.src = url;
+      }
+    });
+  }
+
   body.querySelector("#btnAddCvVersion")?.addEventListener("click", () => {
     body.querySelector("#cvVersionFileInput")?.click();
   });
@@ -1877,12 +1943,12 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
     try {
       const extractedText = await extractTextFromCvFile(file);
       if (extractedText && extractedText.trim().length > 10) {
-        addVer(`[Uploaded Document: ${file.name} | ${(file.size / 1024).toFixed(1)} KB | By: ${activeUser.name}]\n\n${extractedText.trim()}`);
+        addVer(extractedText.trim());
       } else {
-        addVer(`[Binary Document Uploaded]\nFile Name : ${file.name}\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
+        addVer(generateResumeText(c));
       }
     } catch (err) {
-      addVer(`[Uploaded Document: ${file.name}]\nFile Size : ${(file.size / 1024).toFixed(1)} KB\nUploaded By : ${activeUser.name}\n\n` + generateResumeText(c));
+      addVer(generateResumeText(c));
     }
   });
 
@@ -4297,23 +4363,191 @@ function handleApplyJobSubmit(e) {
 }
 
 /**
- * 14B. INTERVIEW CALENDAR & .ICS SCHEDULER (Fase 4B)
+ * 14B. INTERVIEW CALENDAR & .ICS SCHEDULER (Google Calendar Style)
  */
-function renderInterviewCalendar() {
+let currentCalendarDate = new Date();
+let calendarViewMode = "month";
+
+function switchCalendarViewMode(mode) {
+  calendarViewMode = mode;
+  const btnMonth = document.getElementById("btnCalViewMonth");
+  const btnAgenda = document.getElementById("btnCalViewAgenda");
+  const paneMonth = document.getElementById("gcalMonthView");
+  const paneAgenda = document.getElementById("gcalAgendaView");
+
+  if (btnMonth) btnMonth.classList.toggle("active", mode === "month");
+  if (btnAgenda) btnAgenda.classList.toggle("active", mode === "agenda");
+  if (paneMonth) paneMonth.style.display = mode === "month" ? "block" : "none";
+  if (paneAgenda) paneAgenda.style.display = mode === "agenda" ? "block" : "none";
+
+  if (mode === "month") {
+    renderGoogleCalendarGrid();
+  } else {
+    renderInterviewAgendaList();
+  }
+}
+window.switchCalendarViewMode = switchCalendarViewMode;
+
+function goToTodayCalendar() {
+  currentCalendarDate = new Date();
+  renderGoogleCalendarGrid();
+}
+window.goToTodayCalendar = goToTodayCalendar;
+
+function changeCalendarMonth(delta) {
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+  renderGoogleCalendarGrid();
+}
+window.changeCalendarMonth = changeCalendarMonth;
+
+function handleGcalCellClick(dateStr) {
+  openScheduleInterviewModal(null, dateStr);
+}
+window.handleGcalCellClick = handleGcalCellClick;
+
+function renderGoogleCalendarGrid() {
+  const container = document.getElementById("gcalGridContainer");
+  const titleEl = document.getElementById("gcalCurrentMonthTitle");
+  if (!container) return;
+
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+
+  if (titleEl) {
+    const monthNamesId = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const monthNamesEn = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const names = currentLang === "id" ? monthNamesId : monthNamesEn;
+    titleEl.textContent = `${names[month]} ${year}`;
+  }
+
+  const today = new Date();
+  const isTodayYearMonth = today.getFullYear() === year && today.getMonth() === month;
+  const todayDateNum = today.getDate();
+
+  const weekdaysId = ["MIN", "SEN", "SEL", "RAB", "KAM", "JUM", "SAB"];
+  const weekdaysEn = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const weekdays = currentLang === "id" ? weekdaysId : weekdaysEn;
+
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 is Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const pad = n => String(n).padStart(2, "0");
+
+  const monthShortsId = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const monthShortsEn = ["Nov", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthShorts = currentLang === "id" ? monthShortsId : monthShortsEn;
+
+  let cellsHtml = "";
+
+  // 1. Weekday headers
+  cellsHtml += weekdays.map(dayName => `
+    <div class="gcal-weekday">${dayName}</div>
+  `).join("");
+
+  // 2. Previous month trailing days
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    const dayNum = daysInPrevMonth - firstDayOfWeek + 1 + i;
+    const prevMonthIdx = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const dateStr = `${prevYear}-${pad(prevMonthIdx + 1)}-${pad(dayNum)}`;
+    const label = (dayNum === 1) ? `${monthShorts[prevMonthIdx]} 1` : `${dayNum}`;
+
+    const dayInterviews = scheduledInterviews.filter(item => (item.dateTime || "").startsWith(dateStr));
+    const eventsHtml = dayInterviews.map(item => {
+      const timeStr = item.dateTime.includes("T") ? item.dateTime.split("T")[1].substring(0, 5) : "";
+      return `
+        <div class="gcal-event ${item.status === 'Completed' ? 'completed' : ''}" onclick="event.stopPropagation(); openInterviewDetailsModal('${item.id}')" title="${escapeHtml(item.candidateName)} - ${escapeHtml(item.position)}">
+          <span class="gcal-event-time">${timeStr}</span>
+          <span class="gcal-event-title">${escapeHtml(item.candidateName)}</span>
+        </div>
+      `;
+    }).join("");
+
+    cellsHtml += `
+      <div class="gcal-cell other-month" onclick="handleGcalCellClick('${dateStr}')">
+        <div class="gcal-cell-header">
+          <span class="gcal-cell-badge">${label}</span>
+        </div>
+        <div class="gcal-events">${eventsHtml}</div>
+      </div>
+    `;
+  }
+
+  // 3. Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${pad(month + 1)}-${pad(d)}`;
+    const isToday = isTodayYearMonth && d === todayDateNum;
+    const label = (d === 1) ? `${monthShorts[month]} 1` : `${d}`;
+
+    const dayInterviews = scheduledInterviews.filter(item => (item.dateTime || "").startsWith(dateStr));
+    const eventsHtml = dayInterviews.map(item => {
+      const timeStr = item.dateTime.includes("T") ? item.dateTime.split("T")[1].substring(0, 5) : "";
+      return `
+        <div class="gcal-event ${item.status === 'Completed' ? 'completed' : ''}" onclick="event.stopPropagation(); openInterviewDetailsModal('${item.id}')" title="${escapeHtml(item.candidateName)} - ${escapeHtml(item.position)} (${escapeHtml(item.company)})">
+          <span class="gcal-event-time">${timeStr}</span>
+          <span class="gcal-event-title">${escapeHtml(item.candidateName)}</span>
+        </div>
+      `;
+    }).join("");
+
+    cellsHtml += `
+      <div class="gcal-cell" onclick="handleGcalCellClick('${dateStr}')">
+        <div class="gcal-cell-header">
+          <span class="gcal-cell-badge ${isToday ? 'today' : ''}">${label}</span>
+        </div>
+        <div class="gcal-events">${eventsHtml}</div>
+      </div>
+    `;
+  }
+
+  // 4. Next month leading days (fill to complete last week)
+  const totalRendered = firstDayOfWeek + daysInMonth;
+  const rem = (7 - (totalRendered % 7)) % 7;
+  for (let d = 1; d <= rem; d++) {
+    const nextMonthIdx = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    const dateStr = `${nextYear}-${pad(nextMonthIdx + 1)}-${pad(d)}`;
+    const label = (d === 1) ? `${monthShorts[nextMonthIdx]} 1` : `${d}`;
+
+    const dayInterviews = scheduledInterviews.filter(item => (item.dateTime || "").startsWith(dateStr));
+    const eventsHtml = dayInterviews.map(item => {
+      const timeStr = item.dateTime.includes("T") ? item.dateTime.split("T")[1].substring(0, 5) : "";
+      return `
+        <div class="gcal-event ${item.status === 'Completed' ? 'completed' : ''}" onclick="event.stopPropagation(); openInterviewDetailsModal('${item.id}')" title="${escapeHtml(item.candidateName)} - ${escapeHtml(item.position)}">
+          <span class="gcal-event-time">${timeStr}</span>
+          <span class="gcal-event-title">${escapeHtml(item.candidateName)}</span>
+        </div>
+      `;
+    }).join("");
+
+    cellsHtml += `
+      <div class="gcal-cell other-month" onclick="handleGcalCellClick('${dateStr}')">
+        <div class="gcal-cell-header">
+          <span class="gcal-cell-badge">${label}</span>
+        </div>
+        <div class="gcal-events">${eventsHtml}</div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `<div class="gcal-grid">${cellsHtml}</div>`;
+}
+
+function renderInterviewAgendaList() {
   const container = document.getElementById("interviewAgendaContainer");
   if (!container) return;
 
   if (scheduledInterviews.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-base); border-radius: 6px;">
-        <p style="font-size: 14px; font-weight: 500;">No scheduled interviews yet.</p>
-        <p style="font-size: 12px; margin-top: 4px;">Click "+ Schedule Interview" to set up a candidate interview round.</p>
+        <p style="font-size: 14px; font-weight: 500;">Belum ada jadwal wawancara.</p>
+        <p style="font-size: 12px; margin-top: 4px;">Klik "+ Jadwalkan Wawancara" untuk mengatur sesi wawancara kandidat.</p>
       </div>
     `;
     return;
   }
 
-  // Sort by dateTime ascending
   const sorted = [...scheduledInterviews].sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
 
   container.innerHTML = sorted.map(item => {
@@ -4372,7 +4606,95 @@ function renderInterviewCalendar() {
   }).join("");
 }
 
-function openScheduleInterviewModal(candidateId = null) {
+function renderInterviewCalendar() {
+  renderGoogleCalendarGrid();
+  renderInterviewAgendaList();
+}
+
+function openInterviewDetailsModal(interviewId) {
+  const dialog = document.getElementById("interviewDetailsModal");
+  const body = document.getElementById("interviewDetailsModalBody");
+  if (!dialog || !body) return;
+
+  const item = scheduledInterviews.find(i => i.id === interviewId);
+  if (!item) return;
+
+  const d = new Date(item.dateTime);
+  const dateStr = !isNaN(d) ? d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : item.dateTime;
+  const timeStr = !isNaN(d) ? d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB" : "";
+  const isCompleted = item.status === "Completed";
+
+  body.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+      <div>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0;">${escapeHtml(item.candidateName)}</h3>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+          ${escapeHtml(item.round || "Wawancara")} • <strong>${escapeHtml(item.position)}</strong>
+        </p>
+      </div>
+      <span class="status-count-badge" style="${isCompleted ? 'background: var(--bg-subtle); color: var(--text-muted);' : 'background: rgba(26,115,232,0.15); color: #1a73e8;'}">
+        ${escapeHtml(item.status || "Scheduled")}
+      </span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; background: var(--bg-surface); border: 1px solid var(--border-base); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--text-muted); width: 20px;">🏢</span>
+        <span>Perusahaan: <strong>${escapeHtml(item.company)}</strong></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--text-muted); width: 20px;">📅</span>
+        <span>Waktu: <strong>${dateStr} • ${timeStr}</strong></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--text-muted); width: 20px;">👥</span>
+        <span>Pewawancara: ${escapeHtml(item.interviewers || "-")}</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--text-muted); width: 20px;">💻</span>
+        <span>Platform: ${escapeHtml(item.platform || "Google Meet")}</span>
+      </div>
+      ${item.notes ? `
+        <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--border-base);">
+          <span style="color: var(--text-muted); width: 20px;">📝</span>
+          <span style="color: var(--text-secondary);">${escapeHtml(item.notes)}</span>
+        </div>
+      ` : ""}
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="btn-outlined" onclick="downloadIcsCalendar('${item.id}')" style="height: 32px; font-size: 12px;">
+          📅 Unduh .ICS
+        </button>
+        <button type="button" class="btn-outlined" onclick="document.getElementById('interviewDetailsModal')?.close(); openCandidateProfileModal('${item.candidateId}');" style="height: 32px; font-size: 12px;">
+          👤 Profil Kandidat
+        </button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        ${item.meetingLink ? `
+          <a href="${escapeHtml(item.meetingLink)}" target="_blank" rel="noopener noreferrer" class="interview-join-btn" style="height: 32px; display: inline-flex; align-items: center; padding: 0 12px; font-size: 12px; text-decoration: none;">
+            Gabung ${escapeHtml(item.platform || "Meet")}
+          </a>
+        ` : ""}
+        ${!isCompleted ? `
+          <button type="button" class="btn-solid" onclick="document.getElementById('interviewDetailsModal')?.close(); markInterviewComplete('${item.id}');" style="height: 32px; font-size: 12px;">
+            Selesaikan Wawancara
+          </button>
+        ` : `
+          <button type="button" class="btn-outlined" onclick="document.getElementById('interviewDetailsModal')?.close(); openOfferLetterModal('${item.candidateId}');" style="height: 32px; font-size: 12px;">
+            Buat Penawaran
+          </button>
+        `}
+      </div>
+    </div>
+  `;
+
+  dialog.showModal();
+}
+window.openInterviewDetailsModal = openInterviewDetailsModal;
+
+function openScheduleInterviewModal(candidateId = null, defaultDateStr = null) {
   const dialog = document.getElementById("scheduleInterviewModal");
   const candSelect = document.getElementById("intCandidateSelect");
   const compInput = document.getElementById("intCompany");
@@ -4398,13 +4720,17 @@ function openScheduleInterviewModal(candidateId = null) {
     if (posInput) posInput.value = targetCand.recommendedPosition || "Software Engineer";
   }
 
-  // Set default interview time to tomorrow at 14:00
+  // Set default interview time
   if (dtInput) {
-    const tmrw = new Date();
-    tmrw.setDate(tmrw.getDate() + 1);
-    tmrw.setHours(14, 0, 0, 0);
-    const pad = n => String(n).padStart(2, "0");
-    dtInput.value = `${tmrw.getFullYear()}-${pad(tmrw.getMonth() + 1)}-${pad(tmrw.getDate())}T${pad(tmrw.getHours())}:${pad(tmrw.getMinutes())}`;
+    if (defaultDateStr) {
+      dtInput.value = `${defaultDateStr}T10:00`;
+    } else {
+      const tmrw = new Date();
+      tmrw.setDate(tmrw.getDate() + 1);
+      tmrw.setHours(14, 0, 0, 0);
+      const pad = n => String(n).padStart(2, "0");
+      dtInput.value = `${tmrw.getFullYear()}-${pad(tmrw.getMonth() + 1)}-${pad(tmrw.getDate())}T${pad(tmrw.getHours())}:${pad(tmrw.getMinutes())}`;
+    }
   }
 
   if (meetInput && (!meetInput.value || meetInput.value.includes("tt-meet-rec"))) {

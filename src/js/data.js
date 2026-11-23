@@ -1118,7 +1118,50 @@ const PRESET_DEMO_SCHEDULED_INTERVIEWS = [
     notes: "Live system design challenge: multi-cloud disaster recovery."
   }
 ];
-const INITIAL_SCHEDULED_INTERVIEWS = [];
+const INITIAL_SCHEDULED_INTERVIEWS = [
+  {
+    id: "INT-1001",
+    candidateId: "CND-1001",
+    candidateName: "Andi Candera",
+    company: "alauda",
+    position: "Indonesia Pre sales",
+    round: "Technical Interview (Round 1)",
+    dateTime: "2026-11-23T10:00",
+    platform: "Google Meet",
+    interviewers: "Budi (VP Engineering), Rina (Lead Consultant)",
+    meetingLink: "https://meet.google.com/alauda-andi-tech",
+    notes: "Fokus pada arsitektur hybrid-cloud dan kemampuan presentasi Mandarin.",
+    status: "Scheduled"
+  },
+  {
+    id: "INT-1002",
+    candidateId: "CND-1002",
+    candidateName: "Dimas Rizaldi",
+    company: "PT FinTech Solusi Nusantara",
+    position: "Senior Backend Engineer",
+    round: "User & Culture Fit (Round 2)",
+    dateTime: "2026-11-25T14:00",
+    platform: "Zoom",
+    meetingLink: "https://zoom.us/j/9876543210",
+    interviewers: "Hendro (CTO), Maya (HR Lead)",
+    notes: "Diskusi microservices Golang dan scalability high-throughput.",
+    status: "Scheduled"
+  },
+  {
+    id: "INT-1003",
+    candidateId: "CND-1003",
+    candidateName: "Zulfikri Akif",
+    company: "Cyberindo Solusi",
+    position: "Solutions Architect",
+    round: "Final Director Interview",
+    dateTime: "2026-11-27T15:30",
+    platform: "Google Meet",
+    meetingLink: "https://meet.google.com/cyberindo-final-zulfikri",
+    interviewers: "Dewi (Managing Director)",
+    notes: "Final offering alignment dan ekspektasi paket kompensasi.",
+    status: "Scheduled"
+  }
+];
 
 const ALL_COLUMNS = [
   { id: "candidate", key: "colCandidate", locked: true },
@@ -1369,10 +1412,12 @@ function saveOpenJobs(jobs) {
 function getStoredInterviews() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.INTERVIEWS);
-    if (!raw) return INITIAL_SCHEDULED_INTERVIEWS;
-    return JSON.parse(raw);
+    if (!raw) return JSON.parse(JSON.stringify(INITIAL_SCHEDULED_INTERVIEWS));
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return JSON.parse(JSON.stringify(INITIAL_SCHEDULED_INTERVIEWS));
   } catch (e) {
-    return INITIAL_SCHEDULED_INTERVIEWS;
+    return JSON.parse(JSON.stringify(INITIAL_SCHEDULED_INTERVIEWS));
   }
 }
 

@@ -76,15 +76,6 @@
               <span data-i18n="navAddCandidate">Add Candidate</span>
             </button>
           </li>
-          <li>
-            <button type="button" class="submenu-item-btn" data-view="careerPortal">
-              <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-              </svg>
-              <span data-i18n="navCareerPortal">Career Portal (Jobs)</span>
-            </button>
-          </li>
         </ul>
       </div>
 
@@ -640,24 +631,62 @@
       </section>
 
       <!-- ====================================================================
-           PANEL 3: CONSULTANT BUSINESS - CLIENT COMPANIES
+           PANEL 3: CONSULTANT BUSINESS - CLIENT COMPANIES & CAREER PORTAL COMBINED
            ==================================================================== -->
       <section id="panel-clientList" class="workspace-panel">
-        <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
-          <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navClientList">Client Companies</h2>
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="navClientList">Perusahaan Klien & Portal Lowongan</h2>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+              Kelola daftar perusahaan klien mitra, portofolio kandidat aktif, dan lowongan kerja terbuka.
+            </p>
+          </div>
+          <div class="view-mode-toggle" style="margin-left: auto;">
+            <button type="button" id="tabBtnClientOverview" class="view-toggle-btn active" onclick="switchClientSubtab('clients')">
+              🏢 <span data-i18n="tabClientCompanies">Perusahaan Klien</span>
+            </button>
+            <button type="button" id="tabBtnClientJobs" class="view-toggle-btn" onclick="switchClientSubtab('jobs')">
+              💼 <span data-i18n="tabClientJobs">Portal Lowongan Kerja</span>
+            </button>
+          </div>
         </div>
-        <div tabindex="0" role="region" aria-label="Client Companies" class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th data-i18n="colRecCompany">Recommended Company</th>
-                <th data-i18n="colStatus">Active Candidates</th>
-                <th data-i18n="colRecPosition">Recommended Positions</th>
-                <th data-i18n="colEntryTime">Latest Activity</th>
-              </tr>
-            </thead>
-            <tbody id="clientCompaniesTableBody"></tbody>
-          </table>
+
+        <!-- Sub-pane 1: Client Companies Directory -->
+        <div id="subpane-clientOverview" class="client-subpane active">
+          <div tabindex="0" role="region" aria-label="Client Companies" class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-i18n="colRecCompany">Recommended Company</th>
+                  <th data-i18n="colStatus">Active Candidates</th>
+                  <th data-i18n="colRecPosition">Recommended Positions</th>
+                  <th data-i18n="colEntryTime">Latest Activity</th>
+                </tr>
+              </thead>
+              <tbody id="clientCompaniesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sub-pane 2: Career Portal / Jobs Board -->
+        <div id="subpane-clientJobs" class="client-subpane" style="display: none;">
+          <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 14.5px; font-weight: 600;" data-i18n="lblOpenPositions">Lowongan Kerja Terbuka</h3>
+              <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
+                Lowongan kerja yang sedang dibuka oleh perusahaan klien mitra.
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
+              <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
+                <option value="all">All Companies</option>
+              </select>
+              <input type="text" id="careerSearchQuery" class="ctrl-input" placeholder="Search title or skills..." style="height: 28px; font-size: 12px;">
+              <button type="button" id="btnOpenPostJobModal" class="btn-solid" style="height: 28px; font-size: 12px;" data-i18n="btnPostJob">+ Post Job Order</button>
+            </div>
+          </div>
+
+          <div id="jobBoardContainer" class="job-card-grid"></div>
         </div>
       </section>
 
@@ -871,43 +900,50 @@
       </section>
 
       <!-- ====================================================================
-           PANEL 7: PUBLIC CAREER PORTAL / JOB BOARD (Fase 4A)
-           ==================================================================== -->
-      <section id="panel-careerPortal" class="workspace-panel">
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblOpenPositions">Open Career Opportunities</h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-              Explore and apply for open positions across our client companies. Submitted applications directly enter Resume Lib as New candidates.
-            </p>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
-            <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
-              <option value="all">All Companies</option>
-            </select>
-            <input type="text" id="careerSearchQuery" class="ctrl-input" placeholder="Search title or skills..." style="height: 28px; font-size: 12px;">
-            <button type="button" id="btnOpenPostJobModal" class="btn-solid" style="height: 28px; font-size: 12px;" data-i18n="btnPostJob">+ Post Job Order</button>
-          </div>
-        </div>
-
-        <div id="jobBoardContainer" class="job-card-grid"></div>
-      </section>
-
-      <!-- ====================================================================
-           PANEL 8: INTERVIEW CALENDAR & SCHEDULER (Fase 4B)
+           PANEL 8: INTERVIEW CALENDAR & SCHEDULER (Google Calendar Style)
            ==================================================================== -->
       <section id="panel-interviewCalendar" class="workspace-panel">
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
-            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblUpcomingInterviews">Upcoming Scheduled Interviews</h2>
+            <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblUpcomingInterviews">Kalender Wawancara Kandidat</h2>
             <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
-              Coordinate candidate interview rounds, access virtual rooms (Meet/Zoom), and export .ICS calendar events.
+              Jadwal wawancara kandidat terpadu dengan tampilan Google Calendar, tautan virtual room (Meet/Zoom), dan ekspor .ICS.
             </p>
           </div>
-          <button type="button" id="btnOpenScheduleModal" class="btn-solid" data-i18n="btnScheduleInterview">+ Schedule Interview</button>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <div class="view-mode-toggle">
+              <button type="button" id="btnCalViewMonth" class="view-toggle-btn active" onclick="switchCalendarViewMode('month')">
+                📅 <span data-i18n="btnViewMonth">Bulan</span>
+              </button>
+              <button type="button" id="btnCalViewAgenda" class="view-toggle-btn" onclick="switchCalendarViewMode('agenda')">
+                📋 <span data-i18n="btnViewAgenda">Agenda</span>
+              </button>
+            </div>
+            <button type="button" id="btnOpenScheduleModal" class="btn-solid" data-i18n="btnScheduleInterview">+ Jadwalkan Wawancara</button>
+          </div>
         </div>
 
-        <div id="interviewAgendaContainer" class="calendar-agenda-grid"></div>
+        <!-- Google Calendar Monthly Grid View -->
+        <div id="gcalMonthView" class="gcal-container">
+          <div class="gcal-toolbar">
+            <div class="gcal-nav-left">
+              <button type="button" class="gcal-btn-today" onclick="goToTodayCalendar()" data-i18n="btnCalendarToday">Hari Ini</button>
+              <button type="button" class="gcal-btn-nav" onclick="changeCalendarMonth(-1)" aria-label="Bulan Sebelumnya" title="Bulan Sebelumnya">
+                ‹
+              </button>
+              <button type="button" class="gcal-btn-nav" onclick="changeCalendarMonth(1)" aria-label="Bulan Berikutnya" title="Bulan Berikutnya">
+                ›
+              </button>
+              <span id="gcalCurrentMonthTitle" class="gcal-title-month">November 2026</span>
+            </div>
+          </div>
+          <div id="gcalGridContainer"></div>
+        </div>
+
+        <!-- Agenda List View (Alternative) -->
+        <div id="gcalAgendaView" style="display: none; margin-top: 10px;">
+          <div id="interviewAgendaContainer" class="calendar-agenda-grid"></div>
+        </div>
       </section>
 
       <!-- ====================================================================
@@ -1788,6 +1824,20 @@
       <div class="custom-prompt-footer">
         <button type="button" id="btnCustomPromptCancel" class="btn-outlined" data-i18n="btnCancel">Batal</button>
         <button type="button" id="btnCustomPromptConfirm" class="btn-solid btn-danger" data-i18n="btnConfirm">Konfirmasi</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal 12: Interview Details Modal (Google Calendar Click) -->
+  <dialog id="interviewDetailsModal" aria-labelledby="interviewDetailsModalTitle" closedby="any">
+    <div class="modal-shell" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2 id="interviewDetailsModalTitle" style="font-size: 15px; font-weight: 700;">Detail Wawancara</h2>
+        <button type="button" class="modal-close-x" data-close-modal aria-label="Tutup">✕</button>
+      </div>
+      <div id="interviewDetailsModalBody" class="modal-body" style="padding: 16px 20px;"></div>
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-base); display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="btn-outlined" data-close-modal>Tutup</button>
       </div>
     </div>
   </dialog>
