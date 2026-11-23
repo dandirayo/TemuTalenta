@@ -1694,23 +1694,64 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
 
     <!-- PANE 3: Multi-Version CV Document Viewer (DK-03) -->
     <div id="pane-cvViewer" class="profile-tab-pane ${activeTab === 'cvViewer' ? 'active' : ''}">
-      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <label for="cvVersionSelect" style="font-size: 12px; font-weight: 600;">CV Version:</label>
-          <select id="cvVersionSelect" class="ctrl-select" style="height: 28px; font-size: 12px; min-width: 170px;">
+          <label for="cvVersionSelect" style="font-size: 12px; font-weight: 600;">${t("lblCvVersion") || "Versi CV"}:</label>
+          <select id="cvVersionSelect" class="ctrl-select" style="height: 30px; font-size: 12px; min-width: 180px;">
             ${c.cvVersions.map((ver, idx) => `
               <option value="${idx}" ${idx === safeCvIdx ? "selected" : ""}>${escapeHtml(ver.version)} — ${escapeHtml(ver.uploadedAt)}</option>
             `).join("")}
           </select>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-          <button type="button" id="btnAddCvVersion" class="btn-outlined" style="height: 28px; padding: 0 10px; font-size: 12px;">+ Upload New Version</button>
-          <input type="file" id="cvVersionFileInput" accept=".txt,.pdf,.doc,.docx" style="display: none;">
-          <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 28px; padding: 0 10px; font-size: 12px;">
-            Download This Version
+          <button type="button" id="btnAddCvVersion" class="btn-outlined" style="height: 30px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            ${t("btnUploadNewCvVersion") || "+ Unggah Versi Baru"}
+          </button>
+          <input type="file" id="cvVersionFileInput" accept=".pdf,.doc,.docx,.txt,.rtf" style="display: none;">
+          <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 30px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ${activeCvObj.fileName ? `Unduh ${escapeHtml(activeCvObj.fileName)}` : (t("btnDownloadThisVersion") || "Unduh Versi Ini")}
           </button>
         </div>
       </div>
+
+      ${activeCvObj.fileName ? `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-hover, rgba(0,0,0,0.03)); border: 1px solid var(--border-base); border-radius: var(--radius-md, 8px); margin-bottom: 12px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">${getCvFileIcon(activeCvObj.fileName)}</span>
+            <div>
+              <div style="font-weight: 700; color: var(--text-primary); font-size: 13px;">${escapeHtml(activeCvObj.fileName)}</div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                ${activeCvObj.fileSize ? (activeCvObj.fileSize / 1024).toFixed(1) + ' KB • ' : ''}Diunggah oleh <strong>${escapeHtml(activeCvObj.uploadedBy || 'User')}</strong> (${escapeHtml(activeCvObj.uploadedAt)})
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            ${(activeCvObj.fileType === 'application/pdf' || activeCvObj.fileName.toLowerCase().endsWith('.pdf')) ? `
+              <button type="button" class="btn-outlined" onclick="previewCandidateCvFile('${c.id}', ${safeCvIdx})" style="height: 28px; padding: 0 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                ${t("btnPreviewCvFile") || "Pratinjau File"}
+              </button>
+            ` : ''}
+            <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 28px; padding: 0 12px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              ${t("btnDownloadOriginalFile") || "Unduh File Asli"}
+            </button>
+          </div>
+        </div>
+      ` : `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-hover, rgba(0,0,0,0.02)); border: 1px dashed var(--border-base); border-radius: var(--radius-md, 8px); margin-bottom: 12px; flex-wrap: wrap;">
+          <div style="font-size: 12px; color: var(--text-secondary);">
+            📄 ${t("lblNoOriginalFile") || "Versi ini menggunakan format resume teks. Klik '+ Unggah Versi Baru' jika ingin melampirkan file CV asli (PDF / Word)."}
+          </div>
+          <button type="button" class="btn-outlined btn-trigger-cv-upload" style="height: 28px; padding: 0 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            📤 Unggah File Asli
+          </button>
+        </div>
+      `}
+
       <div class="cv-preview-paper">${escapeHtml(cvPreviewContent)}</div>
     </div>
 
@@ -1792,20 +1833,43 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
   body.querySelector("#btnAddCvVersion")?.addEventListener("click", () => {
     body.querySelector("#cvVersionFileInput")?.click();
   });
+  body.querySelectorAll(".btn-trigger-cv-upload").forEach(btn => {
+    btn.addEventListener("click", () => {
+      body.querySelector("#cvVersionFileInput")?.click();
+    });
+  });
 
   body.querySelector("#cvVersionFileInput")?.addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
     const verLabel = `v${c.cvVersions.length + 1} (${file.name})`;
+
+    let fileDataUrl = null;
+    try {
+      fileDataUrl = await readFileAsDataUrl(file);
+    } catch (readErr) {
+      console.warn("Could not read file as Data URL:", readErr);
+    }
+
+    const fileKey = `cv_${c.id}_v${c.cvVersions.length + 1}_${Date.now()}`;
+    if (fileDataUrl && typeof CvFileDB !== "undefined") {
+      await CvFileDB.saveFile(fileKey, fileDataUrl);
+    }
+
     const addVer = (contentText) => {
       c.cvVersions.unshift({
         version: verLabel,
+        fileName: file.name,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+        fileKey: fileKey,
+        fileDataUrl: fileDataUrl,
         uploadedAt: formatTimestamp(new Date()),
         uploadedBy: activeUser.name,
         content: contentText
       });
       saveCandidates(candidates);
-      addAuditLog("UPLOAD_CV_VERSION", `Candidate ${c.name}`, `Uploaded CV version ${verLabel}`);
+      addAuditLog("UPLOAD_CV_VERSION", `Candidate ${c.name}`, `Uploaded CV version ${verLabel} (${file.name})`);
       showToast(`Added CV version: ${verLabel}`);
       openCandidateProfileModal(c.id, "cvViewer", 0);
     };
@@ -1941,11 +2005,237 @@ function generateResumeText(c) {
   ].join("\n");
 }
 
-function downloadCandidateResume(candidateId, cvVersionIdx = 0) {
+/**
+ * Helper: Read a browser File object as a Base64 Data URL
+ */
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Helper: Convert a Base64 Data URL into a binary Blob
+ */
+function dataUrlToBlob(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== "string") return null;
+  const parts = dataUrl.split(",");
+  if (parts.length < 2) return null;
+  const mime = parts[0].match(/:(.*?);/)?.[1] || "application/octet-stream";
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+/**
+ * IndexedDB Safe Binary Store for Original CV Documents (.pdf, .docx, .doc, .txt)
+ * Prevents localStorage QuotaExceededError when uploading large CV files.
+ */
+const CvFileDB = {
+  dbName: "NextKerjaFileDB",
+  storeName: "cvFiles",
+  _dbPromise: null,
+
+  async getDB() {
+    if (typeof indexedDB === "undefined") return null;
+    if (this._dbPromise) return this._dbPromise;
+
+    this._dbPromise = new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(this.dbName, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            db.createObjectStore(this.storeName);
+          }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (err) => {
+          console.warn("IndexedDB open error:", err);
+          resolve(null);
+        };
+      } catch (err) {
+        console.warn("IndexedDB not supported or disabled:", err);
+        resolve(null);
+      }
+    });
+
+    return this._dbPromise;
+  },
+
+  async saveFile(key, dataUrl) {
+    if (!key || !dataUrl) return false;
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, "readwrite");
+          const store = tx.objectStore(this.storeName);
+          store.put(dataUrl, key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    } catch (e) {
+      return false;
+    }
+  },
+
+  async getFile(key) {
+    if (!key) return null;
+    try {
+      const db = await this.getDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, "readonly");
+          const store = tx.objectStore(this.storeName);
+          const req = store.get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async deleteFile(key) {
+    if (!key) return false;
+    try {
+      const db = await this.getDB();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(this.storeName, "readwrite");
+          tx.objectStore(this.storeName).delete(key);
+          tx.oncomplete = () => resolve(true);
+          tx.onerror = () => resolve(false);
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+};
+
+/**
+ * Get emoji icon based on CV file extension
+ */
+function getCvFileIcon(fileName) {
+  if (!fileName) return "📄";
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".pdf")) return "📕";
+  if (lower.endsWith(".docx") || lower.endsWith(".doc")) return "📘";
+  if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".rtf")) return "📝";
+  return "📄";
+}
+
+/**
+ * Open original CV file in a new browser tab for live preview
+ */
+async function previewCandidateCvFile(candidateId, cvVersionIdx = 0) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
 
   const verObj = Array.isArray(c.cvVersions) && c.cvVersions[cvVersionIdx] ? c.cvVersions[cvVersionIdx] : null;
+  let dataUrl = verObj ? verObj.fileDataUrl : null;
+  if (!dataUrl && verObj && verObj.fileKey) {
+    try {
+      dataUrl = await CvFileDB.getFile(verObj.fileKey);
+      if (dataUrl) verObj.fileDataUrl = dataUrl;
+    } catch (e) {}
+  }
+
+  if (dataUrl) {
+    try {
+      const blob = dataUrlToBlob(dataUrl);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return;
+      }
+    } catch (e) {}
+    window.open(dataUrl, "_blank");
+  } else {
+    showToast(t("lblNoOriginalFile") || "No original binary file attached to this version.");
+  }
+}
+
+/**
+ * Download Candidate Resume:
+ * If an original uploaded file exists (.pdf, .docx, .doc, .txt), downloads the exact same original file!
+ * Otherwise gracefully falls back to structured text resume.
+ */
+async function downloadCandidateResume(candidateId, cvVersionIdx = 0) {
+  const c = candidates.find(item => item.id === candidateId);
+  if (!c) return;
+
+  const verObj = Array.isArray(c.cvVersions) && c.cvVersions[cvVersionIdx] ? c.cvVersions[cvVersionIdx] : null;
+
+  // Retrieve dataUrl: check in-memory first, then IndexedDB
+  let dataUrl = verObj ? verObj.fileDataUrl : null;
+  if (!dataUrl && verObj && verObj.fileKey) {
+    try {
+      dataUrl = await CvFileDB.getFile(verObj.fileKey);
+      if (dataUrl) {
+        verObj.fileDataUrl = dataUrl;
+      }
+    } catch (e) {}
+  }
+
+  // If original binary file is available, download exact original file!
+  if (dataUrl && verObj && verObj.fileName) {
+    try {
+      const blob = dataUrlToBlob(dataUrl);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = verObj.fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+        addAuditLog("DOWNLOAD_RESUME", `Candidate ${c.name}`, `Downloaded original CV file: ${verObj.fileName}`);
+        showToast(`${t("msgResumeDownloaded") || "Downloaded CV"}: ${verObj.fileName}`);
+        return;
+      }
+    } catch (err) {
+      console.warn("Blob download failed, fallback to direct dataUrl:", err);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = verObj.fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      addAuditLog("DOWNLOAD_RESUME", `Candidate ${c.name}`, `Downloaded original CV file: ${verObj.fileName}`);
+      showToast(`${t("msgResumeDownloaded") || "Downloaded CV"}: ${verObj.fileName}`);
+      return;
+    }
+  }
+
+  // Fallback to structured text resume if no original binary file was uploaded
   const resumeContent = verObj && verObj.content ? verObj.content : generateResumeText(c);
   const blob = new Blob([resumeContent], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -2313,8 +2603,14 @@ async function handleAddCandidateSubmit(e) {
     ? parsedExtra.skills
     : (position ? [position] : []);
 
+  const candidateId = `CND-${1000 + candidates.length + 1}`;
+  const fileKey = uploadedCv?.fileDataUrl ? `cv_${candidateId}_v1_${Date.now()}` : null;
+  if (fileKey && uploadedCv.fileDataUrl && typeof CvFileDB !== "undefined") {
+    CvFileDB.saveFile(fileKey, uploadedCv.fileDataUrl);
+  }
+
   const newRecord = {
-    id: `CND-${1000 + candidates.length + 1}`,
+    id: candidateId,
     name,
     nationality,
     gender,
@@ -2341,6 +2637,11 @@ async function handleAddCandidateSubmit(e) {
     educationHistory: Array.isArray(parsedExtra.educationHistory) && parsedExtra.educationHistory.length > 0 ? parsedExtra.educationHistory : undefined,
     cvVersions: uploadedCv ? [{
       version: `v1 (${uploadedCv.fileName})`,
+      fileName: uploadedCv.fileName,
+      fileType: uploadedCv.fileType || "application/octet-stream",
+      fileSize: uploadedCv.fileSize,
+      fileKey: fileKey,
+      fileDataUrl: uploadedCv.fileDataUrl,
       uploadedAt: nowStr,
       uploadedBy: activeUser.name,
       content: `[Uploaded CV File: ${uploadedCv.fileName}]\n\n${uploadedCv.rawText}`
@@ -3911,6 +4212,11 @@ function handleApplyJobSubmit(e) {
   const uploadedCv = pendingUploadedCvData && pendingUploadedCvData.mode === "apply" ? pendingUploadedCvData : null;
   const parsedExtra = uploadedCv?.parsed || {};
 
+  const fileKey = uploadedCv?.fileDataUrl ? `cv_${candidateId}_v1_${Date.now()}` : null;
+  if (fileKey && uploadedCv.fileDataUrl && typeof CvFileDB !== "undefined") {
+    CvFileDB.saveFile(fileKey, uploadedCv.fileDataUrl);
+  }
+
   const newCand = {
     id: candidateId,
     name: fullName,
@@ -3935,6 +4241,11 @@ function handleApplyJobSubmit(e) {
     educationHistory: Array.isArray(parsedExtra.educationHistory) && parsedExtra.educationHistory.length > 0 ? parsedExtra.educationHistory : undefined,
     cvVersions: uploadedCv ? [{
       version: `v1 (${uploadedCv.fileName})`,
+      fileName: uploadedCv.fileName,
+      fileType: uploadedCv.fileType || "application/octet-stream",
+      fileSize: uploadedCv.fileSize,
+      fileKey: fileKey,
+      fileDataUrl: uploadedCv.fileDataUrl,
       uploadedAt: nowFormatted,
       uploadedBy: fullName,
       content: `[Uploaded CV File: ${uploadedCv.fileName}]\n\n${uploadedCv.rawText}`
@@ -5093,6 +5404,13 @@ async function handleCvFileSelected(file, mode = "add") {
   }
 
   try {
+    let fileDataUrl = null;
+    try {
+      fileDataUrl = await readFileAsDataUrl(file);
+    } catch (readErr) {
+      console.warn("Could not read uploaded CV as Data URL:", readErr);
+    }
+
     const rawText = await extractTextFromCvFile(file);
     if (!rawText || rawText.trim().length < 5) {
       if (mode === "add") {
@@ -5113,6 +5431,8 @@ async function handleCvFileSelected(file, mode = "add") {
       mode,
       fileName: file.name,
       fileSize: file.size,
+      fileType: file.type || "application/octet-stream",
+      fileDataUrl,
       rawText,
       parsed
     };
@@ -6022,6 +6342,9 @@ window.openScheduleInterviewModal = openScheduleInterviewModal;
 window.downloadIcsCalendar = downloadIcsCalendar;
 window.markInterviewComplete = markInterviewComplete;
 window.openOfferLetterModal = openOfferLetterModal;
+window.downloadCandidateResume = downloadCandidateResume;
+window.previewCandidateCvFile = previewCandidateCvFile;
+window.CvFileDB = CvFileDB;
 window.runDemoScenario = runDemoScenario;
 window.resetAllDemoData = resetAllDemoData;
 window.switchWorkspaceView = switchWorkspaceView;

@@ -145,6 +145,13 @@ const I18N = {
     btnSubmitRec: "Submit Recommendation",
     btnUploadCsv: "Upload & Import",
     btnDownloadTemplate: "Download CSV Template",
+    btnUploadNewCvVersion: "Upload New Version",
+    btnDownloadThisVersion: "Download This Version",
+    btnDownloadOriginalFile: "Download Original File",
+    btnPreviewCvFile: "Preview File",
+    lblCvVersion: "CV Version",
+    lblOriginalFileAttached: "Original File Attached",
+    lblNoOriginalFile: "This version is using standard text resume format. Click '+ Upload New Version' to attach an original CV file (.PDF, .DOCX, .DOC, .TXT).",
     tabOverview: "Overview & Contacts",
     tabWorkEdu: "Experience & Education",
     tabCvViewer: "CV Document Viewer",
@@ -445,6 +452,13 @@ const I18N = {
     btnSubmitRec: "Kirim Rekomendasi",
     btnUploadCsv: "Unggah & Impor",
     btnDownloadTemplate: "Unduh Template CSV",
+    btnUploadNewCvVersion: "Unggah Versi Baru",
+    btnDownloadThisVersion: "Unduh Versi Ini",
+    btnDownloadOriginalFile: "Unduh File Asli",
+    btnPreviewCvFile: "Pratinjau File",
+    lblCvVersion: "Versi CV",
+    lblOriginalFileAttached: "File Dokumen Asli Terlampir",
+    lblNoOriginalFile: "Versi ini menggunakan format resume teks standar. Klik '+ Unggah Versi Baru' jika ingin melampirkan file CV asli (.PDF, .DOCX, .DOC, .TXT).",
     tabOverview: "Profil & Kontak",
     tabWorkEdu: "Pengalaman & Pendidikan",
     tabCvViewer: "Pratinjau CV Dokumen",
@@ -1175,7 +1189,28 @@ function getStoredCandidates() {
 function saveCandidates(list) {
   try {
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) {
+    try {
+      // If localStorage quota is exceeded, prune large inlined data URLs from the localStorage JSON copy.
+      // The binary files remain safely stored in IndexedDB under ver.fileKey.
+      const sanitized = list.map(c => {
+        if (!c.cvVersions || !c.cvVersions.length) return c;
+        return {
+          ...c,
+          cvVersions: c.cvVersions.map(v => {
+            if (v.fileDataUrl && v.fileDataUrl.length > 50000) {
+              const { fileDataUrl, ...rest } = v;
+              return rest;
+            }
+            return v;
+          })
+        };
+      });
+      localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(sanitized));
+    } catch (e2) {
+      console.warn("Could not save candidates to localStorage:", e2);
+    }
+  }
 }
 
 function getStoredLang() {
