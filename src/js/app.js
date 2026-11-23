@@ -966,9 +966,9 @@ function switchClientSubtab(tab) {
   }
 
   if (isJobs) {
-    renderJobBoard();
+    renderCareerPortal();
   } else {
-    renderClientCompaniesTable();
+    renderClientCompaniesView();
   }
 }
 window.switchClientSubtab = switchClientSubtab;
