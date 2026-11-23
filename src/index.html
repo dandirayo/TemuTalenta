@@ -995,7 +995,17 @@
     <div class="modal-shell">
       <div class="modal-header">
         <h2 id="profileModalTitle" data-i18n="modalProfileTitle">Candidate Profile & Recommendations</h2>
-        <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+        <div class="modal-header-actions">
+          <button type="button" id="btnToggleProfileFullscreen" class="modal-header-btn" title="Layar Penuh / Maximize" aria-label="Toggle Fullscreen">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-maximize" aria-hidden="true">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-restore" aria-hidden="true" style="display: none;">
+              <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/>
+            </svg>
+          </button>
+          <button type="button" class="modal-close-x" data-close-modal aria-label="Close">✕</button>
+        </div>
       </div>
       <div id="profileModalBody" class="modal-body"></div>
       <div class="modal-footer">

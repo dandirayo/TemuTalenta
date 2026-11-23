@@ -1470,6 +1470,12 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
   const body = document.getElementById("profileModalBody");
   if (!dialog || !body) return;
 
+  try {
+    const savedFs = localStorage.getItem("profile_modal_fullscreen") === "true";
+    dialog.classList.toggle("is-fullscreen", savedFs);
+    updateProfileFullscreenBtnState(savedFs);
+  } catch (e) {}
+
   const currentBadge = computeCandidateBadge(c);
   const calculatedAge = calculateAge(c.birthDate);
   const safeCvIdx = Math.min(Math.max(0, selectedCvIdx), c.cvVersions.length - 1);
@@ -3667,6 +3673,24 @@ function deleteMasterCountry(index) {
 /**
  * 13. DIALOG LIGHT-DISMISS FALLBACK & HELPERS
  */
+function updateProfileFullscreenBtnState(isFull) {
+  const btn = document.getElementById("btnToggleProfileFullscreen");
+  if (!btn) return;
+  btn.title = isFull ? t("btnRestore") : t("btnMaximize");
+}
+
+function toggleProfileModalFullscreen(force) {
+  const modal = document.getElementById("profileModal");
+  if (!modal) return;
+  const isCurrentlyFull = modal.classList.contains("is-fullscreen");
+  const shouldBeFull = typeof force === "boolean" ? force : !isCurrentlyFull;
+  modal.classList.toggle("is-fullscreen", shouldBeFull);
+  try {
+    localStorage.setItem("profile_modal_fullscreen", shouldBeFull ? "true" : "false");
+  } catch (e) {}
+  updateProfileFullscreenBtnState(shouldBeFull);
+}
+
 function setupDialogLightDismiss() {
   if (!("closedBy" in HTMLDialogElement.prototype)) {
     const outside = (e, dialog) => {
@@ -3686,6 +3710,23 @@ function setupDialogLightDismiss() {
       if (d) closeDialogSmooth(d);
     });
   });
+
+  // Profile Modal Fullscreen toggle & titlebar dblclick
+  const btnFs = document.getElementById("btnToggleProfileFullscreen");
+  const profileDialog = document.getElementById("profileModal");
+  if (btnFs && profileDialog) {
+    btnFs.addEventListener("click", () => {
+      toggleProfileModalFullscreen();
+    });
+  }
+
+  const profileHeader = profileDialog?.querySelector(".modal-header");
+  if (profileHeader) {
+    profileHeader.addEventListener("dblclick", (e) => {
+      if (e.target.closest("button")) return;
+      toggleProfileModalFullscreen();
+    });
+  }
 
   // Smooth exit on Esc key cancel event
   document.querySelectorAll("dialog").forEach(dialog => {
