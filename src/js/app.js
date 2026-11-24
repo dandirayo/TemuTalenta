@@ -10,6 +10,7 @@ let candidates = [];
 let currentLang = "en";
 let currentStageFilter = "all";
 let currentView = "resumeLib";
+let currentClientSubtab = "clients";
 let visibleColumns = [];
 let sortState = { columnId: "entryTime", direction: "descending" };
 let currentPage = 1;
@@ -28,6 +29,41 @@ let masterCountries = [];
 let selectedCandidateIds = new Set();
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+function generateUniqueCandidateId() {
+  let maxNum = 1000;
+  (candidates || []).forEach(c => {
+    const m = String(c.id || "").match(/CND-(\d+)/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    }
+  });
+  return `CND-${maxNum + 1}`;
+}
+
+function generateUniqueJobId() {
+  let maxNum = 10;
+  (openJobs || []).forEach(j => {
+    const m = String(j.id || "").match(/JOB-(\d+)/i);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    }
+  });
+  return `JOB-${String(maxNum + 1).padStart(2, "0")}`;
+}
+
+function isValidIsoDateString(val) {
+  if (!val || !/^\d{4}-\d{2}-\d{2}$/.test(String(val).trim())) return false;
+  const [y, m, d] = String(val).trim().split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && (dt.getUTCMonth() + 1) === m && dt.getUTCDate() === d;
+}
+
+function isSupportedCvFile(fileName) {
+  return /\.(pdf|docx|doc|txt|md|rtf)$/i.test(String(fileName || "").trim());
+}
 
 /**
  * ====================================================================
@@ -77,12 +113,17 @@ function showConfirmDialog({
     }
     const titleEl = document.getElementById("customPromptTitle");
     const msgEl = document.getElementById("customPromptMessage");
+    const fieldsEl = document.getElementById("customPromptFields");
     const iconEl = document.getElementById("customPromptIcon");
     const btnCancel = document.getElementById("btnCustomPromptCancel");
     const btnConfirm = document.getElementById("btnCustomPromptConfirm");
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
+    if (fieldsEl) {
+      fieldsEl.innerHTML = "";
+      fieldsEl.style.display = "none";
+    }
     if (iconEl) {
       iconEl.className = `custom-prompt-icon ${type}`;
       iconEl.innerHTML = getPromptIconSvg(type);
@@ -157,12 +198,17 @@ function showAlertDialog({
     }
     const titleEl = document.getElementById("customPromptTitle");
     const msgEl = document.getElementById("customPromptMessage");
+    const fieldsEl = document.getElementById("customPromptFields");
     const iconEl = document.getElementById("customPromptIcon");
     const btnCancel = document.getElementById("btnCustomPromptCancel");
     const btnConfirm = document.getElementById("btnCustomPromptConfirm");
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
+    if (fieldsEl) {
+      fieldsEl.innerHTML = "";
+      fieldsEl.style.display = "none";
+    }
     if (iconEl) {
       iconEl.className = `custom-prompt-icon ${type}`;
       iconEl.innerHTML = getPromptIconSvg(type);
@@ -211,6 +257,158 @@ function showAlertDialog({
   });
 }
 
+function showInputDialog({
+  title = t("confirmAction"),
+  message = "",
+  fields = [],
+  confirmText = t("btnConfirm"),
+  cancelText = t("btnCancel"),
+  type = "info"
+} = {}) {
+  return new Promise(resolve => {
+    const dialog = document.getElementById("customPromptModal");
+    if (!dialog) {
+      return resolve(null);
+    }
+    const titleEl = document.getElementById("customPromptTitle");
+    const msgEl = document.getElementById("customPromptMessage");
+    const fieldsEl = document.getElementById("customPromptFields");
+    const iconEl = document.getElementById("customPromptIcon");
+    const btnCancel = document.getElementById("btnCustomPromptCancel");
+    const btnConfirm = document.getElementById("btnCustomPromptConfirm");
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.textContent = message;
+    if (iconEl) {
+      iconEl.className = `custom-prompt-icon ${type}`;
+      iconEl.innerHTML = getPromptIconSvg(type);
+    }
+
+    if (fieldsEl) {
+      fieldsEl.style.display = "flex";
+      fieldsEl.innerHTML = fields.map((fld, idx) => {
+        const inputId = `customPromptField_${idx}_${fld.name}`;
+        const labelHtml = fld.label ? `<label for="${inputId}" class="custom-prompt-field-label">${escapeHtml(fld.label)}</label>` : "";
+        let controlHtml = "";
+        if (fld.type === "select") {
+          const opts = (fld.options || []).map(opt => {
+            const val = typeof opt === "object" ? opt.value : opt;
+            const lbl = typeof opt === "object" ? opt.label : opt;
+            const sel = String(val) === String(fld.value ?? "") ? "selected" : "";
+            return `<option value="${escapeHtml(val)}" ${sel}>${escapeHtml(lbl)}</option>`;
+          }).join("");
+          controlHtml = `<select id="${inputId}" data-field-name="${escapeHtml(fld.name)}" class="ctrl-select custom-prompt-input">${opts}</select>`;
+        } else if (fld.type === "textarea") {
+          controlHtml = `<textarea id="${inputId}" data-field-name="${escapeHtml(fld.name)}" class="custom-prompt-textarea" rows="${fld.rows || 3}" placeholder="${escapeHtml(fld.placeholder || "")}">${escapeHtml(fld.value || "")}</textarea>`;
+        } else {
+          const inputType = fld.type || "text";
+          controlHtml = `<input type="${escapeHtml(inputType)}" id="${inputId}" data-field-name="${escapeHtml(fld.name)}" class="ctrl-input custom-prompt-input" value="${escapeHtml(fld.value || "")}" placeholder="${escapeHtml(fld.placeholder || "")}">`;
+        }
+        return `<div class="custom-prompt-field-item">${labelHtml}${controlHtml}</div>`;
+      }).join("") + `<div id="customPromptFieldError" class="custom-prompt-field-error" style="display:none;"></div>`;
+    }
+
+    if (btnCancel) {
+      btnCancel.style.display = "inline-flex";
+      btnCancel.textContent = cancelText;
+    }
+    if (btnConfirm) {
+      btnConfirm.textContent = confirmText;
+      btnConfirm.className = type === "danger" ? "btn-solid btn-danger" : "btn-solid";
+    }
+
+    let settled = false;
+    const cleanup = () => {
+      dialog.removeEventListener("close", onClose);
+      if (btnCancel) btnCancel.onclick = null;
+      if (btnConfirm) btnConfirm.onclick = null;
+      if (fieldsEl) {
+        fieldsEl.innerHTML = "";
+        fieldsEl.style.display = "none";
+      }
+    };
+
+    const onClose = () => {
+      cleanup();
+      if (!settled) {
+        settled = true;
+        resolve(null);
+      }
+    };
+
+    const submitValues = () => {
+      if (settled) return;
+      const values = {};
+      const errEl = document.getElementById("customPromptFieldError");
+      for (const fld of fields) {
+        const el = fieldsEl?.querySelector(`[data-field-name="${fld.name}"]`);
+        const rawVal = el ? el.value : "";
+        const val = typeof rawVal === "string" ? rawVal.trim() : "";
+        if (fld.required && !val) {
+          if (errEl) {
+            errEl.textContent = fld.requiredMessage || t("alertReasonRequired");
+            errEl.style.display = "block";
+          }
+          el?.focus();
+          return;
+        }
+        if (typeof fld.validate === "function") {
+          const errMsg = fld.validate(val);
+          if (errMsg) {
+            if (errEl) {
+              errEl.textContent = errMsg;
+              errEl.style.display = "block";
+            }
+            el?.focus();
+            return;
+          }
+        }
+        values[fld.name] = val;
+      }
+      settled = true;
+      cleanup();
+      closeDialogSmooth(dialog);
+      resolve(values);
+    };
+
+    if (btnCancel) {
+      btnCancel.onclick = () => {
+        if (!settled) {
+          settled = true;
+          cleanup();
+          closeDialogSmooth(dialog);
+          resolve(null);
+        }
+      };
+    }
+
+    if (btnConfirm) {
+      btnConfirm.onclick = submitValues;
+    }
+
+    fieldsEl?.querySelectorAll("input").forEach(inp => {
+      inp.addEventListener("keydown", ev => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          submitValues();
+        }
+      });
+    });
+
+    dialog.addEventListener("close", onClose, { once: true });
+    try {
+      dialog.showModal();
+    } catch (e) {
+      dialog.close();
+      dialog.showModal();
+    }
+    setTimeout(() => {
+      const firstInput = fieldsEl?.querySelector("input, textarea, select");
+      firstInput?.focus();
+    }, 30);
+  });
+}
+
 // Global window.alert override so that all browser alert() calls turn into centered blur modals
 window.alert = function (message) {
   showAlertDialog({
@@ -223,13 +421,18 @@ window.alert = function (message) {
 
 window.showConfirmDialog = showConfirmDialog;
 window.showAlertDialog = showAlertDialog;
+window.showInputDialog = showInputDialog;
 
 document.addEventListener("DOMContentLoaded", () => {
   initThemeState();
   currentLang = getStoredLang();
   candidates = getStoredCandidates();
   visibleColumns = getStoredVisibleColumns();
-  activeUser = getStoredActiveUser();
+  USERS = getStoredUsers();
+  const storedUser = getStoredActiveUser();
+  const matchedActive = USERS.find(u => u.id === storedUser?.id && u.active !== false);
+  activeUser = matchedActive || USERS.find(u => u.active !== false) || USERS[0];
+  saveActiveUser(activeUser);
   notifications = getStoredNotifications();
   masterCompanies = getStoredMasterCompanies();
   masterPositions = getStoredMasterPositions();
@@ -246,6 +449,13 @@ document.addEventListener("DOMContentLoaded", () => {
   applyRolePermissions();
   syncColumnPresetButtons();
   renderAllViews();
+  if (currentView && currentView !== "resumeLib") {
+    const initialSubtab = currentClientSubtab;
+    switchWorkspaceView(currentView, false);
+    if (currentView === "clientList" && initialSubtab === "jobs") {
+      switchClientSubtab("jobs");
+    }
+  }
 });
 
 /**
@@ -344,12 +554,31 @@ function applyTranslations() {
  * 3. ROLE SWITCHER & PERMISSION ENFORCEMENT
  */
 function switchActiveUser(userId) {
+  USERS = getStoredUsers();
   const target = USERS.find(u => u.id === userId);
-  if (!target) return;
+  if (!target || target.active === false) {
+    const userSelect = document.getElementById("roleSelect");
+    if (userSelect && activeUser) userSelect.value = activeUser.id;
+    if (target && target.active === false) {
+      showAlertDialog({
+        title: t("alertAccessDenied"),
+        message: t("alertInactiveUserBlocked"),
+        type: "warning"
+      });
+    }
+    return;
+  }
   activeUser = target;
   saveActiveUser(activeUser);
+  clearBatchSelection();
   applyRolePermissions();
-  renderAllViews();
+  if (activeUser.role === "client" && ["recList", "pipelineReport", "auditLogs", "settings", "interviewCalendar", "prdDocs"].includes(currentView)) {
+    switchWorkspaceView("resumeLib", false);
+  } else if (activeUser.role !== "superadmin" && currentView === "settings") {
+    switchWorkspaceView("resumeLib", false);
+  } else {
+    renderAllViews();
+  }
   showToast(`${t("msgRoleChanged")} ${activeUser.name} (${activeUser.roleName})`);
 }
 
@@ -358,9 +587,16 @@ function applyRolePermissions() {
   const userAvatar = document.getElementById("userAvatarIndicator");
   const btnExport = document.getElementById("btnExportCsv");
   const settingsMenuItem = document.getElementById("menuItemSettings");
+  const addMenuItem = document.getElementById("menuItemAddCandidate");
+  const dataAnalysisGroup = document.getElementById("menuGroupDataAnalysis");
   const clientBanner = document.getElementById("clientPortalBanner");
   const btnOpenAdd = document.getElementById("btnOpenAddModal");
   const btnOpenImport = document.getElementById("btnOpenImportModal");
+  const btnResetDb = document.getElementById("btnResetDatabase");
+  const btnPostJob = document.getElementById("btnOpenPostJobModal");
+  const careerCompFilter = document.getElementById("careerFilterCompany");
+
+  const isClient = activeUser.role === "client";
 
   if (userSelect) userSelect.value = activeUser.id;
   if (userAvatar) {
@@ -382,21 +618,40 @@ function applyRolePermissions() {
     btnExport.style.display = canExport ? "inline-flex" : "none";
   }
 
-  // PG-01: Settings menu only for Super Admin
+  // PG-01: Settings menu & JSON Backup only for Super Admin
   if (settingsMenuItem) {
     settingsMenuItem.style.display = activeUser.role === "superadmin" ? "block" : "none";
   }
+  const btnExportJson = document.getElementById("btnExportBackupJson");
+  const btnImportJson = document.getElementById("btnImportBackupJson");
+  if (btnExportJson) btnExportJson.style.display = isClient ? "none" : "flex";
+  if (btnImportJson) btnImportJson.style.display = activeUser.role === "superadmin" ? "flex" : "none";
+
+  // Sidebar & Mobile Nav isolation for external Client HR
+  if (addMenuItem) addMenuItem.style.display = isClient ? "none" : "block";
+  if (dataAnalysisGroup) dataAnalysisGroup.style.display = isClient ? "none" : "block";
+  document.querySelectorAll('.submenu-item-btn[data-view="recList"], .submenu-item-btn[data-view="interviewCalendar"], .submenu-item-btn[data-view="prdDocs"]').forEach(el => {
+    const li = el.closest("li") || el;
+    li.style.display = isClient ? "none" : "";
+  });
+  document.querySelectorAll('.mobile-bottom-nav [data-view="recList"], .mobile-bottom-nav [data-view="interviewCalendar"]').forEach(el => {
+    el.style.display = isClient ? "none" : "inline-flex";
+  });
+
+  if (btnResetDb) btnResetDb.style.display = isClient ? "none" : "inline-flex";
+  if (btnPostJob) btnPostJob.style.display = isClient ? "none" : "inline-flex";
+  if (careerCompFilter) careerCompFilter.style.display = isClient ? "none" : "";
 
   // Client Portal Mode (PRD Role: Klien alauda)
-  if (activeUser.role === "client") {
+  if (isClient) {
     if (clientBanner) {
       clientBanner.style.display = "flex";
       clientBanner.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="client-portal-tag">Client Portal</span>
-          <span><strong>${escapeHtml(activeUser.clientCompany || "Client")} Portal</strong> — Logged in as ${escapeHtml(activeUser.name)} (${escapeHtml(activeUser.roleName)}). Review submitted CVs and take quick actions.</span>
+          <span><strong>${escapeHtml(activeUser.clientCompany || "Client")} Portal</strong> — ${escapeHtml(activeUser.name)} (${escapeHtml(activeUser.roleName)})</span>
         </div>
-        <button type="button" class="btn-outlined" style="color: white; border-color: rgba(255,255,255,0.4); font-size: 11px; padding: 3px 8px;" onclick="switchActiveUser('USR-AUL')">Exit Client Portal</button>
+        <button type="button" class="client-portal-exit-btn" onclick="switchActiveUser('USR-AUL')">Exit Client Portal</button>
       `;
     }
     if (btnOpenAdd) btnOpenAdd.style.display = "none";
@@ -409,7 +664,7 @@ function applyRolePermissions() {
 }
 
 /**
- * 4. URL QUERY PARAMETER SYNC (PRD RL-07)
+ * 4. URL QUERY PARAMETER SYNC (PRD RL-07 + View Persistence)
  */
 function syncFiltersToUrl() {
   try {
@@ -417,6 +672,12 @@ function syncFiltersToUrl() {
     const nameVal = document.getElementById("searchCandidateName")?.value.trim();
     const kwVal = document.getElementById("searchKeyword")?.value.trim();
 
+    if (currentView && currentView !== "resumeLib") {
+      params.set("view", currentView);
+      if (currentView === "clientList" && currentClientSubtab === "jobs") {
+        params.set("subtab", "jobs");
+      }
+    }
     if (nameVal) params.set("name", nameVal);
     if (kwVal) params.set("kw", kwVal);
     if (currentStageFilter !== "all") params.set("stage", currentStageFilter);
@@ -429,9 +690,19 @@ function syncFiltersToUrl() {
 function restoreFiltersFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view");
+    const subtabParam = params.get("subtab");
     const nameParam = params.get("name");
     const kwParam = params.get("kw");
     const stageParam = params.get("stage");
+
+    const validViews = ["resumeLib", "recList", "clientList", "pipelineReport", "auditLogs", "settings", "interviewCalendar", "prdDocs"];
+    if (viewParam && validViews.includes(viewParam)) {
+      currentView = viewParam;
+    }
+    if (subtabParam === "jobs") {
+      currentClientSubtab = "jobs";
+    }
 
     if (nameParam) {
       const el = document.getElementById("searchCandidateName");
@@ -658,6 +929,7 @@ function bindGlobalEvents() {
   document.getElementById("searchStateSelect")?.addEventListener("change", e => {
     currentStageFilter = e.target.value;
     currentPage = 1;
+    clearBatchSelection();
     syncStageTabsUI();
     syncFiltersToUrl();
     renderResumeTable();
@@ -686,35 +958,24 @@ function bindGlobalEvents() {
     }
   });
 
-  document.getElementById("btnResetDatabase")?.addEventListener("click", () => {
+  document.getElementById("btnResetDatabase")?.addEventListener("click", async () => {
+    if (activeUser.role === "client") return;
+    const ok = await showConfirmDialog({
+      title: t("confirmResetDbTitle"),
+      message: t("confirmResetDbMsg"),
+      confirmText: t("btnConfirm"),
+      cancelText: t("btnCancel"),
+      type: "danger"
+    });
+    if (!ok) return;
     localStorage.removeItem(STORAGE_KEYS.CANDIDATES);
     candidates = getStoredCandidates();
+    clearBatchSelection();
+    resetSearchFilters();
     currentPage = 1;
     renderAllViews();
     showToast(t("msgResetDone"));
   });
-
-
-/**
- * OPEN ADD CANDIDATE MODAL HELPER
- */
-function openAddCandidateModal() {
-  populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
-  resetCvUploadUi("add");
-  document.getElementById("addCandidateModal")?.showModal();
-}
-window.openAddCandidateModal = openAddCandidateModal;
-
-function loadDemoCandidates() {
-  if (typeof PRESET_DEMO_CANDIDATES !== "undefined" && Array.isArray(PRESET_DEMO_CANDIDATES)) {
-    candidates = JSON.parse(JSON.stringify(PRESET_DEMO_CANDIDATES));
-    saveCandidates(candidates);
-    currentPage = 1;
-    renderAllViews();
-    showToast(t("msgDemoLoaded"));
-  }
-}
-window.loadDemoCandidates = loadDemoCandidates;
 
   // Add Candidate
   document.getElementById("btnOpenAddModal")?.addEventListener("click", openAddCandidateModal);
@@ -722,6 +983,10 @@ window.loadDemoCandidates = loadDemoCandidates;
   // Export & Import CSV (RL-22, RL-23)
   document.getElementById("btnExportCsv")?.addEventListener("click", exportFilteredCandidatesToCsv);
   document.getElementById("btnOpenImportModal")?.addEventListener("click", () => {
+    if (activeUser.role === "client") {
+      showAlertDialog({ title: t("alertAccessDenied"), message: t("alertSuperAdminOnly"), type: "warning" });
+      return;
+    }
     document.getElementById("importCsvModal")?.showModal();
   });
   document.getElementById("btnDownloadSampleCsv")?.addEventListener("click", downloadSampleCsvTemplate);
@@ -747,6 +1012,7 @@ window.loadDemoCandidates = loadDemoCandidates;
     tab.addEventListener("click", () => {
       currentStageFilter = tab.getAttribute("data-stage") || "all";
       currentPage = 1;
+      clearBatchSelection();
       const stateSelect = document.getElementById("searchStateSelect");
       if (stateSelect) stateSelect.value = currentStageFilter;
       syncStageTabsUI();
@@ -901,14 +1167,57 @@ window.loadDemoCandidates = loadDemoCandidates;
   document.getElementById("formAddUser")?.addEventListener("submit", handleAddUser);
 }
 
+/**
+ * OPEN ADD CANDIDATE MODAL & DEMO DATA HELPERS (Top-level scope)
+ */
+function openAddCandidateModal() {
+  if (activeUser && activeUser.role === "client") {
+    showAlertDialog({
+      title: t("alertAccessDenied"),
+      message: t("alertSuperAdminOnly"),
+      type: "warning"
+    });
+    return;
+  }
+  populateCompanyAndPositionSelects("addCompanySelect", "addPositionSelect");
+  resetCvUploadUi("add");
+  document.getElementById("addCandidateModal")?.showModal();
+}
+window.openAddCandidateModal = openAddCandidateModal;
+
+function loadDemoCandidates() {
+  if (typeof PRESET_DEMO_CANDIDATES !== "undefined" && Array.isArray(PRESET_DEMO_CANDIDATES)) {
+    candidates = JSON.parse(JSON.stringify(PRESET_DEMO_CANDIDATES));
+    saveCandidates(candidates);
+    currentPage = 1;
+    renderAllViews();
+    showToast(t("msgDemoLoaded"));
+  }
+}
+window.loadDemoCandidates = loadDemoCandidates;
+
 function switchWorkspaceView(viewId, pushHistory = true) {
   if (viewId === "addCandidateModalTrigger") {
     openAddCandidateModal();
     return;
   }
 
+  // Enforce Role-Based Access Guards on Workspace Views
+  if (viewId === "settings" && activeUser.role !== "superadmin") {
+    showAlertDialog({
+      title: t("alertAccessDenied"),
+      message: t("alertSuperAdminOnly"),
+      type: "danger"
+    });
+    viewId = "resumeLib";
+  }
+  if (activeUser.role === "client" && ["recList", "pipelineReport", "auditLogs", "settings", "interviewCalendar", "prdDocs"].includes(viewId)) {
+    viewId = "resumeLib";
+  }
+
   // Combined view: Career Portal is now integrated inside Perusahaan Klien (jobs sub-tab)
   if (viewId === "careerPortal") {
+    currentClientSubtab = "jobs";
     switchWorkspaceView("clientList", pushHistory);
     switchClientSubtab("jobs");
     return;
@@ -924,8 +1233,12 @@ function switchWorkspaceView(viewId, pushHistory = true) {
     btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
   });
   document.querySelectorAll(".mobile-bottom-nav [data-view]").forEach(btn => {
-    btn.classList.toggle("active", btn.getAttribute("data-view") === viewId);
+    const bView = btn.getAttribute("data-view");
+    const isActive = bView === viewId || (viewId === "clientList" && bView === "careerPortal");
+    btn.classList.toggle("active", isActive);
   });
+
+  syncFiltersToUrl();
 
   const applyViewChange = () => {
     document.querySelectorAll(".workspace-panel").forEach(panel => {
@@ -937,8 +1250,14 @@ function switchWorkspaceView(viewId, pushHistory = true) {
   };
 
   if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const transition = document.startViewTransition(() => applyViewChange());
-    transition.finished.catch(() => {});
+    try {
+      const transition = document.startViewTransition(() => applyViewChange());
+      transition.ready?.catch(() => {});
+      transition.updateCallbackDone?.catch(() => {});
+      transition.finished?.catch(() => {});
+    } catch (e) {
+      applyViewChange();
+    }
   } else {
     applyViewChange();
   }
@@ -949,6 +1268,7 @@ function switchWorkspaceView(viewId, pushHistory = true) {
  */
 function switchClientSubtab(tab) {
   const isJobs = tab === "jobs";
+  currentClientSubtab = isJobs ? "jobs" : "clients";
   const btnClients = document.getElementById("tabBtnClientOverview");
   const btnJobs = document.getElementById("tabBtnClientJobs");
   const paneClients = document.getElementById("subpane-clientOverview");
@@ -964,6 +1284,8 @@ function switchClientSubtab(tab) {
     paneJobs.classList.toggle("active", isJobs);
     paneJobs.style.display = isJobs ? "block" : "none";
   }
+
+  syncFiltersToUrl();
 
   if (isJobs) {
     renderCareerPortal();
@@ -1000,6 +1322,7 @@ function resetSearchFilters() {
 
   currentStageFilter = "all";
   currentPage = 1;
+  clearBatchSelection();
   syncStageTabsUI();
   syncFiltersToUrl();
   renderResumeTable();
@@ -1298,34 +1621,50 @@ function renderResumeTable() {
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 
+  const emptyStatePanel = document.getElementById("resumeEmptyStatePanel");
+  const tableWrapper = document.getElementById("resumeTableWrapper");
+
   if (pagedRecords.length === 0) {
     const isTotallyEmpty = (candidates || []).filter(c => !c.isDeleted).length === 0;
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="${activeCols.length}" style="padding: 56px 20px; text-align: center;">
-          <div style="font-size: 36px; margin-bottom: 12px;">📁</div>
-          <div style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
-            ${isTotallyEmpty ? t("emptyDatabaseTitle") : t("emptyTable")}
+    const isClient = activeUser.role === "client";
+    tbody.innerHTML = "";
+    if (emptyStatePanel && resumeViewMode === "table") {
+      emptyStatePanel.style.display = "flex";
+      emptyStatePanel.innerHTML = `
+        <div class="empty-state-icon">📁</div>
+        <div class="empty-state-title">
+          ${isTotallyEmpty ? t("emptyDatabaseTitle") : t("emptyTable")}
+        </div>
+        <div class="empty-state-desc">
+          ${isTotallyEmpty ? t("emptyDatabaseDesc") : ""}
+        </div>
+        ${isTotallyEmpty && !isClient ? `
+          <div class="empty-state-actions">
+            <button type="button" class="btn-solid" style="height: 36px; padding: 0 20px; font-size: 12.5px; font-weight: 700;" onclick="openAddCandidateModal()">${t("btnNewCandidate")}</button>
+            <button type="button" class="btn-outlined" style="height: 36px; padding: 0 18px; font-size: 12.5px; font-weight: 700;" onclick="document.getElementById('importCsvModal')?.showModal()">${t("btnImportCsv")}</button>
+            <button type="button" class="btn-outlined" style="height: 36px; padding: 0 18px; font-size: 12.5px; font-weight: 700;" onclick="loadDemoCandidates()">${t("btnLoadDemo")}</button>
           </div>
-          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; max-width: 440px; margin-left: auto; margin-right: auto;">
-            ${isTotallyEmpty ? t("emptyDatabaseDesc") : ""}
+        ` : (!isTotallyEmpty ? `
+          <div class="empty-state-actions">
+            <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700;" onclick="document.getElementById('btnSearchAll')?.click()">${t("btnSearchAll")}</button>
           </div>
-          ${isTotallyEmpty ? `
-            <div style="display: inline-flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-              <button type="button" class="btn-solid" style="height: 34px; padding: 0 18px; font-size: 12px; font-weight: 700;" onclick="openAddCandidateModal()">${t("btnNewCandidate")}</button>
-              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="document.getElementById('importCsvModal')?.showModal()">${t("btnImportCsv")}</button>
-              <button type="button" class="btn-outlined" style="height: 34px; padding: 0 16px; font-size: 12px; font-weight: 700; background: var(--bg-surface);" onclick="loadDemoCandidates()">${t("btnLoadDemo")}</button>
-            </div>
-          ` : ""}
-        </td>
-      </tr>
-    `;
+        ` : "")}
+      `;
+      if (tableWrapper) tableWrapper.style.display = "none";
+    } else {
+      tbody.innerHTML = `<tr><td colspan="${activeCols.length}" style="padding: 40px 20px; text-align: center; color: var(--text-muted);">${t("emptyTable")}</td></tr>`;
+    }
+    updateBatchToolbarUI();
     syncTableResponsiveLabels();
     if (resumeViewMode === "kanban") {
+      if (emptyStatePanel) emptyStatePanel.style.display = "none";
       renderKanbanBoard(filtered);
     }
     return;
   }
+
+  if (emptyStatePanel) emptyStatePanel.style.display = "none";
+  if (tableWrapper && resumeViewMode === "table") tableWrapper.style.display = "block";
 
   tbody.innerHTML = pagedRecords.map(c => buildCandidateRowHtml(c, activeCols)).join("");
   bindTableRowActions(tbody);
@@ -1518,6 +1857,12 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
   const activeCvObj = c.cvVersions[safeCvIdx];
   const cvPreviewContent = activeCvObj.content || generateResumeText(c);
 
+  const isClientRole = activeUser.role === "client";
+  const clientScopedRecs = isClientRole && activeUser.clientCompany
+    ? (c.recommendations || []).filter(r => r.company.toLowerCase() === activeUser.clientCompany.toLowerCase())
+    : (c.recommendations || []);
+  const displayComp = isClientRole && activeUser.clientCompany ? activeUser.clientCompany : (c.recommendedCompany || "-");
+
   body.innerHTML = `
     <!-- Candidate Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border-base); margin-bottom: 14px;">
@@ -1527,7 +1872,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           ${c.isDeleted ? `<span style="font-size: 11px; color: var(--danger-dot); margin-left: 6px;">[ARCHIVED]</span>` : ""}
         </h3>
         <p style="color: var(--text-secondary); margin-top: 2px;">
-          ${escapeHtml(c.recommendedPosition || "-")} — <strong>${escapeHtml(c.recommendedCompany || "-")}</strong>
+          ${escapeHtml(c.recommendedPosition || "-")} — <strong>${escapeHtml(displayComp)}</strong>
         </p>
         <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
           ID: ${c.id} | ${escapeHtml(c.email || "-")} | ${escapeHtml(c.phone || "-")} | ${c.domicile || "Indonesia"}
@@ -1538,17 +1883,22 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           ${currentBadge} - ${getStatusName(currentBadge)}
         </span>
         <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
-          <button type="button" class="btn-outlined" id="btnProfileOutreach" style="height: 24px; font-size: 11px; padding: 0 8px;">Contact WA / Email</button>
-          <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 24px; font-size: 11px; padding: 0 8px;">Schedule Interview</button>
-          <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 24px; font-size: 11px; padding: 0 8px;">Generate Offer</button>
-          <button type="button" class="btn-outlined" id="btnToggleSoftDelete" style="height: 24px; font-size: 11px; padding: 0 8px; color: var(--warning-color);">
-            ${c.isDeleted ? "Restore Archive" : "Archive (Soft Delete)"}
-          </button>
-          ${activeUser.role === "superadmin" ? `
-            <button type="button" class="btn-outlined" id="btnHardDeleteCandidate" style="height: 24px; font-size: 11px; padding: 0 8px; color: var(--danger-dot); border-color: var(--danger-dot);">
-              Permanent Delete
+          ${isClientRole ? `
+            <button type="button" class="btn-solid" id="btnProfileClientApprove" style="height: 28px; font-size: 11.5px; padding: 0 12px;">Approve Interview</button>
+            <button type="button" class="btn-outlined" id="btnProfileClientReject" style="height: 28px; font-size: 11.5px; padding: 0 12px; color: var(--danger-dot); border-color: var(--danger-dot);">Reject CV</button>
+          ` : `
+            <button type="button" class="btn-outlined" id="btnProfileOutreach" style="height: 28px; font-size: 11.5px; padding: 0 10px;">${t("btnContactWaEmail")}</button>
+            <button type="button" class="btn-outlined" id="btnProfileScheduleInt" style="height: 28px; font-size: 11.5px; padding: 0 10px;">${t("btnScheduleIntShort")}</button>
+            <button type="button" class="btn-outlined" id="btnProfileGenOffer" style="height: 28px; font-size: 11.5px; padding: 0 10px;">${t("btnGenOfferShort")}</button>
+            <button type="button" class="btn-outlined" id="btnToggleSoftDelete" style="height: 28px; font-size: 11.5px; padding: 0 10px; color: var(--warning-color);">
+              ${c.isDeleted ? t("btnRestoreArchive") : t("btnArchiveSoft")}
             </button>
-          ` : ""}
+            ${activeUser.role === "superadmin" ? `
+              <button type="button" class="btn-outlined" id="btnHardDeleteCandidate" style="height: 28px; font-size: 11.5px; padding: 0 10px; color: var(--danger-dot); border-color: var(--danger-dot);">
+                ${t("btnDeletePermanent")}
+              </button>
+            ` : ""}
+          `}
         </div>
       </div>
     </div>
@@ -1610,51 +1960,59 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
             ${(c.tags || ["Siap Relokasi", "Verified"]).map((tg, idx) => `
               <span class="col-tag">
                 ${escapeHtml(tg)}
-                <button type="button" class="tag-remove-btn" data-tag-idx="${idx}" style="border:none; background:transparent; cursor:pointer; font-size:11px; padding:0 2px; min-block-size:18px; min-inline-size:18px;" aria-label="Remove tag">×</button>
+                ${!isClientRole ? `<button type="button" class="tag-remove-btn" data-tag-idx="${idx}" style="border:none; background:transparent; cursor:pointer; font-size:11px; padding:0 2px; min-block-size:18px; min-inline-size:18px;" aria-label="Remove tag">×</button>` : ""}
               </span>
             `).join("")}
           </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <input type="text" id="newCandidateTagInput" class="ctrl-input" placeholder="Add skill or attribute tag..." style="height: 28px; font-size: 12px; flex: 1;">
-            <button type="button" id="btnAddCandidateTag" class="btn-outlined" style="height: 28px; font-size: 11.5px; padding: 0 10px;">+ Add Tag</button>
-          </div>
+          ${!isClientRole ? `
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <input type="text" id="newCandidateTagInput" class="ctrl-input" placeholder="${escapeHtml(t("phAddSkillTag"))}" style="height: 30px; font-size: 12px; flex: 1;">
+              <button type="button" id="btnAddCandidateTag" class="btn-outlined" style="height: 30px; font-size: 11.5px; padding: 0 12px;">${t("btnAddTagShort")}</button>
+            </div>
+          ` : ""}
         </div>
 
-        <div class="form-field full">
-          <label>Internal Consultant Notes (DK-06)</label>
-          <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
-            ${(c.internalNotes || []).length === 0 ? `<small style="color: var(--text-muted);">No internal notes yet.</small>` : (c.internalNotes || []).map(note => `
-              <div style="padding: 6px 10px; background: var(--bg-subtle); border-left: 2px solid var(--brand-primary); font-size: 12px; border-radius: 3px;">
-                <div>${escapeHtml(note.text)}</div>
-                <small style="color: var(--text-muted);">${escapeHtml(note.author)} • ${escapeHtml(note.timestamp)}</small>
-              </div>
-            `).join("")}
+        ${!isClientRole ? `
+          <div class="form-field full">
+            <label>${t("lblInternalNotes")}</label>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+              ${(c.internalNotes || []).length === 0 ? `<small style="color: var(--text-muted);">${t("msgNoInternalNotes")}</small>` : (c.internalNotes || []).map(note => `
+                <div style="padding: 6px 10px; background: var(--bg-subtle); border-left: 2px solid var(--brand-primary); font-size: 12px; border-radius: var(--radius-sm);">
+                  <div>${escapeHtml(note.text)}</div>
+                  <small style="color: var(--text-muted);">${escapeHtml(note.author)} • ${escapeHtml(note.timestamp)}</small>
+                </div>
+              `).join("")}
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <input type="text" id="newInternalNoteInput" class="ctrl-input" placeholder="${escapeHtml(t("phAddInternalNote"))}" style="height: 30px; font-size: 12px; flex: 1;">
+              <button type="button" id="btnAddInternalNote" class="btn-outlined" style="height: 30px; font-size: 11.5px; padding: 0 12px;">${t("btnAddNoteShort")}</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <input type="text" id="newInternalNoteInput" class="ctrl-input" placeholder="Write private consultant evaluation note..." style="height: 28px; font-size: 12px; flex: 1;">
-            <button type="button" id="btnAddInternalNote" class="btn-outlined" style="height: 28px; font-size: 11.5px; padding: 0 10px;">+ Add Note</button>
-          </div>
-        </div>
+        ` : ""}
       </div>
 
       <!-- Recommendation Management with Valid Transitions (DK-04) -->
       <div style="margin-top: 14px;">
-        <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">Manage Recommendations & Pipeline Status (DK-04)</label>
+        <label style="font-weight: 600; font-size: 12px; margin-bottom: 6px; display: block;">${t("lblManageRecs")}</label>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${(c.recommendations || []).map(r => `
-            <div style="padding: 10px 12px; border: 1px solid var(--border-base); border-radius: 3px; background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          ${clientScopedRecs.map(r => `
+            <div style="padding: 10px 12px; border: 1px solid var(--border-base); border-radius: var(--radius-md); background-color: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div>
                 <strong>${escapeHtml(r.company)}</strong> — ${escapeHtml(r.position)}<br>
                 <small style="color: var(--text-muted);">${r.timestamp} • Consultant: ${escapeHtml(r.consultantName || "Rina")}</small>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <select class="ctrl-select rec-stage-changer" data-candidate-id="${c.id}" data-rec-id="${r.id}" style="height: 28px; font-size: 12px;">
-                  ${Object.values(STATUS_CODES).map(st => `
-                    <option value="${st.code}" ${r.statusCode === st.code ? "selected" : ""}>
-                      ${st.code} - ${getStatusName(st.code)}
-                    </option>
-                  `).join("")}
-                </select>
+                ${isClientRole ? `
+                  <span class="status-count-badge">${r.statusCode} - ${getStatusName(r.statusCode)}</span>
+                ` : `
+                  <select class="ctrl-select rec-stage-changer" data-candidate-id="${c.id}" data-rec-id="${r.id}" style="height: 30px; font-size: 12px;">
+                    ${Object.values(STATUS_CODES).map(st => `
+                      <option value="${st.code}" ${r.statusCode === st.code ? "selected" : ""}>
+                        ${st.code} - ${getStatusName(st.code)}
+                      </option>
+                    `).join("")}
+                  </select>
+                `}
               </div>
             </div>
           `).join("")}
@@ -1689,6 +2047,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           </tbody>
         </table>
       </div>
+      ${!isClientRole ? `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 6px; margin-bottom: 18px; padding: 10px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-sm);">
         <input type="text" id="workRoleInput" class="ctrl-input" placeholder="Role / Job Title" style="height: 28px; font-size: 12px;">
         <input type="text" id="workCompanyInput" class="ctrl-input" placeholder="Company Name" style="height: 28px; font-size: 12px;">
@@ -1696,6 +2055,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
         <input type="text" id="workDescInput" class="ctrl-input" placeholder="Key Responsibilities" style="height: 28px; font-size: 12px;">
         <button type="button" id="btnAddWorkHistory" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Add Work</button>
       </div>
+      ` : ""}
 
       <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">Education & Degrees</h4>
       <div class="table-wrapper" style="margin-bottom: 10px;">
@@ -1720,12 +2080,14 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           </tbody>
         </table>
       </div>
+      ${!isClientRole ? `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 6px; padding: 10px; background: var(--bg-subtle); border: 1px solid var(--border-base); border-radius: var(--radius-sm);">
         <input type="text" id="eduDegreeInput" class="ctrl-input" placeholder="Degree (e.g. Bachelor S1)" style="height: 28px; font-size: 12px;">
         <input type="text" id="eduInstInput" class="ctrl-input" placeholder="University / Institution" style="height: 28px; font-size: 12px;">
         <input type="text" id="eduYearInput" class="ctrl-input" placeholder="Graduation Year (e.g. 2020)" style="height: 28px; font-size: 12px;">
         <button type="button" id="btnAddEduHistory" class="btn-outlined" style="height: 28px; font-size: 12px;">+ Add Education</button>
       </div>
+      ` : ""}
     </div>
 
     <!-- PANE 3: Multi-Version CV Document Viewer (DK-03) -->
@@ -1740,11 +2102,13 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
           </select>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          ${!isClientRole ? `
           <button type="button" id="btnAddCvVersion" class="btn-outlined" style="height: 30px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             ${t("btnUploadNewCvVersion") || "+ Unggah Versi Baru"}
           </button>
           <input type="file" id="cvVersionFileInput" accept=".pdf,.doc,.docx,.txt,.rtf" style="display: none;">
+          ` : ""}
           <button type="button" class="btn-solid" onclick="downloadCandidateResume('${c.id}', ${safeCvIdx})" style="height: 30px; padding: 0 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             ${activeCvObj.fileName ? `Unduh ${escapeHtml(activeCvObj.fileName)}` : (t("btnDownloadThisVersion") || "Unduh Versi Ini")}
@@ -1908,6 +2272,15 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
   body.querySelector("#cvVersionFileInput")?.addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!isSupportedCvFile(file.name)) {
+      e.target.value = "";
+      await showAlertDialog({
+        title: t("alertUnsupportedCvTitle"),
+        message: t("alertUnsupportedCvMsg").replace("{filename}", file.name),
+        type: "warning"
+      });
+      return;
+    }
     const verLabel = `v${c.cvVersions.length + 1} (${file.name})`;
 
     let fileDataUrl = null;
@@ -1936,7 +2309,7 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
       });
       saveCandidates(candidates);
       addAuditLog("UPLOAD_CV_VERSION", `Candidate ${c.name}`, `Uploaded CV version ${verLabel} (${file.name})`);
-      showToast(`Added CV version: ${verLabel}`);
+      showToast(t("msgCvVersionAdded").replace("{version}", verLabel));
       openCandidateProfileModal(c.id, "cvViewer", 0);
     };
 
@@ -1954,14 +2327,25 @@ function openCandidateProfileModal(candidateId, activeTab = "overview", selected
 
   // Bind status transitions (DK-04) via shared helper
   body.querySelectorAll(".rec-stage-changer").forEach(sel => {
-    sel.addEventListener("change", e => {
+    sel.addEventListener("change", async e => {
       const recId = sel.getAttribute("data-rec-id");
       const newCode = parseInt(e.target.value, 10);
-      const ok = transitionCandidateStage(c.id, newCode, recId);
+      const ok = await transitionCandidateStage(c.id, newCode, recId);
       if (!ok) {
         sel.value = String(c.recommendations?.find(r => r.id === recId)?.statusCode || 10);
+      } else {
+        openCandidateProfileModal(c.id, "overview");
       }
     });
+  });
+
+  body.querySelector("#btnProfileClientApprove")?.addEventListener("click", () => {
+    clientApproveInterview(c.id);
+    openCandidateProfileModal(c.id, activeTab, safeCvIdx);
+  });
+  body.querySelector("#btnProfileClientReject")?.addEventListener("click", async () => {
+    dialog.close();
+    await clientRejectResume(c.id);
   });
 
   body.querySelector("#btnProfileOutreach")?.addEventListener("click", () => {
@@ -2328,9 +2712,19 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
     return { blocked: true, message: "Action blocked: Candidate is Blacklisted (Code 91) and cannot be recommended.", requiresReason: false, requiresManager: false };
   }
 
+  // Condition 1B (Rule 2): Recent Entry / Active Onboarded Placement (Code 40 / 41)
+  if (currentBadge === 40 || currentBadge === 41) {
+    return {
+      blocked: true,
+      message: `Action blocked: Candidate has already started work / onboarded (Code ${currentBadge} - ${getStatusName(currentBadge)}) and cannot be recommended.`,
+      requiresReason: false,
+      requiresManager: false
+    };
+  }
+
   const recs = candidate.recommendations || [];
   const windowMonths = parseInt(systemSettings?.duplicateWindowMonths, 10) || 6;
-  const cutoffDate = new Date("2026-11-16");
+  const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - windowMonths);
 
   // Condition 2: Same company + same position, previous recommendation still active
@@ -2379,11 +2773,11 @@ function evaluateRecRepeatRules(candidate, targetCompany, targetPosition, curren
     };
   }
 
-  // Condition 5: Candidate currently in code 31 or 40
-  if (currentBadge === 31 || currentBadge === 40) {
+  // Condition 5: Candidate currently in code 31 (Offer Accepted)
+  if (currentBadge === 31) {
     return {
       blocked: false,
-      message: "Notice: Candidate already accepted an offer (31) or started work (40). Reason is required.",
+      message: "Notice: Candidate already accepted an offer (Code 31). Reason is required.",
       requiresReason: true,
       requiresManager: false
     };
@@ -2473,6 +2867,7 @@ function openRecRepeatModal(candidateId) {
     posInput.onchange = verifyRulesLive;
   }
 
+  verifyRulesLive();
   dialog.showModal();
 }
 
@@ -2590,7 +2985,7 @@ function openRecListModal(candidateId) {
               <td>${escapeHtml(r.consultantName || "Rina")}</td>
               <td>${escapeHtml(r.timestamp)}</td>
               <td style="text-align: left; max-width: 220px;">
-                ${r.reason ? `<strong style="color: #b91c1c;">[Reason: ${escapeHtml(r.reason)}]</strong><br>` : ""}
+                ${r.reason ? `<strong style="color: var(--danger-dot);">[Reason: ${escapeHtml(r.reason)}]</strong><br>` : ""}
                 ${escapeHtml(r.notes || "-")}
               </td>
             </tr>
@@ -2669,7 +3064,7 @@ async function handleAddCandidateSubmit(e) {
     ? parsedExtra.skills
     : (position ? [position] : []);
 
-  const candidateId = `CND-${1000 + candidates.length + 1}`;
+  const candidateId = generateUniqueCandidateId();
   const fileKey = uploadedCv?.fileDataUrl ? `cv_${candidateId}_v1_${Date.now()}` : null;
   if (fileKey && uploadedCv.fileDataUrl && typeof CvFileDB !== "undefined") {
     CvFileDB.saveFile(fileKey, uploadedCv.fileDataUrl);
@@ -2825,8 +3220,38 @@ function handleCsvImportSubmit(e) {
   }
 }
 
+function parseCsvLine(line) {
+  const result = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      result.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 function processCsvData(csvText) {
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+  const lines = String(csvText || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim().length > 0);
   if (lines.length <= 1) {
     showAlertDialog({
       title: t("alertNotification"),
@@ -2840,10 +3265,10 @@ function processCsvData(csvText) {
   const failedRows = [];
   const nowStr = formatTimestamp(new Date());
 
-  // Simple CSV line parser
+  // RFC-4180 compliant CSV line parser (supports quoted commas like "Indonesian, English")
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+    const cols = parseCsvLine(line);
     const name = cols[0];
     const nationality = cols[1] || "Indonesia";
     const gender = cols[2] || "Male";
@@ -2862,8 +3287,9 @@ function processCsvData(csvText) {
       continue;
     }
 
+    const newCandId = generateUniqueCandidateId();
     const newRecord = {
-      id: `CND-${1000 + candidates.length + 1}`,
+      id: newCandId,
       name,
       nationality,
       gender,
@@ -2999,11 +3425,26 @@ function switchCbTab(tabKey) {
   syncTableResponsiveLabels();
 }
 
+function isConsultantMatch(recordName, targetFullName, recordUserId = null, targetUserId = null) {
+  if (recordUserId && targetUserId && recordUserId === targetUserId) return true;
+  const recNorm = String(recordName || "").trim().toLowerCase();
+  const targetNorm = String(targetFullName || "").trim().toLowerCase();
+  if (!recNorm || !targetNorm) return false;
+  if (recNorm === targetNorm) return true;
+  const recParts = recNorm.split(/\s+/);
+  const targetParts = targetNorm.split(/\s+/);
+  if (recParts.length === 1 && recParts[0] === targetParts[0]) {
+    const sameFirstCount = (USERS || []).filter(u => String(u.name || "").trim().toLowerCase().split(/\s+/)[0] === targetParts[0]).length;
+    return sameFirstCount <= 1;
+  }
+  return false;
+}
+
 function renderConsultantBusinessHub() {
   // Populate Company Filter
   const compFilter = document.getElementById("cbFilterCompany");
   if (compFilter && compFilter.children.length <= 1) {
-    compFilter.innerHTML = `<option value="all">All Companies</option>` + masterCompanies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+    compFilter.innerHTML = `<option value="all">${t("optAllCompanies")}</option>` + masterCompanies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
   }
 
   const selectedCons = document.getElementById("cbFilterConsultant")?.value || "all";
@@ -3020,8 +3461,9 @@ function renderConsultantBusinessHub() {
 
   // Calculate Monthly Targets & KPIs (CB-02)
   const targetUser = selectedCons === "all" ? (activeUser.name || "Rina Wijaya") : selectedCons;
-  const userCandidates = candidates.filter(c => (c.ownerName || "Rina Wijaya").toLowerCase() === targetUser.toLowerCase());
-  const userRecs = allRecs.filter(item => (item.rec.consultantName || "Rina").toLowerCase().includes(targetUser.toLowerCase().split(" ")[0].toLowerCase()));
+  const targetUserObj = USERS.find(u => u.name.toLowerCase() === targetUser.toLowerCase());
+  const userCandidates = candidates.filter(c => isConsultantMatch(c.ownerName || "Rina Wijaya", targetUser, c.ownerId, targetUserObj?.id));
+  const userRecs = allRecs.filter(item => isConsultantMatch(item.rec.consultantName || "Rina", targetUser, item.rec.consultantId, targetUserObj?.id));
   
   const countNewAdded = userCandidates.length;
   const countSubmitted = userRecs.length;
@@ -3032,22 +3474,22 @@ function renderConsultantBusinessHub() {
   if (targetKpiBox) {
     targetKpiBox.innerHTML = `
       <div class="kpi-card">
-        <div>New Talents Added</div>
+        <div>${t("kpiNewTalents")}</div>
         <div class="kpi-num">${countNewAdded} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">/ Target 10</span></div>
         <div class="dist-bar-track" style="margin-top:6px;"><div class="dist-bar-fill" style="width: ${Math.min(100, Math.round((countNewAdded / 10) * 100))}%;"></div></div>
       </div>
       <div class="kpi-card">
-        <div>Client Submissions</div>
+        <div>${t("kpiClientSubmissions")}</div>
         <div class="kpi-num">${countSubmitted} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">/ Target 12</span></div>
         <div class="dist-bar-track" style="margin-top:6px;"><div class="dist-bar-fill" style="width: ${Math.min(100, Math.round((countSubmitted / 12) * 100))}%;"></div></div>
       </div>
       <div class="kpi-card">
-        <div>Interviews Arranged</div>
+        <div>${t("kpiInterviewsArranged")}</div>
         <div class="kpi-num">${countInterviews} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">/ Target 5</span></div>
         <div class="dist-bar-track" style="margin-top:6px;"><div class="dist-bar-fill" style="width: ${Math.min(100, Math.round((countInterviews / 5) * 100))}%;"></div></div>
       </div>
       <div class="kpi-card">
-        <div>Placements / Entry</div>
+        <div>${t("kpiPlacementsEntry")}</div>
         <div class="kpi-num" style="color: var(--success-color);">${countEntryHires} <span style="font-size:12px; font-weight:normal; color:var(--text-muted);">/ Target 2</span></div>
         <div class="dist-bar-track" style="margin-top:6px;"><div class="dist-bar-fill" style="width: ${Math.min(100, Math.round((countEntryHires / 2) * 100))}%; background-color: var(--success-color);"></div></div>
       </div>
@@ -3056,7 +3498,7 @@ function renderConsultantBusinessHub() {
 
   // Filter Recommendations Table
   const filteredRecs = allRecs.filter(item => {
-    if (selectedCons !== "all" && !(item.rec.consultantName || "").toLowerCase().includes(selectedCons.toLowerCase().split(" ")[0].toLowerCase())) return false;
+    if (selectedCons !== "all" && !isConsultantMatch(item.rec.consultantName || "", selectedCons, item.rec.consultantId, targetUserObj?.id)) return false;
     if (selectedComp !== "all" && item.rec.company !== selectedComp) return false;
     if (selectedStatus === "failed") {
       if (!STATUS_CODES[item.rec.statusCode]?.isFailed) return false;
@@ -3077,7 +3519,7 @@ function renderConsultantBusinessHub() {
           <td>${escapeHtml(item.rec.position)}</td>
           <td><strong>${escapeHtml(item.rec.company)}</strong></td>
           <td>
-            <span class="status-count-badge" style="${STATUS_CODES[item.rec.statusCode]?.isFailed ? 'background-color: var(--danger-dot);' : ''}">
+            <span class="status-count-badge" style="${STATUS_CODES[item.rec.statusCode]?.isFailed ? 'background-color: var(--danger-dot); color: #ffffff;' : ''}">
               ${item.rec.statusCode}
             </span>
             <small style="display:block; font-size:10px; color:var(--text-muted);">${getStatusName(item.rec.statusCode)}</small>
@@ -3098,8 +3540,8 @@ function renderConsultantBusinessHub() {
   if (leaderTbody) {
     const activeStaff = USERS.filter(u => u.role === "consultant" || u.role === "manager");
     leaderTbody.innerHTML = activeStaff.map(staff => {
-      const staffCandidates = candidates.filter(c => (c.ownerName || "").toLowerCase().includes(staff.name.toLowerCase().split(" ")[0].toLowerCase()));
-      const staffRecs = allRecs.filter(item => (item.rec.consultantName || "").toLowerCase().includes(staff.name.toLowerCase().split(" ")[0].toLowerCase()));
+      const staffCandidates = candidates.filter(c => isConsultantMatch(c.ownerName || "", staff.name, c.ownerId, staff.id));
+      const staffRecs = allRecs.filter(item => isConsultantMatch(item.rec.consultantName || "", staff.name, item.rec.consultantId, staff.id));
       const staffInterviews = staffRecs.filter(item => [20, 21, 22].includes(item.rec.statusCode)).length;
       const staffHires = staffRecs.filter(item => [40, 41].includes(item.rec.statusCode)).length;
       const convRate = staffRecs.length > 0 ? Math.round((staffHires / staffRecs.length) * 100) : 0;
@@ -3115,7 +3557,7 @@ function renderConsultantBusinessHub() {
           <td><strong style="color: var(--success-color);">${staffHires}</strong></td>
           <td>${convRate}%</td>
           <td>
-            <span style="font-weight: 700; color: ${targetPercent >= 100 ? '#15803d' : 'var(--text-primary)'};">
+            <span style="font-weight: 700; color: ${targetPercent >= 100 ? 'var(--success-color)' : 'var(--text-primary)'};">
               ${targetPercent}%
             </span>
           </td>
@@ -3132,10 +3574,14 @@ function renderClientCompaniesView() {
   const clientTbody = document.getElementById("clientCompaniesTableBody");
   if (!clientTbody) return;
 
+  const isClientRole = activeUser.role === "client" && activeUser.clientCompany;
   const companyMap = {};
   candidates.forEach(c => {
     (c.recommendations || []).forEach(r => {
       const comp = r.company || "Other";
+      if (isClientRole && comp.toLowerCase() !== activeUser.clientCompany.toLowerCase()) {
+        return;
+      }
       if (!companyMap[comp]) {
         companyMap[comp] = { name: comp, count: 0, roles: new Set(), latest: r.timestamp };
       }
@@ -3173,8 +3619,8 @@ function getAnalyticsScopedCandidates() {
   const baseList = candidates.filter(c => !c.isDeleted);
   if (range === "all") return baseList;
 
-  const refNow = new Date("2026-11-16T23:59:59");
-  let cutoff = new Date("2026-01-01T00:00:00");
+  const refNow = new Date();
+  let cutoff = new Date(refNow.getFullYear(), 0, 1);
   if (range === "30d") {
     cutoff = new Date(refNow.getTime() - 30 * 86400000);
   } else if (range === "quarter") {
@@ -3237,10 +3683,10 @@ function renderAdvancedAnalytics() {
 
   if (kpiContainer) {
     kpiContainer.innerHTML = `
-      <div class="kpi-card"><div>Total Talent Bank</div><div class="kpi-num">${s.totalRaw}</div></div>
-      <div class="kpi-card"><div>Active in Pipeline</div><div class="kpi-num">${s.countPending + s.countPass + s.countInterview + s.countOffer}</div></div>
-      <div class="kpi-card"><div>Successful Placements</div><div class="kpi-num" style="color: #15803d;">${s.countEntry}</div></div>
-      <div class="kpi-card"><div>Rejections / Failed</div><div class="kpi-num" style="color: #b91c1c;">${s.countFailed}</div></div>
+      <div class="kpi-card"><div>${t("kpiTotalBank")}</div><div class="kpi-num">${s.totalRaw}</div></div>
+      <div class="kpi-card"><div>${t("kpiActivePipeline")}</div><div class="kpi-num">${s.countPending + s.countPass + s.countInterview + s.countOffer}</div></div>
+      <div class="kpi-card"><div>${t("kpiSuccessPlacements")}</div><div class="kpi-num" style="color: var(--success-color);">${s.countEntry}</div></div>
+      <div class="kpi-card"><div>${t("kpiRejectionsFailed")}</div><div class="kpi-num" style="color: var(--danger-dot);">${s.countFailed}</div></div>
     `;
   }
 
@@ -3439,44 +3885,58 @@ function renderAuditLogsView() {
 function renderUserManagementList() {
   USERS = getStoredUsers();
   const userTbody = document.getElementById("settingsUserListTableBody");
-  if (!userTbody) return;
+  const activeSuperAdmins = USERS.filter(x => x.role === "superadmin" && x.active !== false).length;
 
-  userTbody.innerHTML = USERS.map((u, i) => `
-    <tr>
-      <th scope="row"><code>${escapeHtml(u.id)}</code></th>
-      <td><strong>${escapeHtml(u.name)}</strong></td>
-      <td><span class="status-count-badge" style="background-color: var(--brand-primary); color: #161922; font-weight: 800;">${escapeHtml(u.roleName)}</span></td>
-      <td>${escapeHtml(u.email || "-")} ${u.clientCompany ? `<br><small style="color:var(--text-muted);">(Client: ${escapeHtml(u.clientCompany)})</small>` : ""}</td>
-      <td>
-        <span style="font-size: 11px; font-weight: 600; color: ${u.active !== false ? 'var(--success-color)' : 'var(--danger-dot)'};">
-          ${u.active !== false ? '● Active' : '○ Inactive'}
-        </span>
-      </td>
-      <td>
-        <div style="display: flex; gap: 4px;">
-          <button type="button" class="btn-outlined" style="padding: 2px 6px; font-size: 11px;" onclick="toggleUserStatus('${u.id}')">
-            ${u.active !== false ? 'Deactivate' : 'Activate'}
-          </button>
-          <button type="button" class="btn-outlined" style="padding: 2px 6px; font-size: 11px;" onclick="resetUserPassword('${u.id}')">
-            Reset Pwd
-          </button>
-          ${USERS.length > 1 ? `
-            <button type="button" class="btn-outlined" style="padding: 2px 6px; font-size: 11px; color: var(--danger-dot);" onclick="deleteUser('${u.id}')">
-              ✕
+  if (userTbody) {
+    userTbody.innerHTML = USERS.map((u) => {
+      const isSelf = activeUser && u.id === activeUser.id;
+      const isLastSuperAdmin = u.role === "superadmin" && u.active !== false && activeSuperAdmins <= 1;
+      const lockProtected = isSelf || isLastSuperAdmin;
+      return `
+      <tr>
+        <th scope="row"><code>${escapeHtml(u.id)}</code></th>
+        <td><strong>${escapeHtml(u.name)}</strong>${isSelf ? ` <small style="color:var(--text-muted);">(You)</small>` : ""}</td>
+        <td><span class="status-count-badge">${escapeHtml(u.roleName)}</span></td>
+        <td>${escapeHtml(u.email || "-")} ${u.clientCompany ? `<br><small style="color:var(--text-muted);">(Client: ${escapeHtml(u.clientCompany)})</small>` : ""}</td>
+        <td>
+          <span style="font-size: 11px; font-weight: 600; color: ${u.active !== false ? 'var(--success-color)' : 'var(--danger-dot)'};">
+            ${u.active !== false ? '● Active' : '○ Inactive'}
+          </span>
+        </td>
+        <td>
+          <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn-outlined" style="padding: 2px 8px; font-size: 11px;" ${lockProtected && u.active !== false ? 'disabled title="Protected active Super Admin"' : ''} onclick="toggleUserStatus('${u.id}')">
+              ${u.active !== false ? 'Deactivate' : 'Activate'}
             </button>
-          ` : ''}
-        </div>
-      </td>
-    </tr>
-  `).join("");
+            <button type="button" class="btn-outlined" style="padding: 2px 8px; font-size: 11px;" onclick="resetUserPassword('${u.id}')">
+              Reset Pwd
+            </button>
+            ${USERS.length > 1 && !lockProtected ? `
+              <button type="button" class="btn-outlined" style="padding: 2px 8px; font-size: 11px; color: var(--danger-dot);" onclick="deleteUser('${u.id}')" aria-label="Delete ${escapeHtml(u.name)}">
+                ✕
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+      `;
+    }).join("");
+  }
 
-  // Update role selector dropdown in header
+  // Update role selector dropdown in header (only active accounts can log in / switch)
   const roleSelect = document.getElementById("roleSelect");
   if (roleSelect) {
-    roleSelect.innerHTML = USERS.map(u => `
+    const activeUsers = USERS.filter(u => u.active !== false);
+    roleSelect.innerHTML = activeUsers.map(u => `
       <option value="${u.id}">${escapeHtml(u.name)} (${escapeHtml(u.role)})</option>
     `).join("");
-    roleSelect.value = activeUser.id;
+    if (activeUser && activeUsers.some(u => u.id === activeUser.id)) {
+      roleSelect.value = activeUser.id;
+    } else if (activeUsers[0]) {
+      activeUser = activeUsers[0];
+      saveActiveUser(activeUser);
+      roleSelect.value = activeUser.id;
+    }
   }
 }
 
@@ -3519,13 +3979,26 @@ function handleAddUser(e) {
 function toggleUserStatus(userId) {
   USERS = getStoredUsers();
   const target = USERS.find(u => u.id === userId);
-  if (target) {
-    target.active = target.active === false ? true : false;
-    saveUsers(USERS);
-    addAuditLog("USER_STATUS_TOGGLE", `User ${target.name}`, `Set active status to ${target.active}`);
-    renderUserManagementList();
-    showToast(`User ${target.name} is now ${target.active ? 'Active' : 'Inactive'}`);
+  if (!target) return;
+
+  const activeSuperAdmins = USERS.filter(x => x.role === "superadmin" && x.active !== false).length;
+  const isSelf = activeUser && target.id === activeUser.id;
+  const isLastSuperAdmin = target.role === "superadmin" && target.active !== false && activeSuperAdmins <= 1;
+
+  if (target.active !== false && (isSelf || isLastSuperAdmin)) {
+    showAlertDialog({
+      title: t("alertAccessDenied"),
+      message: t("alertCannotSelfDelete"),
+      type: "danger"
+    });
+    return;
   }
+
+  target.active = target.active === false ? true : false;
+  saveUsers(USERS);
+  addAuditLog("USER_STATUS_TOGGLE", `User ${target.name}`, `Set active status to ${target.active}`);
+  renderUserManagementList();
+  showToast(`User ${target.name} is now ${target.active ? 'Active' : 'Inactive'}`);
 }
 
 async function resetUserPassword(userId) {
@@ -3550,7 +4023,20 @@ async function deleteUser(userId) {
   USERS = getStoredUsers();
   const index = USERS.findIndex(u => u.id === userId);
   if (index >= 0) {
-    const userName = USERS[index].name;
+    const target = USERS[index];
+    const activeSuperAdmins = USERS.filter(x => x.role === "superadmin" && x.active !== false).length;
+    const isSelf = activeUser && target.id === activeUser.id;
+    const isLastSuperAdmin = target.role === "superadmin" && target.active !== false && activeSuperAdmins <= 1;
+    if (isSelf || isLastSuperAdmin) {
+      await showAlertDialog({
+        title: t("alertAccessDenied"),
+        message: t("alertCannotSelfDelete"),
+        type: "danger"
+      });
+      return;
+    }
+
+    const userName = target.name;
     const ok = await showConfirmDialog({
       title: t("dialogDeleteUserTitle"),
       message: t("dialogDeleteUserMsg").replace("{name}", userName),
@@ -3596,11 +4082,27 @@ function clientApproveInterview(candidateId) {
   }
 }
 
-function clientRejectResume(candidateId) {
+async function clientRejectResume(candidateId) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
-  const reason = prompt(`Please provide client feedback reason for rejecting ${c.name}:`, "Experience profile does not match current project requirements.");
-  if (!reason || !reason.trim()) return;
+  const result = await showInputDialog({
+    title: t("dialogClientRejectTitle"),
+    message: t("dialogClientRejectMsg").replace("{name}", c.name),
+    fields: [
+      {
+        name: "reason",
+        type: "textarea",
+        rows: 3,
+        value: "Experience profile does not match current project requirements.",
+        required: true
+      }
+    ],
+    confirmText: t("btnConfirm"),
+    cancelText: t("btnCancel"),
+    type: "danger"
+  });
+  if (!result || !result.reason) return;
+  const reason = result.reason;
 
   const targetComp = activeUser.clientCompany || "alauda";
   const rec = (c.recommendations || []).find(r => r.company.toLowerCase() === targetComp.toLowerCase()) ||
@@ -3621,7 +4123,7 @@ function clientRejectResume(candidateId) {
     saveNotifications(notifications);
     saveCandidates(candidates);
     renderAllViews();
-    showToast(`Marked ${c.name} as Resume Rejected (Code 19)`);
+    showToast(t("msgCandidateRejected").replace("{name}", c.name));
   }
 }
 
@@ -3656,14 +4158,14 @@ function runDemoScenario(index) {
       break;
     }
     case 3: {
-      // Scenario 3: Rule 3 - Re-apply after failure requires justification (Fajar Nugroho at Midea)
+      // Scenario 3: Rule 3 - Re-apply after failure requires justification (Fajar Nugroho at Mico World)
       switchWorkspaceView("resumeLib");
       setTimeout(() => {
         openRecRepeatModal("CND-1005");
         setTimeout(() => {
           const compInput = document.getElementById("recRepeatCompany");
           if (compInput) {
-            compInput.value = "Midea";
+            compInput.value = "Mico World";
             compInput.dispatchEvent(new Event("input"));
           }
         }, 150);
@@ -3682,6 +4184,26 @@ function runDemoScenario(index) {
     }
     case 5: {
       // Scenario 5: Client Portal Experience (David Chen at alauda)
+      USERS = getStoredUsers();
+      let clientDemoUser = USERS.find(u => u.id === "USR-04");
+      if (!clientDemoUser) {
+        clientDemoUser = {
+          id: "USR-04",
+          name: "David Chen",
+          email: "david.chen@alauda.io",
+          role: "client",
+          roleName: "Client HR (alauda)",
+          avatar: "DC",
+          clientCompany: "alauda",
+          active: true
+        };
+        USERS.push(clientDemoUser);
+        saveUsers(USERS);
+      } else {
+        clientDemoUser.active = true;
+        saveUsers(USERS);
+      }
+      renderUserManagementList();
       switchActiveUser("USR-04");
       switchWorkspaceView("resumeLib");
       showToast("Switched to Client Portal mode (HR alauda). Reviewing submitted CVs.");
@@ -4120,7 +4642,8 @@ function escapeHtml(str) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function showToast(msg) {
@@ -4152,6 +4675,8 @@ function renderCareerPortal() {
   const searchInput = document.getElementById("careerSearchQuery");
   if (!container) return;
 
+  const isClientRole = activeUser.role === "client" && activeUser.clientCompany;
+
   // Populate company filter if not populated yet
   if (filterComp && filterComp.options.length <= 1) {
     const companies = [...new Set(openJobs.map(j => j.company))].sort();
@@ -4163,11 +4688,11 @@ function renderCareerPortal() {
     });
   }
 
-  const selectedComp = filterComp ? filterComp.value : "all";
+  const selectedComp = isClientRole ? activeUser.clientCompany : (filterComp ? filterComp.value : "all");
   const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
   const filtered = openJobs.filter(job => {
-    if (selectedComp !== "all" && job.company !== selectedComp) return false;
+    if (selectedComp !== "all" && job.company.toLowerCase() !== selectedComp.toLowerCase()) return false;
     if (query) {
       const matchText = `${job.title} ${job.company} ${job.location} ${job.type} ${(job.tags || []).join(" ")} ${job.description || ""}`.toLowerCase();
       if (!matchText.includes(query)) return false;
@@ -4177,9 +4702,8 @@ function renderCareerPortal() {
 
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-base); border-radius: 6px;">
-        <p style="font-size: 14px; font-weight: 500;">No open positions found matching your criteria.</p>
-        <p style="font-size: 12px; margin-top: 4px;">Try clearing filters or search query.</p>
+      <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted); background: var(--bg-surface); border: 1px dashed var(--border-base); border-radius: var(--radius-lg);">
+        <p style="font-size: 14px; font-weight: 600;">${t("emptyTable")}</p>
       </div>
     `;
     return;
@@ -4187,8 +4711,8 @@ function renderCareerPortal() {
 
   container.innerHTML = filtered.map(job => `
     <div class="job-card">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-        <div>
+      <div class="job-card-header">
+        <div style="min-width: 0; flex: 1;">
           <span class="job-company-badge">${escapeHtml(job.company)}</span>
           <h3 class="job-title" style="margin-top: 6px;">${escapeHtml(job.title)}</h3>
           <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 3px;">
@@ -4198,7 +4722,7 @@ function renderCareerPortal() {
         <span class="job-salary-tag">${escapeHtml(job.salaryRange || "Competitive")}</span>
       </div>
 
-      <p style="font-size: 12.5px; color: var(--text-base); margin-top: 10px; line-height: 1.45;">
+      <p style="font-size: 12.5px; color: var(--text-primary); margin-top: 10px; line-height: 1.45;">
         ${escapeHtml(job.description || "")}
       </p>
 
@@ -4206,14 +4730,16 @@ function renderCareerPortal() {
         ${(job.tags || []).map(tag => `<span class="parse-extracted-badge">${escapeHtml(tag)}</span>`).join("")}
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-base); font-size: 11.5px; color: var(--text-muted);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-base); font-size: 11.5px; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
         <span>Posted: ${escapeHtml(job.postedDate || "Recent")} • Exp: ${escapeHtml(job.experienceReq || job.experienceRequired || "3+ yrs")}</span>
         <div style="display: flex; gap: 6px; align-items: center;">
-          <button type="button" class="btn-outlined" onclick="openEditJobModal('${job.id}')" style="height: 26px; font-size: 11px; padding: 0 9px; display: inline-flex; align-items: center; gap: 4px;" title="Edit Lowongan">
+          ${!isClientRole ? `
+          <button type="button" class="btn-outlined" onclick="openEditJobModal('${job.id}')" style="height: 28px; font-size: 11px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px;" title="Edit Lowongan">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span>Edit</span>
           </button>
-          <button type="button" class="btn-solid" onclick="openApplyJobModal('${job.id}')" style="height: 26px; font-size: 11.5px; padding: 0 10px;">
+          ` : ""}
+          <button type="button" class="btn-solid" onclick="openApplyJobModal('${job.id}')" style="height: 28px; font-size: 11.5px; padding: 0 12px;">
             ${t("btnApplyJob")}
           </button>
         </div>
@@ -4271,7 +4797,7 @@ function handleApplyJobSubmit(e) {
   }
 
   const job = openJobs.find(j => j.id === jobId);
-  const candidateId = `CND-${Math.floor(1000 + Math.random() * 9000)}`;
+  const candidateId = generateUniqueCandidateId();
 
   const now = new Date();
   const nowFormatted = formatTimestamp(now);
@@ -4435,7 +4961,7 @@ function renderGoogleCalendarGrid() {
   const pad = n => String(n).padStart(2, "0");
 
   const monthShortsId = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-  const monthShortsEn = ["Nov", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthShortsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const monthShorts = currentLang === "id" ? monthShortsId : monthShortsEn;
 
   let cellsHtml = "";
@@ -4566,7 +5092,7 @@ function renderInterviewAgendaList() {
         </div>
 
         <div style="margin-top: 10px;">
-          <h4 style="font-size: 14px; font-weight: 700; color: var(--text-base);">
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
             <a href="javascript:void(0)" onclick="openCandidateProfileModal('${item.candidateId}')" style="color: var(--text-primary); font-weight: 700; text-decoration: underline;">
               ${escapeHtml(item.candidateName)}
             </a>
@@ -4694,30 +5220,53 @@ function openInterviewDetailsModal(interviewId) {
 }
 window.openInterviewDetailsModal = openInterviewDetailsModal;
 
+function syncScheduleInterviewTargetFields(targetCand) {
+  const compInput = document.getElementById("intCompany");
+  const posInput = document.getElementById("intPosition");
+  if (!compInput || !posInput) return;
+
+  const recComp = (targetCand?.recommendedCompany || "").trim();
+  const recPos = (targetCand?.recommendedPosition || "").trim();
+
+  if (recComp) {
+    compInput.value = recComp;
+    compInput.readOnly = true;
+  } else {
+    compInput.value = "";
+    compInput.readOnly = false;
+    compInput.placeholder = "e.g. alauda";
+  }
+
+  if (recPos) {
+    posInput.value = recPos;
+    posInput.readOnly = true;
+  } else {
+    posInput.value = "";
+    posInput.readOnly = false;
+    posInput.placeholder = "e.g. Senior Engineer";
+  }
+}
+
 function openScheduleInterviewModal(candidateId = null, defaultDateStr = null) {
   const dialog = document.getElementById("scheduleInterviewModal");
   const candSelect = document.getElementById("intCandidateSelect");
-  const compInput = document.getElementById("intCompany");
-  const posInput = document.getElementById("intPosition");
   const dtInput = document.getElementById("intDateTime");
   const meetInput = document.getElementById("intMeetingLink");
   if (!dialog || !candSelect) return;
 
-  // Populate candidate select
-  candSelect.innerHTML = candidates.map(c => `
+  const activeList = candidates.filter(c => !c.isDeleted);
+  candSelect.innerHTML = activeList.map(c => `
     <option value="${c.id}" ${candidateId && c.id === candidateId ? "selected" : ""}>
-      ${escapeHtml(c.name)} (${c.id}) — ${escapeHtml(c.recommendedCompany || "No Comp")}
+      ${escapeHtml(c.name)} (${c.id}) — ${escapeHtml(c.recommendedCompany || "Open / Unassigned")}
     </option>
   `).join("");
 
-  // Select target candidate
   const selectedId = candidateId || candSelect.value;
   candSelect.value = selectedId;
 
-  const targetCand = candidates.find(c => c.id === selectedId) || candidates[0];
+  const targetCand = activeList.find(c => c.id === selectedId) || activeList[0];
   if (targetCand) {
-    if (compInput) compInput.value = targetCand.recommendedCompany || "alauda";
-    if (posInput) posInput.value = targetCand.recommendedPosition || "Software Engineer";
+    syncScheduleInterviewTargetFields(targetCand);
   }
 
   // Set default interview time
@@ -4744,10 +5293,7 @@ function handleIntCandidateChange(e) {
   const candId = e.target.value;
   const targetCand = candidates.find(c => c.id === candId);
   if (!targetCand) return;
-  const compInput = document.getElementById("intCompany");
-  const posInput = document.getElementById("intPosition");
-  if (compInput) compInput.value = targetCand.recommendedCompany || "alauda";
-  if (posInput) posInput.value = targetCand.recommendedPosition || "Software Engineer";
+  syncScheduleInterviewTargetFields(targetCand);
 }
 
 function handleScheduleInterviewSubmit(e) {
@@ -4757,8 +5303,29 @@ function handleScheduleInterviewSubmit(e) {
   const targetCand = candidates.find(c => c.id === candId);
   if (!targetCand) return;
 
-  const company = document.getElementById("intCompany")?.value.trim() || targetCand.recommendedCompany;
-  const position = document.getElementById("intPosition")?.value.trim() || targetCand.recommendedPosition;
+  const company = (document.getElementById("intCompany")?.value.trim() || targetCand.recommendedCompany || "").trim();
+  const position = (document.getElementById("intPosition")?.value.trim() || targetCand.recommendedPosition || "").trim();
+  if (!company || !position) {
+    showAlertDialog({
+      title: t("alertNotification"),
+      message: t("alertFillJobRequired"),
+      type: "warning"
+    });
+    return;
+  }
+
+  // Guard: Prevent scheduling new interview on an active placement (Code 40/41) for the same company
+  if (!Array.isArray(targetCand.recommendations)) targetCand.recommendations = [];
+  let targetRec = targetCand.recommendations.find(r => (r.company || "").toLowerCase() === company.toLowerCase());
+  if (targetRec && (targetRec.statusCode === 40 || targetRec.statusCode === 41)) {
+    showAlertDialog({
+      title: t("alertRuleRejected"),
+      message: t("alertInterviewEntryBlocked").replace("{code}", targetRec.statusCode),
+      type: "warning"
+    });
+    return;
+  }
+
   const round = document.getElementById("intRound")?.value || "Round 1 - Technical Interview";
   const dateTime = document.getElementById("intDateTime")?.value;
   const platform = document.getElementById("intPlatform")?.value || "Google Meet";
@@ -4785,18 +5352,19 @@ function handleScheduleInterviewSubmit(e) {
   scheduledInterviews.unshift(interviewRecord);
   saveInterviews(scheduledInterviews);
 
-  // Update candidate status to 20 (Interview Scheduled)
+  // Advance candidate status to 20 (Interview Scheduled) without downgrading higher active stages (21, 22, 30, 31)
   const nowFormatted = formatTimestamp(new Date());
-  let targetRec = targetCand.recommendations?.find(r => r.company.toLowerCase() === company.toLowerCase());
-  if (!targetRec && targetCand.recommendations?.length > 0) {
-    targetRec = targetCand.recommendations[0];
-  }
   if (targetRec) {
-    targetRec.statusCode = 20;
+    if (targetRec.statusCode < 20 || STATUS_CODES[targetRec.statusCode]?.isFailed) {
+      targetRec.statusCode = 20;
+      targetRec.isActive = true;
+    }
     targetRec.timestamp = nowFormatted;
     targetRec.notes = `${round} scheduled for ${dateTime}. Meeting: ${meetingLink}`;
   } else {
-    targetCand.recommendations.push({
+    targetCand.recommendedCompany = company;
+    targetCand.recommendedPosition = position;
+    targetCand.recommendations.unshift({
       id: `REC-${Date.now()}`,
       candidateId: targetCand.id,
       company: company,
@@ -4920,7 +5488,8 @@ function openOfferLetterModal(candidateId) {
   if (sendBtn) sendBtn.setAttribute("data-candidate-id", c.id);
   if (acceptBtn) acceptBtn.setAttribute("data-candidate-id", c.id);
 
-  const defaultStartIso = c.startDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const fallbackIso = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const defaultStartIso = isValidIsoDateString(c.startDate) ? c.startDate.trim() : fallbackIso;
   if (startInput) startInput.value = defaultStartIso;
   if (sigInput) sigInput.value = c.digitalSignature || "";
 
@@ -4929,7 +5498,7 @@ function openOfferLetterModal(candidateId) {
   const positionName = rec.position || "Senior Professional";
   const salaryExp = c.salaryExpectation || "IDR 25,000,000 / month";
   const todayStr = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  const startDateStr = new Date(defaultStartIso).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  const startDateStr = new Date(`${defaultStartIso}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   paper.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-base); padding-bottom: 14px; margin-bottom: 16px;">
@@ -4941,7 +5510,7 @@ function openOfferLetterModal(candidateId) {
       <div style="text-align: right; font-size: 11.5px; color: var(--text-secondary);">
         <div><strong>Ref:</strong> TT-OFFER/${new Date().getFullYear()}/${c.id}</div>
         <div style="margin-top: 3px;"><strong>Date:</strong> ${todayStr}</div>
-        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: ${c.digitalSignature ? '#15803d' : 'var(--brand-primary)'}; color: ${c.digitalSignature ? '#ffffff' : '#161922'}; font-weight: 800;">${c.digitalSignature ? 'SIGNED & ACCEPTED' : 'OFFICIAL OFFER'}</span></div>
+        <div style="margin-top: 3px;"><span class="status-count-badge" style="background: ${c.digitalSignature ? 'var(--success-color)' : 'var(--brand-primary)'}; color: ${c.digitalSignature ? '#ffffff' : '#161922'}; font-weight: 800;">${c.digitalSignature ? 'SIGNED & ACCEPTED' : 'OFFICIAL OFFER'}</span></div>
       </div>
     </div>
 
@@ -5009,14 +5578,14 @@ function openOfferLetterModal(candidateId) {
     <div class="offer-sig-grid">
       <div>
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 40px;">Sincerely,<br><strong>Authorized Signatory</strong><br>${escapeHtml(companyName)}</p>
-        <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
+        <div style="border-top: 1px solid var(--border-strong); width: 200px; font-size: 11px; padding-top: 4px;">
           HR Director / Hiring Manager
         </div>
       </div>
       <div>
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: ${c.digitalSignature ? '12px' : '40px'};">Accepted and Agreed:<br><strong>Candidate Acceptance</strong></p>
         ${c.digitalSignature ? `<div class="esign-script" style="margin-bottom: 6px;">/s/ ${escapeHtml(c.digitalSignature)}</div><div style="font-size: 10px; color: var(--success-color); margin-bottom: 6px;">Digitally Signed • Start Date: ${escapeHtml(defaultStartIso)}</div>` : ""}
-        <div style="border-top: 1px solid var(--text-base); width: 200px; font-size: 11px; padding-top: 4px;">
+        <div style="border-top: 1px solid var(--border-strong); width: 200px; font-size: 11px; padding-top: 4px;">
           ${escapeHtml(c.name)}<br>
           <span style="font-size: 10px; color: var(--text-muted);">Signature & Date</span>
         </div>
@@ -5719,6 +6288,17 @@ function autoFillApplyJobForm(extracted, sourceLabel = "CV") {
 /** Handle file upload event for Add Candidate or Apply Job modals */
 async function handleCvFileSelected(file, mode = "add") {
   if (!file) return;
+  if (!isSupportedCvFile(file.name)) {
+    const fileInp = document.getElementById(mode === "add" ? "cvUploadFileInput" : "applyCvFileInput");
+    if (fileInp) fileInp.value = "";
+    await showAlertDialog({
+      title: t("alertUnsupportedCvTitle"),
+      message: t("alertUnsupportedCvMsg").replace("{filename}", file.name),
+      type: "warning",
+      okText: t("btnUnderstood")
+    });
+    return;
+  }
   const sizeKb = (file.size / 1024).toFixed(1);
 
   if (mode === "add") {
@@ -5963,13 +6543,17 @@ function handleRunCvParser() {
 /**
  * 15A. SHARED STAGE TRANSITION ENGINE (DK-04, Kanban & Warranty)
  */
-function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
+async function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return false;
 
   // Check Blacklist permission: only Manager/SuperAdmin can set 91
   if (newCode === 91 && activeUser.role !== "manager" && activeUser.role !== "superadmin") {
-    alert("Permission denied: Only Team Managers or Super Admins can set status to 91 (Blacklist).");
+    await showAlertDialog({
+      title: t("alertAccessDenied"),
+      message: "Permission denied: Only Team Managers or Super Admins can set status to 91 (Blacklist).",
+      type: "danger"
+    });
     return false;
   }
 
@@ -5977,23 +6561,54 @@ function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
   const failedCodes = [19, 29, 39, 49, 90, 91];
   let reasonInput = "";
   if (failedCodes.includes(newCode)) {
-    reasonInput = prompt(`Reason is mandatory for setting status code ${newCode} (${getStatusName(newCode)}):`);
-    if (!reasonInput || !reasonInput.trim()) {
-      alert("Action cancelled: Reason is mandatory.");
+    const res = await showInputDialog({
+      title: t("dialogStageReasonTitle"),
+      message: t("dialogStageReasonMsg").replace("{code}", newCode).replace("{status}", getStatusName(newCode)),
+      fields: [
+        {
+          name: "reason",
+          type: "textarea",
+          rows: 3,
+          placeholder: t("fldReason"),
+          required: true,
+          requiredMessage: t("alertReasonRequired")
+        }
+      ],
+      confirmText: t("btnConfirm"),
+      cancelText: t("btnCancel"),
+      type: "danger"
+    });
+    if (!res || !res.reason) {
       return false;
     }
+    reasonInput = res.reason;
   }
 
   // Mandatory start date when advancing to Offer Accepted (Code 31) per PRD
-  let startDateVal = c.startDate || "";
+  let startDateVal = isValidIsoDateString(c.startDate) ? c.startDate.trim() : "";
   if (newCode === 31 && !startDateVal) {
     const defaultDt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const promptedDate = prompt(`Start Date is required for Code 31 (${getStatusName(31)}). Enter YYYY-MM-DD:`, defaultDt);
-    if (!promptedDate || !promptedDate.trim()) {
-      alert("Action cancelled: Confirmed Start Date is required for Offer Acceptance (Code 31).");
+    const resDate = await showInputDialog({
+      title: t("dialogStartDateTitle"),
+      message: t("dialogStartDateMsg"),
+      fields: [
+        {
+          name: "startDate",
+          type: "date",
+          value: defaultDt,
+          required: true,
+          requiredMessage: t("alertInvalidDate"),
+          validate: val => isValidIsoDateString(val) ? null : t("alertInvalidDate")
+        }
+      ],
+      confirmText: t("btnConfirm"),
+      cancelText: t("btnCancel"),
+      type: "success"
+    });
+    if (!resDate || !isValidIsoDateString(resDate.startDate)) {
       return false;
     }
-    startDateVal = promptedDate.trim();
+    startDateVal = resDate.startDate.trim();
     c.startDate = startDateVal;
   }
 
@@ -6026,7 +6641,7 @@ function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
     targetRec.isActive = true;
   }
 
-  if (newCode === 40 && !c.startDate) {
+  if (newCode === 40 && !isValidIsoDateString(c.startDate)) {
     c.startDate = new Date().toISOString().slice(0, 10);
   }
 
@@ -6058,6 +6673,7 @@ function transitionCandidateStage(candidateId, newCode, targetRecId = null) {
 function switchResumeViewMode(mode) {
   resumeViewMode = mode === "kanban" ? "kanban" : "table";
   const tableWrapper = document.getElementById("resumeTableWrapper");
+  const emptyStatePanel = document.getElementById("resumeEmptyStatePanel");
   const kanbanBox = document.getElementById("resumeKanbanContainer");
   const tableFooter = document.querySelector("#panel-resumeLib .table-footer");
   const btnTable = document.getElementById("btnViewTable");
@@ -6069,6 +6685,7 @@ function switchResumeViewMode(mode) {
   if (tableWrapper) tableWrapper.style.display = resumeViewMode === "table" ? "block" : "none";
   if (tableFooter) tableFooter.style.display = resumeViewMode === "table" ? "flex" : "none";
   if (kanbanBox) kanbanBox.style.display = resumeViewMode === "kanban" ? "flex" : "none";
+  if (emptyStatePanel && resumeViewMode === "kanban") emptyStatePanel.style.display = "none";
 
   if (resumeViewMode === "kanban") {
     renderKanbanBoard(getFilteredCandidates());
@@ -6099,7 +6716,7 @@ function renderKanbanBoard(filteredCandidates) {
       <div class="kanban-column" data-stage-key="${col.stageKey}" data-drop-code="${col.dropCode}">
         <div class="kanban-col-header" style="border-top: 3px solid ${col.color};">
           <span>${col.title}</span>
-          <span class="status-count-badge" style="background-color: var(--brand-dark); color: #ffffff; font-weight: 800;">${colItems.length}</span>
+          <span class="status-count-badge kanban-count-pill">${colItems.length}</span>
         </div>
         <div class="kanban-col-body">
           ${colItems.length === 0 ? `<div style="font-size: 11.5px; color: var(--text-muted); text-align: center; padding: 18px 8px;">${currentLang === "id" ? "Tarik kartu kandidat ke sini" : "Drop candidate card here"}</div>` : colItems.map(c => {
@@ -6119,7 +6736,7 @@ function renderKanbanBoard(filteredCandidates) {
                   ${c.yearsOfService} yrs exp • ${escapeHtml(c.education || "-")}
                 </div>
                 <div class="card-quick-actions">
-                  <select class="ctrl-select kanban-stage-select" data-candidate-id="${c.id}" aria-label="Move stage for ${escapeHtml(c.name)}" style="min-width: 0; height: 24px; font-size: 11px; padding: 0 6px; flex: 1;">
+                  <select class="ctrl-select kanban-stage-select" data-candidate-id="${c.id}" aria-label="Move stage for ${escapeHtml(c.name)}" style="min-width: 0; height: 26px; font-size: 11px; padding: 0 8px; flex: 1;">
                     <option value="">Move to stage...</option>
                     <option value="10">10 - Recommended</option>
                     <option value="12">12 - CV Pass</option>
@@ -6160,24 +6777,25 @@ function renderKanbanBoard(filteredCandidates) {
     colEl.addEventListener("dragleave", () => {
       colEl.classList.remove("drag-over");
     });
-    colEl.addEventListener("drop", e => {
+    colEl.addEventListener("drop", async e => {
       e.preventDefault();
       colEl.classList.remove("drag-over");
       const cid = draggedCandidateId || e.dataTransfer?.getData("text/plain");
       const targetCode = parseInt(colEl.getAttribute("data-drop-code"), 10);
       if (cid && !isNaN(targetCode)) {
-        transitionCandidateStage(cid, targetCode);
+        await transitionCandidateStage(cid, targetCode);
       }
     });
   });
 
   // Bind Keyboard-accessible move dropdown
   container.querySelectorAll(".kanban-stage-select").forEach(sel => {
-    sel.addEventListener("change", () => {
+    sel.addEventListener("change", async () => {
       const cid = sel.getAttribute("data-candidate-id");
       const code = parseInt(sel.value, 10);
       if (cid && !isNaN(code)) {
-        transitionCandidateStage(cid, code);
+        const ok = await transitionCandidateStage(cid, code);
+        if (!ok) sel.value = "";
       }
     });
   });
@@ -6230,7 +6848,7 @@ function renderWarrantyTracker() {
     const formattedFee = "IDR " + estFee.toLocaleString("id-ID");
 
     const invStatus = r.invoiceStatus || (r.statusCode === 41 ? "Paid" : (r.statusCode === 40 ? "Invoiced" : "Draft"));
-    const invColor = invStatus === "Paid" ? "#15803d" : (invStatus === "Invoiced" ? "#b45309" : "var(--text-muted)");
+    const invColor = invStatus === "Paid" ? "var(--success-color)" : (invStatus === "Invoiced" ? "var(--warning-color)" : "var(--text-muted)");
 
     return `
       <tr>
@@ -6260,17 +6878,18 @@ function renderWarrantyTracker() {
   }).join("");
 }
 
-function updateWarrantyAction(candidateId, recId, actionType) {
+async function updateWarrantyAction(candidateId, recId, actionType) {
   const c = candidates.find(item => item.id === candidateId);
   const r = c?.recommendations?.find(rec => rec.id === recId);
   if (!c || !r) return;
 
   if (actionType === "pass41") {
-    transitionCandidateStage(c.id, 41, r.id);
-    r.invoiceStatus = "Paid";
-    saveCandidates(candidates);
+    if (await transitionCandidateStage(c.id, 41, r.id)) {
+      r.invoiceStatus = "Paid";
+      saveCandidates(candidates);
+    }
   } else if (actionType === "fail49") {
-    if (transitionCandidateStage(c.id, 49, r.id)) {
+    if (await transitionCandidateStage(c.id, 49, r.id)) {
       r.invoiceStatus = "Warranty Replacement Required";
       saveCandidates(candidates);
     }
@@ -6278,7 +6897,7 @@ function updateWarrantyAction(candidateId, recId, actionType) {
     r.invoiceStatus = "Paid";
     addAuditLog("INVOICE_PAID", `Candidate ${c.name}`, `Marked placement fee invoice as Paid for ${r.company}`);
     saveCandidates(candidates);
-    showToast(`Placement invoice marked Paid for ${c.name}.`);
+    showToast(t("msgPlacementPaid").replace("{name}", c.name));
   }
 
   renderWarrantyTracker();
@@ -6493,7 +7112,7 @@ function handlePostJobSubmit(e) {
   if (!title || !company || !description) return;
 
   const newJob = {
-    id: `JOB-${Math.floor(10 + Math.random() * 90)}`,
+    id: generateUniqueJobId(),
     title,
     company,
     department,
@@ -6524,7 +7143,7 @@ function handlePostJobSubmit(e) {
 
   const filterComp = document.getElementById("careerFilterCompany");
   if (filterComp) {
-    filterComp.innerHTML = `<option value="all">All Companies</option>`;
+    filterComp.innerHTML = `<option value="all">${t("optAllCompanies")}</option>`;
   }
 
   renderAllViews();
@@ -6538,12 +7157,14 @@ function toggleSoftDeleteCandidate(candidateId) {
   const c = candidates.find(item => item.id === candidateId);
   if (!c) return;
   c.isDeleted = !c.isDeleted;
+  selectedCandidateIds.delete(candidateId);
   saveCandidates(candidates);
   addAuditLog(
     c.isDeleted ? "SOFT_DELETE" : "RESTORE_CANDIDATE",
     `Candidate ${c.name}`,
     c.isDeleted ? "Moved candidate to archive" : "Restored candidate from archive"
   );
+  updateBatchToolbarUI();
   renderAllViews();
   showToast(c.isDeleted ? `${c.name} archived (Soft Delete).` : `${c.name} restored to active library.`);
 }
@@ -6573,8 +7194,10 @@ async function hardDeleteCandidate(candidateId) {
   }
 
   const removed = candidates.splice(idx, 1)[0];
+  selectedCandidateIds.delete(candidateId);
   saveCandidates(candidates);
   addAuditLog("HARD_DELETE", `Candidate ${removed.name}`, `Permanently removed record ${removed.id}`);
+  updateBatchToolbarUI();
   renderAllViews();
   showToast(t("msgCandidateDeleted").replace("{name}", removed.name));
   return true;
@@ -6719,10 +7342,27 @@ function clearBatchSelection() {
   updateBatchToolbarUI();
 }
 
-function handleBatchTag() {
+async function handleBatchTag() {
   if (selectedCandidateIds.size === 0) return;
-  const tag = prompt("Enter tag to add to selected candidates (e.g. Fast Track, Mandarin Fluent):")?.trim();
-  if (!tag) return;
+  const count = selectedCandidateIds.size;
+  const res = await showInputDialog({
+    title: t("dialogBatchTagTitle"),
+    message: t("dialogBatchTagMsg").replace("{count}", count),
+    fields: [
+      {
+        name: "tag",
+        type: "text",
+        placeholder: "e.g. Fast Track, Mandarin Fluent",
+        required: true,
+        requiredMessage: t("alertReasonRequired")
+      }
+    ],
+    confirmText: t("btnConfirm"),
+    cancelText: t("btnCancel"),
+    type: "info"
+  });
+  if (!res || !res.tag) return;
+  const tag = res.tag.trim();
 
   let updatedCount = 0;
   candidates.forEach(c => {
@@ -6772,13 +7412,36 @@ async function handleBatchArchive() {
   showToast(`Archived ${archivedCount} candidate(s)${lockedSkipped ? ` (${lockedSkipped} locked onboarded records skipped)` : ""}.`);
 }
 
-function handleBatchRecommend() {
+async function handleBatchRecommend() {
   if (selectedCandidateIds.size === 0) return;
-  const company = prompt("Enter Target Client Company:", masterCompanies[0] || "alauda")?.trim();
-  if (!company) return;
-
-  const customPos = prompt("Enter Target Position (leave empty to use each candidate's current position):", "");
-  if (customPos === null) return;
+  const count = selectedCandidateIds.size;
+  const companyOptions = masterCompanies.map(c => ({ value: c, label: c }));
+  const res = await showInputDialog({
+    title: t("dialogBatchRecTitle"),
+    message: t("dialogBatchRecMsg").replace("{count}", count),
+    fields: [
+      {
+        name: "company",
+        type: "select",
+        label: t("lblClientCompany"),
+        options: companyOptions.length > 0 ? companyOptions : [{ value: "alauda", label: "alauda" }],
+        value: masterCompanies[0] || "alauda",
+        required: true
+      },
+      {
+        name: "position",
+        type: "text",
+        label: t("colRecPosition") + " (Opsional)",
+        placeholder: "Kosongkan untuk mempertahankan posisi kandidat"
+      }
+    ],
+    confirmText: t("btnSubmitRec"),
+    cancelText: t("btnCancel"),
+    type: "info"
+  });
+  if (!res || !res.company) return;
+  const company = res.company.trim();
+  const customPos = (res.position || "").trim();
 
   const nowStr = formatTimestamp(new Date());
   let passedCount = 0;
@@ -6786,7 +7449,7 @@ function handleBatchRecommend() {
 
   candidates.forEach(c => {
     if (!selectedCandidateIds.has(c.id)) return;
-    const targetPos = customPos.trim() || c.recommendedPosition || masterPositions[0] || "Senior Engineer";
+    const targetPos = customPos || c.recommendedPosition || masterPositions[0] || "Senior Engineer";
     const evalResult = evaluateRecRepeatRules(c, company, targetPos, activeUser.name);
 
     if (evalResult.blocked || (evalResult.requiresManager && activeUser.role === "consultant")) {

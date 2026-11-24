@@ -65,7 +65,7 @@
               <span data-i18n="navResumeLib">Pustaka Resume</span>
             </button>
           </li>
-          <li>
+          <li id="menuItemAddCandidate">
             <button type="button" class="submenu-item-btn" data-view="addCandidateModalTrigger">
               <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -80,7 +80,7 @@
       </div>
 
       <!-- Group 2: Consultant Business -->
-      <div class="menu-group">
+      <div id="menuGroupConsultantBiz" class="menu-group">
         <button type="button" class="menu-group-btn">
           <span class="menu-group-label">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -134,7 +134,7 @@
       </div>
 
       <!-- Group 3: Data Analysis -->
-      <div class="menu-group">
+      <div id="menuGroupDataAnalysis" class="menu-group">
         <button type="button" class="menu-group-btn">
           <span class="menu-group-label">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -284,10 +284,11 @@
             <div id="userProfileSummary" class="notif-header" style="flex-direction: column; align-items: flex-start; gap: 2px;"></div>
             <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
               <div style="font-size: 11px; color: var(--text-muted);" data-i18n="lblBackupRestore">Database Backup & Restore</div>
-              <button type="button" id="btnExportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Download JSON Backup</button>
-              <button type="button" id="btnImportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Restore JSON Backup</button>
+              <button type="button" id="btnExportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;" data-i18n="btnDownloadBackup">Download JSON Backup</button>
+              <button type="button" id="btnImportBackupJson" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;" data-i18n="btnRestoreBackup">Restore JSON Backup</button>
               <input type="file" id="restoreJsonFileInput" accept=".json,application/json" style="display: none;">
-              <button type="button" id="btnQuickResetPassword" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;">Change Password</button>
+              <button type="button" id="btnQuickResetPassword" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px;" data-i18n="btnChangePassword">Change Password</button>
+              <a href="./tutorial.html" target="_blank" rel="noopener noreferrer" class="btn-outlined" style="width: 100%; justify-content: center; font-size: 12px; text-decoration: none;" data-i18n="btnOpenTutorial">📖 Open Interactive Blueprint & Tutorial</a>
               <div style="border-top: 1px solid var(--border-base); margin: 4px 0;"></div>
               <button type="button" id="btnOpenDemoGuide" class="btn-solid" style="width: 100%; justify-content: center; font-size: 12px;" data-i18n="btnDemoScenarios">⚡ Interactive Feature Tester (18 Scenarios)</button>
             </div>
@@ -490,6 +491,9 @@
           </div>
         </div>
 
+        <!-- Centered Empty State Container (Displayed when 0 candidates match) -->
+        <div id="resumeEmptyStatePanel" class="empty-state-panel" style="display: none;"></div>
+
         <!-- Enterprise Data Table -->
         <div id="resumeTableWrapper" tabindex="0" role="region" aria-labelledby="resume-table-caption" class="table-wrapper">
           <table id="resumeDataTable" class="data-table">
@@ -534,7 +538,7 @@
         <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
             <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navConsultantBiz">Consultant Business</h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Track personal targets, client submissions, and team performance leaderboard.</p>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" data-i18n="subConsultantBiz">Track personal targets, client submissions, and team performance leaderboard.</p>
           </div>
           <div class="tab-pill-group">
             <button type="button" id="tabBtnCbRecs" class="tab-pill-btn active" data-cbtab="recommendations" data-i18n="tabMyTargets">My Recommendations & Targets</button>
@@ -550,16 +554,16 @@
         <div id="paneCbRecs">
           <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
             <select id="cbFilterConsultant" class="ctrl-select" style="min-width: 150px; height: 28px; font-size: 12px;">
-              <option value="all">All Consultants</option>
+              <option value="all" data-i18n="optAllConsultants">All Consultants</option>
               <option value="Rina Wijaya">Rina Wijaya</option>
               <option value="Budi Hartono">Budi Hartono</option>
               <option value="Hendra Kusuma">Hendra Kusuma</option>
             </select>
             <select id="cbFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
-              <option value="all">All Companies</option>
+              <option value="all" data-i18n="optAllCompanies">All Companies</option>
             </select>
             <select id="cbFilterStatus" class="ctrl-select" style="min-width: 150px; height: 28px; font-size: 12px;">
-              <option value="all">All Status Stages</option>
+              <option value="all" data-i18n="optAllStages">All Status Stages</option>
               <option value="10">10 - Recommended to Client</option>
               <option value="12">12 - Original Resume Pass</option>
               <option value="20">20 - Interview Scheduled</option>
@@ -594,14 +598,14 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Consultant Name</th>
-                  <th>Role</th>
-                  <th>New Candidates Added</th>
-                  <th>Submissions</th>
-                  <th>Interviews</th>
-                  <th>Hired (Entry)</th>
-                  <th>Conversion Rate</th>
-                  <th>Target Achievement</th>
+                  <th data-i18n="colConsName">Consultant Name</th>
+                  <th data-i18n="colRole">Role</th>
+                  <th data-i18n="colNewAdded">New Candidates Added</th>
+                  <th data-i18n="colSubmissions">Submissions</th>
+                  <th data-i18n="colInterviews">Interviews</th>
+                  <th data-i18n="colHiredEntry">Hired (Entry)</th>
+                  <th data-i18n="colConvRate">Conversion Rate</th>
+                  <th data-i18n="colTargetAch">Target Achievement</th>
                 </tr>
               </thead>
               <tbody id="teamLeaderboardTableBody"></tbody>
@@ -616,12 +620,12 @@
               <thead>
                 <tr>
                   <th data-i18n="colCandidate">Candidate</th>
-                  <th>Company & Position</th>
+                  <th data-i18n="colCompAndPos">Company & Position</th>
                   <th data-i18n="fldStage">Stage Code</th>
-                  <th>Start Date & Warranty (90d)</th>
-                  <th>Est. Agency Fee</th>
-                  <th>Invoice Status</th>
-                  <th>Warranty Actions</th>
+                  <th data-i18n="colWarranty90d">Start Date & Warranty (90d)</th>
+                  <th data-i18n="colEstFee">Est. Agency Fee</th>
+                  <th data-i18n="colInvoiceStatus">Invoice Status</th>
+                  <th data-i18n="colWarrantyActions">Warranty Actions</th>
                 </tr>
               </thead>
               <tbody id="warrantyTrackerTableBody"></tbody>
@@ -637,7 +641,7 @@
         <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <h2 style="font-size: 16px; font-weight: 700;" data-i18n="navClientList">Perusahaan Klien & Portal Lowongan</h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" data-i18n="subClientList">
               Kelola daftar perusahaan klien mitra, portofolio kandidat aktif, dan lowongan kerja terbuka.
             </p>
           </div>
@@ -673,16 +677,16 @@
           <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <h3 style="font-size: 14.5px; font-weight: 600;" data-i18n="lblOpenPositions">Lowongan Kerja Terbuka</h3>
-              <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
+              <p style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" data-i18n="subOpenPositions">
                 Lowongan kerja yang sedang dibuka oleh perusahaan klien mitra.
               </p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
-              <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 28px; font-size: 12px;">
-                <option value="all">All Companies</option>
+              <select id="careerFilterCompany" class="ctrl-select" style="min-width: 140px; height: 32px; font-size: 12px;">
+                <option value="all" data-i18n="optAllCompanies">All Companies</option>
               </select>
-              <input type="text" id="careerSearchQuery" class="ctrl-input" placeholder="Search title or skills..." style="height: 28px; font-size: 12px;">
-              <button type="button" id="btnOpenPostJobModal" class="btn-solid" style="height: 28px; font-size: 12px;" data-i18n="btnPostJob">+ Post Job Order</button>
+              <input type="text" id="careerSearchQuery" class="ctrl-input" data-i18n-ph="phSearchJobs" placeholder="Search title or skills..." style="height: 32px; font-size: 12px;">
+              <button type="button" id="btnOpenPostJobModal" class="btn-solid" style="height: 32px; font-size: 12px;" data-i18n="btnPostJob">+ Post Job Order</button>
             </div>
           </div>
 
@@ -697,14 +701,14 @@
         <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
             <h2 style="font-size: 15px; font-weight: 600;" data-i18n="navPipelineReport">Pipeline Report</h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Comprehensive recruitment funnel, candidate demographics, and monthly inflow analysis.</p>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" data-i18n="subPipelineReport">Comprehensive recruitment funnel, candidate demographics, and monthly inflow analysis.</p>
           </div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-inline-size: 100%;">
-            <select id="analyticsDateRange" class="ctrl-select" style="min-width: 120px; height: 28px; font-size: 12px;">
-              <option value="all">All Time</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="quarter">This Quarter</option>
-              <option value="year">Year to Date</option>
+            <select id="analyticsDateRange" class="ctrl-select" style="min-width: 120px; height: 32px; font-size: 12px;">
+              <option value="all" data-i18n="optAllTime">All Time</option>
+              <option value="30d" data-i18n="optLast30Days">Last 30 Days</option>
+              <option value="quarter" data-i18n="optThisQuarter">This Quarter</option>
+              <option value="year" data-i18n="optYearToDate">Year to Date</option>
             </select>
             <button type="button" id="btnExportAnalytics" class="btn-outlined" data-i18n="btnExportAnalytics">Export Analytics CSV</button>
           </div>
@@ -712,13 +716,13 @@
 
         <div id="analyticsKpiContainer" class="kpi-grid"></div>
 
-        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 14px;" data-i18n="lblRecruitmentFunnel">Recruitment Pipeline Funnel</h3>
           <div id="funnelVisualContainer" class="funnel-container"></div>
         </div>
 
         <!-- Monthly Candidate Inflow Trend (DA-02) -->
-        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+        <div style="margin-top: 24px; background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblMonthlyInflow">Monthly Candidate Inflow (DA-02)</h3>
           <div id="monthlyInflowContainer" class="inflow-chart-grid"></div>
         </div>
@@ -728,26 +732,26 @@
           <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblDemographics">Candidate Demographics & Distribution</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px;">
             <!-- Education Distribution -->
-            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Education Breakdown</h4>
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblEduBreakdown">Education Breakdown</h4>
               <div id="distEducationContainer" class="dist-bar-group"></div>
             </div>
 
             <!-- Nationality / Location Distribution -->
-            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Nationality & Domicile</h4>
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblNatDomicile">Nationality & Domicile</h4>
               <div id="distNationalityContainer" class="dist-bar-group"></div>
             </div>
 
             <!-- Top Client Companies (DA-04) -->
-            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Top Client Placements</h4>
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblTopClients">Top Client Placements</h4>
               <div id="distCompaniesContainer" class="dist-bar-group"></div>
             </div>
 
             <!-- Failed Stages & Consultant Performance (DA-01 / DA-04) -->
-            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;">Failed Stage & Consultant Breakdown</h4>
+            <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+              <h4 style="font-size: 12.5px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblFailedConsBreakdown">Failed Stage & Consultant Breakdown</h4>
               <div id="distFailedAndConsContainer" class="dist-bar-group"></div>
             </div>
           </div>
@@ -764,11 +768,11 @@
             <thead>
               <tr>
                 <th>Log ID</th>
-                <th>Action</th>
-                <th>Entity</th>
-                <th>Details</th>
-                <th>User</th>
-                <th>Timestamp</th>
+                <th data-i18n="colAction">Action</th>
+                <th data-i18n="colEntity">Entity</th>
+                <th data-i18n="colDetails">Details</th>
+                <th data-i18n="colUser">User</th>
+                <th data-i18n="colTimestamp">Timestamp</th>
               </tr>
             </thead>
             <tbody id="auditLogsTableBody"></tbody>
@@ -782,53 +786,53 @@
       <section id="panel-settings" class="workspace-panel">
         <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
           <h2 style="font-size: 15px; font-weight: 600;" data-i18n="lblMasterData">Master Data Management</h2>
-          <span style="font-size: 11px; color: var(--text-muted);">Super Admin Access</span>
+          <span style="font-size: 11px; color: var(--text-muted);" data-i18n="lblSuperAdminAccess">Super Admin Access</span>
         </div>
 
         <div class="settings-master-grid">
           <!-- Master Companies -->
-          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblClientCompanies">Client Companies</h3>
             <form id="formAddMasterCompany" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterCompanyName" class="ctrl-input" placeholder="New Client Company..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddCompany">+ Add Client</button>
             </form>
-            <ul id="settingsCompanyList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsCompanyList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: var(--radius-sm);"></ul>
           </div>
 
           <!-- Master Positions -->
-          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
             <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblPositions">Job Positions</h3>
             <form id="formAddMasterPosition" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterPositionName" class="ctrl-input" placeholder="New Position..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddPosition">+ Add Position</button>
             </form>
-            <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsPositionList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: var(--radius-sm);"></ul>
           </div>
 
           <!-- Master Languages (PG-02) -->
-          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Languages (PG-02)</h3>
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblMasterLanguages">Master Languages (PG-02)</h3>
             <form id="formAddMasterLanguage" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterLanguageName" class="ctrl-input" placeholder="New Language..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddLanguage">+ Add Language</button>
             </form>
-            <ul id="settingsLanguageList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsLanguageList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: var(--radius-sm);"></ul>
           </div>
 
           <!-- Master Countries / Nationalities (PG-02) -->
-          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px;">
-            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;">Master Countries / Nationalities (PG-02)</h3>
+          <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" data-i18n="lblMasterCountries">Master Countries / Nationalities (PG-02)</h3>
             <form id="formAddMasterCountry" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <input type="text" id="newMasterCountryName" class="ctrl-input" placeholder="New Country..." required style="flex: 1;">
               <button type="submit" class="btn-solid" data-i18n="btnAddCountry">+ Add Country</button>
             </form>
-            <ul id="settingsCountryList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: 4px;"></ul>
+            <ul id="settingsCountryList" style="list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; border: 1px solid var(--border-base); border-radius: var(--radius-sm);"></ul>
           </div>
         </div>
 
         <!-- Master 2-Digit Status Code Dictionary (PG-02 Reference) -->
-        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px; margin-bottom: 18px;">
+        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg); margin-bottom: 18px;">
           <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;" data-i18n="settingsStatusCodeTitle">Master Status Code Dictionary (Bilingual Registry)</h3>
           <div tabindex="0" role="region" aria-label="Master Status Codes" class="table-wrapper" style="max-height: 260px;">
             <table class="data-table">
@@ -847,15 +851,15 @@
         </div>
 
         <!-- System Governance Policy (Configurable Duplicate Window & Fee Rate per PRD Line 220) -->
-        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: 6px; margin-bottom: 18px;">
-          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Agency Governance Policy (PRD Configuration)</h3>
+        <div style="background: var(--bg-surface); padding: 16px; border: 1px solid var(--border-base); border-radius: var(--radius-lg); margin-bottom: 18px;">
+          <h3 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;" data-i18n="lblGovernancePolicy">Agency Governance Policy (PRD Configuration)</h3>
           <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;">
             <div class="adv-field">
-              <label for="settingDupMonthsInput">Duplicate Recommendation Window (Months)</label>
+              <label for="settingDupMonthsInput" data-i18n="lblDupWindowMonths">Duplicate Recommendation Window (Months)</label>
               <input type="number" id="settingDupMonthsInput" class="ctrl-input" min="1" max="24" value="6" style="width: 160px;">
             </div>
             <div class="adv-field">
-              <label for="settingFeePercentInput">Default Placement Fee Rate (%)</label>
+              <label for="settingFeePercentInput" data-i18n="lblDefaultFeePercent">Default Placement Fee Rate (%)</label>
               <input type="number" id="settingFeePercentInput" class="ctrl-input" min="5" max="35" value="18" style="width: 150px;">
             </div>
             <button type="button" id="btnSaveSystemSettings" class="btn-solid" data-i18n="btnSavePolicy">Save Policy</button>
@@ -863,7 +867,7 @@
         </div>
 
         <!-- User Management & Role Access (PG-01) -->
-        <div style="background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: 6px;">
+        <div style="background: var(--bg-surface); padding: 18px; border: 1px solid var(--border-base); border-radius: var(--radius-lg);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
             <h3 style="font-size: 13.5px; font-weight: 600;" data-i18n="lblUserManagement">User Management & Role Access (PG-01)</h3>
           </div>
@@ -886,11 +890,11 @@
               <thead>
                 <tr>
                   <th>User ID</th>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Email / Organization</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                  <th data-i18n="fldFullName">Name</th>
+                  <th data-i18n="colRole">Role</th>
+                  <th data-i18n="colEmailOrg">Email / Organization</th>
+                  <th data-i18n="colStatus">Status</th>
+                  <th data-i18n="colAction">Actions</th>
                 </tr>
               </thead>
               <tbody id="settingsUserListTableBody"></tbody>
@@ -906,7 +910,7 @@
         <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <h2 style="font-size: 16px; font-weight: 700;" data-i18n="lblUpcomingInterviews">Kalender Wawancara Kandidat</h2>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;" data-i18n="subCalendar">
               Jadwal wawancara kandidat terpadu dengan tampilan Google Calendar, tautan virtual room (Meet/Zoom), dan ekspor .ICS.
             </p>
           </div>
@@ -950,10 +954,15 @@
            PANEL 6: PRD & BLUEPRINT DOCUMENTATION VIEWER
            ==================================================================== -->
       <section id="panel-prdDocs" class="workspace-panel" style="overflow-y: auto;">
-        <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 10px;">PRD — Website ATS (Applicant Tracking System)</h2>
-        <p style="color: var(--text-secondary); margin-bottom: 14px;">
-          Dokumen PRD resmi tersinkronisasi langsung dari <code>docs/PRD.md</code>.
-        </p>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+          <div>
+            <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;" data-i18n="navPrdDocs">PRD — Website ATS (Applicant Tracking System)</h2>
+            <p style="color: var(--text-secondary); margin: 0;" data-i18n="subPrdDocs">
+              Dokumen PRD resmi tersinkronisasi langsung dari <code>docs/PRD.md</code>.
+            </p>
+          </div>
+          <a href="./tutorial.html" target="_blank" rel="noopener noreferrer" class="btn-solid" style="display: inline-flex; align-items: center; text-decoration: none;" data-i18n="btnOpenTutorial">📖 Buka Blueprint & Tutorial Interaktif</a>
+        </div>
         <div class="kpi-grid">
           <div class="kpi-card">
             <strong>1. Resume Lib MVP</strong>
@@ -1017,7 +1026,7 @@
           <line x1="3" y1="12" x2="21" y2="12"/>
           <line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
-        <span>Menu</span>
+        <span data-i18n="mobileNavMenu">Menu</span>
       </button>
     </nav>
   </div>
@@ -1178,9 +1187,9 @@
 
             <!-- Collapsible Raw Text Paste Area -->
             <div id="rawCvParseWrap" class="raw-cv-parse-wrap" style="display: none;">
-              <textarea id="rawCvParseText" rows="3" placeholder="Tempel (paste) teks CV/Resume kandidat di sini (Nama, Email, Telepon, Tanggal Lahir, Pendidikan, Pengalaman, Keahlian) lalu klik Parse & Auto-Fill..."></textarea>
+              <textarea id="rawCvParseText" rows="3" data-i18n-ph="phPasteCvText" placeholder="Tempel (paste) teks CV/Resume kandidat di sini (Nama, Email, Telepon, Tanggal Lahir, Pendidikan, Pengalaman, Keahlian) lalu klik Parse & Auto-Fill..."></textarea>
               <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-                <button type="button" id="btnRunCvParser" class="btn-solid" style="height: 26px; font-size: 11.5px; padding: 0 12px;">Parse & Auto-Fill Teks</button>
+                <button type="button" id="btnRunCvParser" class="btn-solid" style="height: 26px; font-size: 11.5px; padding: 0 12px;" data-i18n="btnParseCvText">Parse & Auto-Fill Teks</button>
               </div>
             </div>
 
@@ -1199,8 +1208,8 @@
           <div class="form-field">
             <label for="addGender" data-i18n="fldGender">Gender</label>
             <select id="addGender">
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="Male" data-i18n="optMale">Male</option>
+              <option value="Female" data-i18n="optFemale">Female</option>
             </select>
           </div>
           <div class="form-field">
@@ -1210,9 +1219,9 @@
           <div class="form-field">
             <label for="addEducation" data-i18n="fldEducation">Education</label>
             <select id="addEducation">
-              <option value="undergraduate">undergraduate</option>
-              <option value="master">master</option>
-              <option value="diploma">diploma</option>
+              <option value="undergraduate" data-i18n="optUndergraduate">undergraduate</option>
+              <option value="master" data-i18n="optMaster">master</option>
+              <option value="diploma" data-i18n="optDiploma">diploma</option>
             </select>
           </div>
           <div class="form-field">
@@ -1241,7 +1250,7 @@
           </div>
           <div class="form-field full">
             <label for="addSummary" data-i18n="fldSummary">Professional Summary</label>
-            <textarea id="addSummary" rows="2" placeholder="Brief summary of skills and experience..."></textarea>
+            <textarea id="addSummary" rows="2" data-i18n-ph="phSummaryInput" placeholder="Brief summary of skills and experience..."></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -1269,12 +1278,12 @@
           </div>
 
           <div class="form-field full">
-            <label for="csvFileInput">Choose CSV File</label>
+            <label for="csvFileInput" data-i18n="lblChooseCsvFile">Choose CSV File</label>
             <input type="file" id="csvFileInput" accept=".csv, text/csv">
           </div>
 
           <div class="form-field full">
-            <label for="csvPasteInput">Or Paste CSV Text Directly</label>
+            <label for="csvPasteInput" data-i18n="lblPasteCsvText">Or Paste CSV Text Directly</label>
             <textarea id="csvPasteInput" rows="5" placeholder="Candidate Name,Nationality,Gender,Birth Date,Education,Language,Years of Service..."></textarea>
           </div>
         </div>
@@ -1811,7 +1820,7 @@
     </div>
   </dialog>
 
-  <!-- Modal 12: Custom Glassmorphism Prompt Modal (Replaces native alert & confirm) -->
+  <!-- Modal 12: Custom Glassmorphism Prompt Modal (Replaces native alert, confirm & prompt) -->
   <dialog id="customPromptModal" class="custom-prompt-modal" aria-labelledby="customPromptTitle" closedby="any">
     <div class="custom-prompt-shell">
       <div class="custom-prompt-header">
@@ -1819,6 +1828,7 @@
         <div class="custom-prompt-content">
           <h3 id="customPromptTitle" class="custom-prompt-title" data-i18n="confirmAction">Konfirmasi Tindakan</h3>
           <p id="customPromptMessage" class="custom-prompt-message">Pesan konfirmasi...</p>
+          <div id="customPromptFields" class="custom-prompt-fields" style="display: none;"></div>
         </div>
       </div>
       <div class="custom-prompt-footer">
@@ -1828,16 +1838,16 @@
     </div>
   </dialog>
 
-  <!-- Modal 12: Interview Details Modal (Google Calendar Click) -->
+  <!-- Modal 13: Interview Details Modal (Google Calendar Click) -->
   <dialog id="interviewDetailsModal" aria-labelledby="interviewDetailsModalTitle" closedby="any">
     <div class="modal-shell" style="max-width: 480px;">
       <div class="modal-header">
-        <h2 id="interviewDetailsModalTitle" style="font-size: 15px; font-weight: 700;">Detail Wawancara</h2>
+        <h2 id="interviewDetailsModalTitle" style="font-size: 15px; font-weight: 700;" data-i18n="modalInterviewDetailsTitle">Detail Wawancara</h2>
         <button type="button" class="modal-close-x" data-close-modal aria-label="Tutup">✕</button>
       </div>
       <div id="interviewDetailsModalBody" class="modal-body" style="padding: 16px 20px;"></div>
       <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-base); display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" class="btn-outlined" data-close-modal>Tutup</button>
+        <button type="button" class="btn-outlined" data-close-modal data-i18n="btnClose">Tutup</button>
       </div>
     </div>
   </dialog>
