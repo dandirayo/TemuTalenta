@@ -61,10 +61,9 @@ NextKerja/
 ## 🚀 Cara Menjalankan Secara Offline
 
 1. **Langsung Buka di Browser**:
-   Klik ganda pada berkas [index.html](file:///C:/Users/901191/GitHub/NextKerja/index.html).
+   Buka berkas `index.html` langsung di peramban Anda.
 2. **Melalui Local Server Node.js**:
    ```powershell
-   cd C:\Users\901191\GitHub\NextKerja
    npm start
    ```
    Buka `http://localhost:3000` di peramban Anda.
@@ -72,6 +71,6 @@ NextKerja/
 ---
 
 ## 📖 Dokumentasi Perencanaan & Spesifikasi
-- [docs/PRD.md](file:///C:/Users/901191/GitHub/NextKerja/docs/PRD.md) – Product Requirements Document (PRD v2.0).
-- [docs/blueprint-perencanaan.md](file:///C:/Users/901191/GitHub/NextKerja/docs/blueprint-perencanaan.md) – Blueprint Perencanaan Sistem.
-- [docs/core.md](file:///C:/Users/901191/GitHub/NextKerja/docs/core.md) – Knowledge Core & Standar Skema Data.
+- [docs/PRD.md](./docs/PRD.md) – Product Requirements Document (PRD v2.0).
+- [docs/blueprint-perencanaan.md](./docs/blueprint-perencanaan.md) – Blueprint Perencanaan Sistem.
+- [docs/core.md](./docs/core.md) – Knowledge Core: Skema Data, Status Pipeline & Aturan Bisnis.

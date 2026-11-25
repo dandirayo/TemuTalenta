@@ -1,224 +1,260 @@
-# Knowledge Core: TemuTalenta
+# Knowledge Core: NextKerja (TemuTalenta)
 
-Dokumen ini mendefinisikan struktur data inti, status tahapan pipeline rekrutmen, aturan bisnis rekomendasi kandidat, serta kamus lokalisasi dwibahasa (**Indonesia / English**) untuk platform **TemuTalenta**.
+Dokumen ini mendefinisikan seluruh arsitektur inti, struktur data, kamus status pipeline dua digit, aturan validasi bisnis rekrutmen, kontrol akses berbasis peran (RBAC), standar dialog & UX, serta sistem desain visual resmi untuk platform **NextKerja (TemuTalenta)**.
 
 ---
 
-## 1. Definisi Kamus Kode Status Dua Digit (Status Code Dictionary)
+## 1. Identitas Visual & Design System Resmi
 
-Sesuai spesifikasi PRD ATS, badge status pada tabel data menampilkan kode angka dua digit terstandardisasi:
+Platform mengadopsi identitas visual **NextKerja** bertema modern B2B Enterprise ATS:
+- **Warna Primer (Brand Primary)**: Lime Green (`#ccf535`) — aksen tombol utama, indikator aktif, tab segmen, dan sorotan visual.
+- **Warna Gelap Primer (Brand Dark)**: Dark Slate (`#121603`) — warna latar belakang sidebar dan elemen kontras tinggi.
+- **Kontrol Bentuk (Pill Controls)**: Tombol (`.btn-solid`, `.btn-outlined`), tab segmen (`.stage-tab`, `.subtab-btn`), serta badge status menggunakan kurva melengkung halus (*rounded pill* / `border-radius: 9999px` atau `18px`).
+- **Tema Ganda Penuh (Dual Theme)**: Mendukung penuh `Light Mode` dan `Dark Mode` dengan sinkronisasi `<meta name="color-scheme">` dan variabel CSS `--bg-base`, `--surface-card`, `--text-primary`, `--border-base`, dan `--shadow-card`.
+- **Aksesibilitas & Focus Ring**: Seluruh kontrol interaktif memiliki outline `:focus-visible` (2px solid aksen Lime/Cyan dengan offset 2px) untuk kenyamanan navigasi keyboard (WCAG 2.1 AA).
+- **Zero Decorative Emoji Policy**: Seluruh antarmuka menggunakan ikonografi vektor **Inline SVG** garis tipis terstandarisasi tanpa emoji kasual untuk menjaga estetika enterprise.
 
-| Kode | Stage Tab | Nama (EN) | Nama (ID) | Nama (ZH) | Keterangan & Aturan |
+---
+
+## 2. Kamus Kode Status Dua Digit (Status Code Dictionary)
+
+Sesuai spesifikasi PRD ATS, badge status pada tabel data menampilkan kode angka dua digit terstandardisasi dengan pemetaan dwibahasa (**Indonesia & English**):
+
+| Kode | Stage Tab | Nama (EN) | Nama (ID) | Kategori & Sifat | Keterangan & Aturan Bisnis |
 | :---: | :---: | :--- | :--- | :--- | :--- |
-| **0** | `new` | New Candidate | Kandidat Baru | 新录入 | Baru diinput, belum diajukan ke klien mana pun. |
-| **10** | `pending` | Recommended to Client | Direkomendasikan ke Klien | 推荐给客户 | CV telah dikirim ke PIC klien. |
-| **11** | `pending` | Client Reviewing | Klien Meninjau CV | 客户初审中 | Klien sedang meninjau kelayakan resume. |
-| **12** | `pass` | Original Resume Pass | Lolos Seleksi CV Klien | 原简历通过 | Klien menyetujui CV dan meminta jadwal interview. |
-| **19** | `failed` | Resume Rejected | CV Ditolak Klien | 简历不通过 | Wajib mengisi alasan penolakan (DK-05). |
-| **20** | `interview` | Interview Scheduled | Wawancara Dijadwalkan | 面试已安排 | Tanggal dan waktu wawancara telah disepakati. |
-| **21** | `interview` | Passed Initial Interview | Lolos Wawancara Awal | 初试通过 | Lolos babak awal (User/HR), lanjut tahap berikutnya. |
-| **22** | `interview` | Final Interview | Wawancara Akhir | 终试阶段 | Tahap wawancara direksi/komisaris. |
-| **29** | `failed` | Interview Failed | Tidak Lolos Wawancara | 面试未通过 | Wajib mengisi catatan kegagalan wawancara. |
-| **30** | `offer` | Offer Issued | Penawaran Diberikan | 发放Offer | Klien menerbitkan offering letter resmi. |
-| **31** | `offer` | Offer Accepted | Penawaran Diterima | 接受Offer | Kandidat menandatangani offering letter. |
-| **39** | `failed` | Offer Rejected | Penawaran Ditolak | 拒绝Offer | Kandidat menolak penawaran kerja (wajib alasan). |
-| **40** | `entry` | Onboarded / Entry | Masuk Kerja (Entry) | 已入职 | Kandidat resmi mulai bekerja di perusahaan klien. |
-| **41** | `entry` | Passed Probation | Lolos Masa Percobaan | 试用期通过 | Garansi agency selesai dan invoice terkonfirmasi. |
-| **49** | `failed` | Resigned / Failed Probation | Resign / Gagal Percobaan | 离职/未过试用 | Keluar sebelum masa probation usai (wajib alasan). |
-| **90** | `failed` | Candidate Withdrew | Mengundurkan Diri | 候选人主动放弃 | Kandidat mundur atas kemauan sendiri. |
-| **91** | `failed` | Blacklisted | Masuk Daftar Hitam | 加入黑名单 | Hanya dapat dilakukan oleh Manajer / Super Admin. |
+| **0** | `new` | New Candidate | Kandidat Baru | Inflow (Awal) | Baru diinput, belum diajukan ke klien mana pun. |
+| **10** | `pending` | Recommended to Client | Direkomendasikan | Active Pipeline | CV telah dikirimkan ke PIC perusahaan klien. |
+| **11** | `pending` | Client Reviewing | Ditinjau Klien | Active Pipeline | Klien sedang meninjau resume untuk persetujuan interview. |
+| **12** | `pass` | Original Resume Pass | CV Lolos | Active Pipeline | Klien menyetujui CV dan meminta koordinasi jadwal interview. |
+| **19** | `failed` | Resume Rejected | CV Ditolak | Final (Failed) | Klien menolak CV (wajib mengisi alasan penolakan via dialog input). |
+| **20** | `interview` | Interview Scheduled | Interview Dijadwalkan | Active Pipeline | Putaran dan jadwal wawancara telah disepakati (sinkron ke kalender). |
+| **21** | `interview` | Initial Interview Passed | Lolos Interview Awal | Active Pipeline | Kandidat lolos babak teknis/HR awal, siap masuk tahap lanjutan. |
+| **22** | `interview` | Final Interview | Interview Final | Active Pipeline | Wawancara tahap akhir bersama manajemen eksekutif/direksi. |
+| **29** | `failed` | Interview Failed | Gagal Interview | Final (Failed) | Kandidat tidak lolos tahapan wawancara (wajib catatan evaluasi). |
+| **30** | `offer` | Offer Proposed | Offer Diajukan | Active Pipeline | Klien menerbitkan penawaran kerja (Offer Letter resmi). |
+| **31** | `offer` | Offer Accepted | Offer Diterima | Active Pipeline | Kandidat menandatangani offering letter (menutup pipeline lain). |
+| **39** | `failed` | Offer Cancelled / Declined | Offer Batal / Ditolak | Final (Failed) | Penawaran dibatalkan atau ditolak kandidat (wajib alasan). |
+| **40** | `entry` | Started Work (Entry) | Mulai Bekerja (Entry) | Active Placement | Kandidat resmi mulai bekerja (onboard) di perusahaan klien. |
+| **41** | `entry` | Passed Probation | Lulus Probation | Final (Success) | Kandidat menyelesaikan masa percobaan 90 hari, garansi tuntas. |
+| **49** | `failed` | Failed Probation / Resigned | Gagal Probation/Resign | Final (Failed) | Kandidat keluar sebelum masa garansi probation berakhir. |
+| **90** | `failed` | Candidate Withdrew | Kandidat Mundur | Final (Failed) | Kandidat mengundurkan diri atas inisiatif pribadi. |
+| **91** | `failed` | Blacklisted | Masuk Daftar Hitam | Final (Blocked) | Kandidat diblacklist permanen (hanya oleh Manager/SuperAdmin). |
 
 ---
 
-## 2. Aturan Validasi Rekomendasi Ulang (Recommended Repeat RL-11)
+## 3. Enam Aturan Bisnis Rekomendasi Ulang & Proteksi Penjadwalan
 
-Validasi otomatis sebelum pengajuan kandidat ke perusahaan:
-1. **Rule 1 (Duplicate Active)**: Jika ada status aktif (`10-31`) di perusahaan yang sama dalam 6 bulan terakhir, sistem **memblokir pengajuan**.
-2. **Rule 2 (Recent Entry)**: Jika status `40` (Entry) tercapai dalam 6 bulan terakhir di perusahaan mana pun, sistem **memblokir pengajuan**.
-3. **Rule 3 (Re-apply after Failure)**: Jika berstatus gagal (`19`, `29`, `39`) pada perusahaan yang sama dalam 6 bulan, wajib menyertakan **alasan justifikasi** perubahan kompetensi/pengalaman.
-4. **Rule 4 (Cross-Consultant Conflict)**: Jika kandidat direkomendasikan oleh konsultan lain dalam kurun waktu 30 hari, wajib mendapatkan **persetujuan Manajer**.
-5. **Rule 5 (Passed 6 Months)**: Pengajuan ke perusahaan yang sama setelah lebih dari 6 bulan diperbolehkan sebagai siklus rekrutmen baru.
-6. **Rule 6 (Different Company)**: Pengajuan ke perusahaan yang berbeda diperbolehkan paralel tanpa batasan siklus.
+Fungsi `evaluateRecRepeatRules(candidate, targetCompany, targetPosition, currentConsultant)` menegakkan aturan integritas data:
+
+1. **Rule 1 (Duplicate Active Block)**:
+   Jika kandidat memiliki status aktif (`10` s/d `31`) pada perusahaan dan posisi yang sama, pengajuan **diblokir** untuk mencegah duplikasi proses seleksi.
+2. **Rule 2 (Recent Entry / Active Placement Block)**:
+   Jika kandidat sedang berstatus `40` (Entry / Mulai Bekerja) atau `41` (Lolos Probation), pengajuan ke perusahaan mana pun **diblokir permanen** hingga status placement selesai.
+3. **Rule 3 (Re-apply after Failure Justification)**:
+   Jika kandidat sebelumnya gagal (`19`, `29`, `39`) pada perusahaan yang sama dalam kurun waktu 6 bulan terakhir, sistem mewajibkan pengisian **alasan justifikasi peningkatan kompetensi**.
+4. **Rule 4 (Cross-Consultant Conflict & Manager Approval)**:
+   Jika kandidat diajukan ke perusahaan yang sama oleh konsultan berbeda dalam kurun waktu 6 bulan (dikonfigurasi di `duplicateWindowMonths`), pengajuan mewajibkan **persetujuan Manajer** dan justifikasi.
+5. **Rule 5 (Passed Configured Window)**:
+   Pengajuan ke perusahaan yang sama setelah melewati masa *duplicate window* (default 6 bulan) diperbolehkan sebagai siklus rekrutmen baru.
+6. **Rule 6 (Parallel Multi-Company)**:
+   Kandidat diperbolehkan diajukan ke beberapa perusahaan berbeda secara paralel asalkan belum mencapai tahap penempatan kerja (Code `40`/`41`).
+
+### Proteksi Tambahan pada Penjadwalan Wawancara (Interview Guard):
+- **Entry Guard**: Sistem menolak penjadwalan wawancara jika kandidat telah berstatus Onboard (`40`) atau Lolos Probation (`41`) pada perusahaan yang sama.
+- **Anti-Downgrade Guard**: Penjadwalan wawancara tambahan tidak boleh menurunkan status kandidat yang sudah berada di tahapan lebih tinggi (misal: kandidat di status `22` Final Interview atau `30` Offer tidak akan diturunkan kembali ke status `20`).
 
 ---
 
-## 2. Skema Data Utama (`CandidateRecord`)
+## 4. Hak Akses Berbasis Peran (Role-Based Access Control / RBAC)
 
+Sistem mendukung multi-role dinamis dengan proteksi akun aktif:
+
+| Peran (Role) | Pengguna Default | Hak Akses & Pembatasan Khusus |
+| :--- | :--- | :--- |
+| **SuperAdmin** | `USR-AUL` (AUL SuperAdmin) | **Full Control**: Akses tak terbatas ke seluruh modul, manajemen pengguna, kamus master data, reset database, cadangan/pemulihan JSON, dan audit log. |
+| **Manager** | `USR-02` (Budi Hartono) | **Supervisi & Analitik**: Akses modul Talent & Analisis, menyetujui rekomendasi lintas konsultan (Rule 4), serta ekspor data ke Excel/CSV. |
+| **Consultant** | `USR-01` (Rina Wijaya)<br>`USR-03` (Hendra Kusuma) | **Operasional Rekruter**: Menambah/mengedit kandidat, mengunggah CV, menjadwalkan wawancara, menerbitkan offer letter, serta kontak cepat WhatsApp/Email. |
+| **Client HR** | `USR-04` (David Chen - alauda) | **Client Portal Terisolasi**: Mode khusus perwakilan HR klien. Menu Tambah Kandidat, Analisis Data, Pengaturan, Operasi Massal, dan Catatan Internal Konsultan disembunyikan. Hanya dapat melihat kandidat yang diajukan ke perusahaannya, serta memiliki tombol cepat *Approve Interview* dan *Reject CV* (dengan dialog alasan). |
+
+### Proteksi Keamanan Akun (Account Lockout Guard):
+- Akun yang sedang aktif digunakan (termasuk SuperAdmin terakhir) **tidak dapat dihapus atau dinonaktifkan** oleh dirinya sendiri.
+- Akun berstatus tidak aktif (`active: false`) otomatis disaring dari *role switcher* header dan dicegah login ke dalam sistem.
+
+---
+
+## 5. Skema Data Inti (Core Data Schemas)
+
+### A. Skema Data Kandidat (`CandidateRecord`)
 ```json
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "CandidateRecord",
-  "type": "object",
-  "required": [
-    "id",
-    "name",
-    "nationality",
-    "statusCount",
-    "stage",
-    "gender",
-    "age",
-    "education",
-    "language",
-    "yearsOfService",
-    "recommendedPosition",
-    "recommendedCompany",
-    "entryTime"
-  ],
-  "properties": {
-    "id": { "type": "string", "description": "ID unik kandidat, misal CND-1001" },
-    "name": { "type": "string", "description": "Nama lengkap kandidat" },
-    "nationality": { "type": "string", "default": "Indonesia" },
-    "statusCount": { "type": "integer", "description": "Jumlah total pengajuan/aktivitas rekomendasi" },
-    "stage": {
-      "type": "string",
-      "enum": ["new", "pending", "pass", "interview", "failed", "entry"]
-    },
-    "gender": { "type": "string", "enum": ["Male", "Female"] },
-    "age": { "type": "integer", "minimum": 18, "maximum": 70 },
-    "education": {
-      "type": "string",
-      "enum": ["undergraduate", "master", "diploma", "highschool", "doctorate"]
-    },
-    "language": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "Daftar bahasa yang dikuasai, misal ['Indonesian', 'English', 'Chinese']"
-    },
-    "yearsOfService": { "type": "number", "minimum": 0 },
-    "recommendedPosition": { "type": "string" },
-    "recommendedCompany": { "type": "string" },
-    "entryTime": { "type": "string", "format": "date-time" },
-    "email": { "type": "string" },
-    "phone": { "type": "string" },
-    "summary": { "type": "string" },
-    "skills": { "type": "array", "items": { "type": "string" } },
-    "recommendations": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "position": { "type": "string" },
-          "company": { "type": "string" },
-          "stage": { "type": "string" },
-          "consultant": { "type": "string" },
-          "timestamp": { "type": "string" },
-          "notes": { "type": "string" }
-        }
-      }
+  "id": "CND-1001",
+  "name": "Andi Candera",
+  "nationality": "Indonesia",
+  "gender": "Male",
+  "birthDate": "2000-04-12",
+  "age": 26,
+  "education": "undergraduate",
+  "language": "Indonesian, English",
+  "yearsOfService": 9,
+  "recommendedPosition": "Presales Lead",
+  "recommendedCompany": "alauda",
+  "entryTime": "2026-09-18 10:30:00",
+  "email": "andi.c@example.id",
+  "phone": "+62 812-3456-7011",
+  "whatsapp": "+62 812-3456-7011",
+  "domicile": "Jakarta Selatan",
+  "salaryExpectation": "IDR 35.000.000",
+  "currentSalary": "IDR 28.000.000",
+  "availability": "1 Month Notice",
+  "ownerId": "USR-01",
+  "ownerName": "Rina Wijaya",
+  "skills": ["Kubernetes", "DevOps", "Solution Architecture", "Presales"],
+  "tags": ["Fast Track", "Enterprise Ready"],
+  "summary": "Senior Solutions Architect with strong track record in cloud infrastructure.",
+  "isDeleted": false,
+  "originalCvFile": {
+    "name": "CV_Andi_Candera_2026.pdf",
+    "size": 154280,
+    "type": "application/pdf",
+    "uploadDate": "2026-09-18 10:30:00",
+    "text": "Ringkasan teks CV..."
+  },
+  "workHistory": [
+    {
+      "role": "Cloud Solutions Architect",
+      "company": "PT Tech Solusi Indonesia",
+      "period": "2021 - Present",
+      "desc": "Leading cloud modernization projects."
     }
-  }
+  ],
+  "educationHistory": [
+    {
+      "degree": "Bachelor of Computer Science",
+      "institution": "Universitas Indonesia",
+      "year": "2019"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "REC-101",
+      "company": "alauda",
+      "position": "Presales Lead",
+      "statusCode": 10,
+      "consultantId": "USR-01",
+      "consultantName": "Rina Wijaya",
+      "timestamp": "2026-09-18 10:30:00",
+      "notes": "Submitted profile to Client HR.",
+      "isActive": true
+    }
+  ]
+}
+```
+
+### B. Skema Lowongan Kerja Klien (`JobOrder`)
+```json
+{
+  "id": "JOB-1001",
+  "title": "Senior Pre-sales Specialist",
+  "company": "alauda",
+  "department": "Enterprise Cloud Solutions",
+  "location": "Jakarta (Hybrid)",
+  "type": "Full-time",
+  "salaryRange": "IDR 20,000,000 - 32,000,000",
+  "experience": "5+ Years",
+  "tags": ["Kubernetes", "DevOps", "Bilingual", "Enterprise IT"],
+  "description": "Lead technical discovery, solution architecture presentations, and POC delivery.",
+  "status": "Active",
+  "postedDate": "2026-11-10"
+}
+```
+
+### C. Skema Wawancara Terjadwal (`InterviewRecord`)
+```json
+{
+  "id": "INT-1001",
+  "candidateId": "CND-1001",
+  "candidateName": "Andi Candera",
+  "company": "alauda",
+  "position": "Presales Lead",
+  "round": "Round 1 - Technical Interview",
+  "dateTime": "2026-11-20T14:00",
+  "platform": "Google Meet",
+  "interviewers": "David Chen (alauda HR), Kevin (Lead Architect)",
+  "meetingLink": "https://meet.google.com/abc-defg-hij",
+  "notes": "Focus on Kubernetes multi-cluster networking.",
+  "status": "Scheduled"
 }
 ```
 
 ---
 
-## 3. Aturan Bisnis Operasi Kandidat
+## 6. Standar Dialog Kustom & Zero Native Browser Dialogs
 
-1. **`Download Resume` (`Unduh Resume`)**:
-   - Menghasilkan berkas dokumen ringkasan resume terstruktur (`.txt` / `.html` siap cetak) yang memuat profil pribadi, pendidikan, bahasa, pengalaman kerja, riwayat rekomendasi klien, dan ringkasan kompetensi.
-2. **`Recommended Repeat` (`Rekomendasi Ulang`)**:
-   - Setiap kali seorang kandidat direkomendasikan ke posisi atau perusahaan baru:
-     - Nilai `statusCount` bertambah `+1`.
-     - Kolom `recommendedPosition` dan `recommendedCompany` pada baris utama diperbarui ke rekomendasi paling mutakhir.
-     - Entri baru ditambahkan ke dalam array `recommendations` kandidat tersebut.
-3. **`Recommended List` (`Daftar Rekomendasi`)**:
-   - Menampilkan tabel historis seluruh rekomendasi kandidat yang bersangkutan.
-   - Memungkinkan konsultan memperbarui status tahapan (`stage`) kandidat secara langsung.
-4. **`Public Career Portal` (`Portal Karier Publik`)**:
-   - Menampilkan lowongan terbuka klien dan memungkinkan kandidat melamar secara mandiri.
-   - Lamaran baru langsung dialirkan ke `Resume Lib` dengan status awal Code `0` (`New`).
-5. **`Interview Calendar & .ICS Scheduler` (`Kalender Wawancara`)**:
-   - Koordinasi putaran wawancara dengan tautan meeting dan ekspor kalender standar `.ics`.
-   - Mengubah status kandidat ke Code `20` (`Interview Scheduled`) dan Code `21` (`Interview Passed`).
-6. **`Official Offer Letter Generator` (`Generator Surat Penawaran Kerja`)**:
-   - Menghasilkan draf dokumen penawaran kerja resmi dengan perincian kompensasi dan blok tanda tangan.
-   - Mengubah status kandidat ke Code `30` (`Offer Proposed`).
-7. **`Smart Heuristic CV Parser` (`Ekstraktor CV Cerdas`)**:
-   - Menganalisis teks CV bebas dan secara cerdas mengisi formulir pendaftaran kandidat.
-8. **`Visual Kanban Board` (`Papan Pipeline Kanban`)**:
-   - Memungkinkan pemindahan kandidat antar-tahap melalui *drag-and-drop* atau kontrol keyboard dengan seluruh validasi bisnis tetap berlaku.
-9. **`Placement Fee & Warranty Tracker` (`Pelacak Komisi & Garansi 90 Hari`)**:
-   - Menghitung estimasi kompensasi agensi, melacak masa garansi *probation* 90 hari, status *invoice*, serta pengarsipan *Soft Delete* dan pencadangan JSON penuh.
-10. **`Multi-Select Batch Operations` (`Operasi Massal Kandidat`)**:
-   - Mendukung aksi *Batch Recommend* (tetap menegakkan 6 aturan validasi pengajuan berulang), *Batch Tag*, dan *Batch Archive* (otomatis melewati kandidat berstatus terkunci `>= 40`).
-11. **`Master Dictionaries & Candidate Outreach` (`Kamus PG-02 & Outreach WA/Email`)**:
-   - Mengelola daftar bahasa, negara/kebangsaan, serta referensi resmi kamus 17 kode status tri-lingual (`0`–`91`), dilengkapi draf pesan cepat kandidat ke WhatsApp (`wa.me`) dan email (`mailto:`).
+Platform mengeliminasi 100% dialog bawaan peramban (`alert()`, `confirm()`, dan `prompt()`):
+1. **Glassmorphism Backdrop & Centered Overlay**:
+   - Seluruh modal menggunakan `<dialog>` modern dengan efek *frosted blur* (`backdrop-filter: blur(8px) saturate(180%)`), bayangan elevasi dalam, dan sudut melengkung `18px`.
+2. **Komponen Pengganti Dialog**:
+   - `showAlertDialog({ title, message, type })`: Pemberitahuan sistem dengan ikon tematik (sukses, peringatan, bahaya).
+   - `showConfirmDialog({ title, message, type, confirmText, cancelText })`: Konfirmasi aksi penting (reset database, hapus kandidat, hapus lowongan).
+   - `showInputDialog({ title, message, inputType, options, placeholder, defaultValue, min, max })`: Dialog input kustom pengganti `window.prompt()` yang mendukung elemen `<input>`, `<select>`, dan `<textarea>`. Digunakan pada:
+     - Input alasan penolakan CV klien (Kode 19).
+     - Input alasan kegagalan kandidat (Kode 29, 39, 49, 90).
+     - Input tanggal mulai kerja resmi saat penerimaan penawaran kerja (Kode 31) dengan validasi format ISO (`YYYY-MM-DD`).
+     - Input penambahan label massal (*Batch Tagging*).
+     - Input justifikasi pengajuan berulang (*Batch Recommend*).
 
 ---
 
-## 4. Standar Antarmuka & Kepatuhan
+## 7. Penanganan Berkas & Parser Dokumen (CSV & CV File Parser)
 
-- **Zero Decorative Emoji Policy**: Antarmuka bisnis menggunakan ikonografi vektor SVG garis tipis standar enterprise, bukan emoji kasual.
-- **Pelindungan Data Pribadi (UU PDP No. 27/2022)**: Penyimpanan lokal menjamin data kandidat tidak dikirim ke pihak ketiga tanpa otorisasi eksplisit.
+### Parser CSV Standar RFC-4180
+Fungsi `parseCsvLine(line)` mengurai baris CSV secara tangguh:
+- Menangani nilai berpagar tanda kutip ganda (`"..."`) yang memuat karakter koma, seperti `"Indonesian, English"`.
+- Menghapus spasi dan tanda kutip pembungkus secara presisi tanpa merusak struktur kolom.
+- Generator ID unik kandidat (`generateUniqueCandidateId()`) memindai nilai numerik tertinggi di seluruh database (`CND-1008+`) sehingga tidak terjadi benturan ID setelah kandidat dihapus.
 
----
-
-## 5. Model Deployment: Single-User Full Control (AUL SuperAdmin)
-
-Platform dikonfigurasi untuk operasional **Single-User Full Control**:
-- **Profil Pengguna Utama**: `AUL SuperAdmin` (`USR-AUL`).
-- **Tingkat Otoritas**: `superadmin` (*Super Administrator - Full Control*).
-- **Hak Akses Eksklusif**:
-  - Penuh atas seluruh tab navigasi (*Talent Management*, *Consultant Business*, *Data Analysis*, dan *Settings*).
-  - Mengelola bank data kandidat (tambah, edit, tagging, internal notes, CV multi-versi, hapus/arsip).
-  - Mengelola lowongan klien di Portal Karir (buat lowongan baru, edit rincian posisi, hapus lowongan).
-  - Mengatur jadwal wawancara di Kalender Interaktif dan unduh file `.ics`.
-  - Menerbitkan Offering Letter dengan tanggal mulai kerja dan e-signature digital.
-  - Memantau garansi 90 hari probation, fee agensi, dan status invoice.
-  - Mengatur kamus Master Data (perusahaan, posisi, bahasa, negara) dan manajemen akun pengguna.
-  - Melakukan ekspor/impor CSV dan backup/restore JSON database secara mandiri.
+### Validasi Ekstensi Berkas CV
+Fungsi `isSupportedCvFile(fileName)` membatasi unggahan resume hanya ke ekstensi dokumen resmi:
+- Ekstensi diizinkan: `.pdf`, `.docx`, `.doc`, `.txt`, `.md`, `.rtf`.
+- Berkas yang tidak valid atau berpotensi berbahaya (seperti `.exe`, `.bat`, `.js`) ditolak secara instan dengan notifikasi peringatan.
 
 ---
 
-## 6. Standar Dialog & Pop-up In-App (Glassmorphism & Zero Browser Dialogs)
+## 8. Persistensi Status, URL Deep-Linking & Transisi Tampilan
 
-Untuk menjaga standar pengalaman pengguna (UX) enterprise dan konsistensi visual:
-1. **Zero Browser Native Dialogs**: Seluruh interaksi pengguna tidak lagi memicu `alert()` atau `confirm()` bawaan peramban (`dandirayo.github.io says...`). Seluruh konfirmasi dan pemberitahuan dialihkan ke `<dialog id="customPromptModal">`.
-2. **Backdrop Blur & Top Layer Glassmorphism**:
-   - Seluruh elemen `<dialog::backdrop>` memiliki efek *frosted glass* (`backdrop-filter: blur(8px) saturate(180%)`).
-   - Modal konfirmasi dan peringatan berada di posisi tengah layar (*centered viewport*) dengan sudut melengkung halus (`18px`), bayangan elevasi dalam, dan animasi pop-in `modalPopIn`.
-   - Mendukung penumpukan modal (*stacked modal on modal*, misalnya konfirmasi hapus lowongan di atas modal edit lowongan).
-3. **Semantik Ikon & Aksi**:
-   - **Danger / Deletion**: Ikon tempat sampah merah dengan tombol konfirmasi merah coral `.btn-danger`.
-   - **Warning**: Ikon segitiga peringatan kuning amber dengan tombol konfirmasi standar.
-   - **Info / Success**: Ikon informatif biru / centang hijau dengan tombol "Mengerti".
+1. **Sinkronisasi Parameter URL**:
+   Fungsi `syncFiltersToUrl()` dan `restoreFiltersFromUrl()` menjaga status navigasi di URL peramban:
+   - Tampilan aktif (`?view=clientList`, `?view=resumeLib`, `?view=interviewCalendar`, dll.).
+   - Subtab aktif (`&subtab=jobs` vs `&subtab=clients`).
+   - Kata kunci pencarian, filter nama, dan tab tahapan seleksi.
+   - Status tetap utuh saat halaman direfresh (*full page reload*).
+2. **Safe View Transitions**:
+   Pemanfaatan Document View Transitions API (`document.startViewTransition`) dilengkapi penanganan *error catch* pada `transition.ready`, `transition.updateCallbackDone`, dan `transition.finished` guna mencegah `AbortError` saat pengguna beralih menu dengan cepat.
 
 ---
 
-## 7. Kustomisasi Kolom Tabel & Mode Tampilan Ringkas (Compact vs Full View)
+## 9. Standar Centering & Keselarasan Tombol (Flex Centering Standard)
 
-Untuk mengoptimalkan densitas informasi pada layar desktop dan laptop tanpa scroll horizontal yang berlebihan:
-1. **Mode Ringkas (Compact View)**:
-   - Menampilkan 5 kolom inti: `Kandidat` (terkunci), `Status Tahapan`, `Posisi Rekomendasi`, `Perusahaan Tujuan`, dan `Operasi`.
-   - Tabel otomatis pas 100% pada resolusi layar standar tanpa scroll horizontal.
-2. **Mode Lengkap (Full View)**:
-   - Menampilkan seluruh 12 kolom database lengkap (termasuk Kebangsaan, Gender, Usia, Pendidikan, Bahasa, Masa Kerja, dan Waktu Masuk).
-3. **Penyembunyian Langsung dari Header (`✕`)**:
-   - Pengguna dapat mengarahkan kursor ke header kolom yang tidak terkunci dan mengklik tombol `✕` untuk langsung menyembunyikan kolom tersebut secara instan.
-4. **Penyimpanan Preferensi**:
-   - Pilihan kolom tersimpan otomatis di `localStorage` (`STORAGE_KEYS.VISIBLE_COLS`).
+Untuk menjamin kenyamanan visual pada seluruh resolusi layar:
+1. **Aturan Dasar Tombol**:
+   Semua elemen tombol interaktif (`:where(button)`, `.btn-solid`, `.btn-outlined`, `.stage-tab`, `.op-btn`) wajib menggunakan:
+   ```css
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   text-align: center;
+   line-height: 1;
+   vertical-align: middle;
+   box-sizing: border-box;
+   ```
+2. **Penyelarasan Komponen Toolbar**:
+   Input teks, selektor dropdown, dan tombol aksi pada toolbar pencarian memiliki tinggi seragam (32px pada desktop) dan dibungkus dalam wadah flex dengan `align-items: center` untuk memastikan sumbu vertikal sejajar sempurna (selisih atas-bawah = 0px).
 
 ---
 
-## 8. Standar Centering & Keselarasan Tombol (Global Button Optical & Flex Centering)
+## 10. Protokol Pengujian Kualitas (QA Verification Suite)
 
-Untuk menjamin seluruh tombol dan elemen interaktif selalu berada tepat di tengah (*perfectly centered*) baik secara vertikal maupun horizontal:
-1. **Aturan Dasar `:where(button)` & Button Classes**:
-   - Seluruh elemen `<button>`, `.btn-solid`, `.btn-outlined`, `.btn-danger`, `.stage-tab`, `.btn-view-toggle`, `.btn-preset-pill`, `.op-btn`, dan `.col-dropdown-action-btn` wajib menyertakan:
-     ```css
-     display: inline-flex;
-     align-items: center;
-     justify-content: center;
-     text-align: center;
-     line-height: 1;
-     vertical-align: middle;
-     box-sizing: border-box;
-     ```
-2. **Pencegahan Pergeseran Baseline Vertikal**:
-   - Hindari penetapan `line-height` relatif (seperti 1.45 warisan teks badan) pada tombol dengan tinggi tetap (`height: 32px`, `height: 26px`, dll.).
-   - Penggunaan `line-height: 1` bersama `align-items: center` menjamin sumbu vertikal teks membagi tinggi tombol secara presisi (selisih atas-bawah = 0px).
-3. **Penyelarasan Komponen Sejajar Toolbar**:
-   - Input dan selektor (`.ctrl-input`, `.ctrl-select`) memiliki tinggi yang sama persis (32px) dan dibungkus dalam flex container dengan `align-items: center` sehingga berada di sumbu tengah yang identik dengan tombol-tombol aksi di sisi kanan.
-
-
+Integritas aplikasi diverifikasi melalui skenario pengujian otomatis berbasis CDP (Chrome/Edge DevTools Protocol):
+- **Zero Runtime Errors**: 0 uncaught exception (`TypeError`, `ReferenceError`, `AbortError`).
+- **16 Skenario QA Inti**: Mencakup parsing CSV RFC-4180, isolasi hak akses Client HR, proteksi lockout akun, aturan bisnis rekomendasi berulang, sanitasi XSS (termasuk karakter petik `&#39;`), validasi berkas resume, pencegahan penurunan status interview, hingga persistensi subtab URL.
+- **Audit UI/UX Lintas Perangkat**: Menjamin responsivitas penuh dari perangkat mobile (360px–412px), tablet (768px), hingga desktop ultra-lebar (1440px).
